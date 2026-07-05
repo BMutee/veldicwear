@@ -1,37 +1,7 @@
-import Link from "next/link";
 
-const products = [
-  {
-    id: 1,
-    name: "Classic Black Hoodie",
-    price: "$49",
-  },
-  {
-    id: 2,
-    name: "Minimal White Tee",
-    price: "$29",
-  },
-  {
-    id: 3,
-    name: "Urban Street Jacket",
-    price: "$89",
-  },
-  {
-    id: 4,
-    name: "Premium Sweatpants",
-    price: "$39",
-  },
-  {
-    id: 5,
-    name: "Oversized Tee",
-    price: "$25",
-  },
-  {
-    id: 6,
-    name: "Luxury Hoodie",
-    price: "$59",
-  },
-];
+
+import { products } from "@/lib/products";
+import Link from "next/link";
 
 export default function ShopPage() {
   return (
