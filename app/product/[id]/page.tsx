@@ -1,4 +1,6 @@
+
 "use client";
+import Image from "next/image";
 import { addToCart } from "@/lib/cart";
 import Link from "next/link";
 
@@ -41,8 +43,15 @@ export default async function ProductPage({
         </Link>
 
         <div className="mt-10 grid gap-10 md:grid-cols-2">
-          <div className="h-96 w-full bg-zinc-800" />
-
+         <div className="relative h-96 w-full overflow-hidden rounded-xl">
+  <Image
+    src={product.image}
+    alt={product.name}
+    fill
+    className="object-cover"
+    priority
+  />
+</div>
           <div>
             <h1 className="text-3xl font-bold">{product.name}</h1>
 

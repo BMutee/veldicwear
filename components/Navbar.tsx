@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import CartIcon from "./CartIcon";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -20,19 +21,24 @@ export default function Navbar() {
 
         {/* Desktop Menu */}
         <nav className="hidden items-center gap-8 md:flex">
-          <Link href="/" className="text-white/80 hover:text-white transition">
-            Home
-          </Link>
-          <Link href="/shop" className="text-white/80 hover:text-white transition">
-            Shop
-          </Link>
-          <Link href="/collection" className="text-white/80 hover:text-white transition">
-            Collection
-          </Link>
-          <Link href="/contact" className="text-white/80 hover:text-white transition">
-            Contact
-          </Link>
-        </nav>
+  <Link href="/" className="text-white/80 hover:text-white transition">
+    Home
+  </Link>
+
+  <Link href="/shop" className="text-white/80 hover:text-white transition">
+    Shop
+  </Link>
+
+  <Link href="/collection" className="text-white/80 hover:text-white transition">
+    Collection
+  </Link>
+
+  <Link href="/contact" className="text-white/80 hover:text-white transition">
+    Contact
+  </Link>
+
+  <CartIcon />
+</nav>
 
         {/* Mobile Button */}
         <button
@@ -58,6 +64,13 @@ export default function Navbar() {
           <Link onClick={() => setOpen(false)} href="/contact" className="block text-white/80">
             Contact
           </Link>
+          <Link
+  onClick={() => setOpen(false)}
+  href="/cart"
+  className="block text-white/80"
+>
+  Cart
+</Link>
         </div>
       )}
     </header>

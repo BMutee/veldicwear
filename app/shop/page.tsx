@@ -1,4 +1,5 @@
 
+import Image from "next/image";
 
 import { products } from "@/lib/products";
 import Link from "next/link";
@@ -22,10 +23,17 @@ export default function ShopPage() {
           {products.map((product) => (
             <div
               key={product.id}
-              className="border border-white/10 bg-white/5 p-5 hover:bg-white/10 transition"
+             className="overflow-hidden rounded-xl border border-white/10 bg-white/5 p-5 shadow-lg transition duration-300 hover:-translate-y-2 hover:border-yellow-500/40 hover:bg-white/10"
             >
               {/* Image placeholder */}
-              <div className="h-52 w-full bg-zinc-800 mb-4" />
+             <div className="relative mb-4 h-72 overflow-hidden rounded-lg">
+  <Image
+    src={product.image}
+    alt={product.name}
+    fill
+    className="object-cover transition duration-300 hover:scale-105"
+  />
+</div>
 
               <h2 className="text-lg font-semibold text-white">
                 {product.name}
@@ -37,7 +45,7 @@ export default function ShopPage() {
                 href={`/product/${product.id}`}
                 className="mt-4 inline-block text-sm text-yellow-400 hover:text-yellow-300"
               >
-                View Product →
+                View Details →
               </Link>
             </div>
           ))}
