@@ -4,6 +4,7 @@ export type Product = {
   price: string;
   image: string;
   description: string;
+  sizes: string[];
 };
 
 export const products: Product[] = [
@@ -14,6 +15,7 @@ export const products: Product[] = [
     image: "/products/hoodie.jpg",
     description:
       "A premium black hoodie designed for comfort, warmth, and everyday streetwear style.",
+    sizes: ["S", "M", "L", "XL"],
   },
   {
     id: "2",
@@ -22,6 +24,7 @@ export const products: Product[] = [
     image: "/products/tshirt.jpg",
     description:
       "Clean, minimal white t-shirt made from soft cotton for daily wear.",
+    sizes: ["S", "M", "L", "XL"],
   },
   {
     id: "3",
@@ -30,5 +33,6 @@ export const products: Product[] = [
     image: "/products/jacket.jpg",
     description:
       "A bold street-style jacket built for modern urban fashion.",
+    sizes: ["M", "L", "XL"],
   },
 ];

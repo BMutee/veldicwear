@@ -1,5 +1,7 @@
+import SizeSelector from "./SizeSelector";
 import { Product } from "@/lib/products";
 import AddToCartButton from "./AddToCartButton";
+
 
 type Props = {
   product: Product;
@@ -19,10 +21,14 @@ export default function ProductInfo({
       </p>
 
       <p className="mt-6 leading-7 text-white/70">
-        {product.description}
-      </p>
+  {product.description}
+</p>
 
-      <AddToCartButton product={product} />
+<SizeSelector sizes={product.sizes} />
+
+<AddToCartButton product={product} />
+
+      
     </div>
   );
 }
