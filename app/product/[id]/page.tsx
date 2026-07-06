@@ -1,18 +1,9 @@
-
 "use client";
-import Image from "next/image";
-import { addToCart } from "@/lib/cart";
+
 import Link from "next/link";
-
-type Product = {
-  id: string;
-  name: string;
-  price: string;
-  description: string;
-};
-
 import { products } from "@/lib/products";
-
+import ProductImage from "@/components/ProductImage";
+import ProductInfo from "@/components/ProductInfo";
 
 export default async function ProductPage({
   params,
@@ -36,41 +27,19 @@ export default async function ProductPage({
   }
 
   return (
-    <main className="min-h-screen bg-black text-white px-6 py-16">
+    <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-4xl">
         <Link href="/shop" className="text-white/60 hover:text-white">
           ← Back to Shop
         </Link>
 
         <div className="mt-10 grid gap-10 md:grid-cols-2">
-         <div className="relative h-96 w-full overflow-hidden rounded-xl">
-  <Image
-    src={product.image}
-    alt={product.name}
-    fill
-    className="object-cover"
-    priority
-  />
-</div>
-          <div>
-            <h1 className="text-3xl font-bold">{product.name}</h1>
+          <ProductImage
+            image={product.image}
+            name={product.name}
+          />
 
-            <p className="mt-3 text-xl text-yellow-400">
-              {product.price}
-            </p>
-
-            <p className="mt-6 text-white/70 leading-7">
-              {product.description}
-            </p>
-
-            
-           <button
-  onClick={() => addToCart(product)}
-  className="mt-8 w-full bg-yellow-500 py-3 text-black font-semibold hover:bg-yellow-400 transition"
->
-  Add to Cart
-</button>
-          </div>
+          <ProductInfo product={product} />
         </div>
       </div>
     </main>
