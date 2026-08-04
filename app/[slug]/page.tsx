@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 export async function generateStaticParams() {
-  const pages = await prisma.cmsPage.findMany({
+  const pages: { slug: string }[] = await prisma.cmsPage.findMany({
     where: { published: true },
     select: { slug: true },
   });
