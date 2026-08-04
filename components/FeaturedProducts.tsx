@@ -1,57 +1,72 @@
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import ProductGrid from "./ProductGrid";
 
-const products = [
-  {
-    id: 1,
-    name: "Classic Black Hoodie",
-    price: "$49",
-  },
-  {
-    id: 2,
-    name: "Minimal White Tee",
-    price: "$29",
-  },
-  {
-    id: 3,
-    name: "Urban Street Jacket",
-    price: "$89",
-  },
-];
+type FeaturedSectionContent = {
+  featuredSectionTitle: string;
+  featuredSectionSubtitle: string;
+};
 
-export default function FeaturedProducts() {
+type FeaturedProductsProps = {
+  content?: FeaturedSectionContent | null;
+};
+
+export default async function FeaturedProducts({ content }: FeaturedProductsProps) {
+  const products = await prisma.product.findMany({
+    take: 8,
+    where: {
+      featured: true,
+    },
+    include: {
+      variants: true,
+      images: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  const displayProducts =
+    products.length > 0
+      ? products
+      : await prisma.product.findMany({
+          take: 8,
+          include: {
+            variants: true,
+            images: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
+
+  const title = content?.featuredSectionTitle || "New Arrivals";
+  const subtitle = content?.featuredSectionSubtitle || "Considered pieces, built to last.";
+
   return (
-    <section className="bg-black px-6 py-20">
-      <div className="mx-auto max-w-6xl">
-        <h2 className="text-center text-3xl font-bold text-white md:text-4xl">
-          Featured Products
-        </h2>
+    <section className="px-6 py-24">
+      <div className="section-grounded">
+        {/* Section header */}
+        <div className="mb-16">
+          <h2 className="font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+            {title}
+          </h2>
+          <p className="mt-3 font-sans text-base text-stone">
+            {subtitle}
+          </p>
+        </div>
 
-        <p className="mt-4 text-center text-white/60">
-          Hand-picked essentials for modern style
-        </p>
+        <ProductGrid products={displayProducts} />
 
-        <div className="mt-12 grid gap-8 sm:grid-cols-2 md:grid-cols-3">
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className="border border-white/10 bg-white/5 p-6 hover:bg-white/10 transition"
-            >
-              <div className="h-48 w-full bg-zinc-800 mb-4" />
-
-              <h3 className="text-lg font-semibold text-white">
-                {product.name}
-              </h3>
-
-              <p className="mt-2 text-white/60">{product.price}</p>
-
-              <Link
-                href="/product"
-                className="mt-4 inline-block text-sm text-yellow-400 hover:text-yellow-300"
-              >
-                View Details →
-              </Link>
-            </div>
-          ))}
+        {/* View All link */}
+        <div className="mt-16 text-center">
+          <Link
+            href="/shop"
+            className="btn-outline cursor-pointer"
+          >
+            Shop all
+            <span className="text-base transition-transform duration-200 group-hover:translate-x-1">&rarr;</span>
+          </Link>
         </div>
       </div>
     </section>

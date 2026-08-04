@@ -1,9 +1,7 @@
-"use client";
-
-import Link from "next/link";
-import { products } from "@/lib/products";
-import ProductImage from "@/components/ProductImage";
-import ProductInfo from "@/components/ProductInfo";
+import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
+import ProductClient from "@/components/ProductClient";
+import ProductGrid from "@/components/ProductGrid";
 
 export default async function ProductPage({
   params,
@@ -12,35 +10,79 @@ export default async function ProductPage({
 }) {
   const { id } = await params;
 
-  const product = products.find((p) => p.id === id);
+  const product = await prisma.product.findUnique({
+    where: { id },
+    include: {
+      variants: true,
+      images: true,
+    },
+  });
 
   if (!product) {
-    return (
-      <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold">Product not found</h1>
-
-        <Link href="/shop" className="mt-4 text-yellow-400">
-          Go back to shop →
-        </Link>
-      </main>
-    );
+    notFound();
   }
 
+  // Find lowest variant price for initial display
+  const variantPrices = product.variants.map(
+    (variant) => (variant.price ?? product.price),
+  );
+  const startingPrice =
+    variantPrices.length > 0
+      ? Math.min(...variantPrices)
+      : product.price;
+
+  // Fetch related products (excluding current)
+  const relatedProducts = await prisma.product.findMany({
+    take: 4,
+    where: {
+      id: { not: product.id },
+    },
+    include: {
+      variants: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-4xl">
-        <Link href="/shop" className="text-white/60 hover:text-white">
-          ← Back to Shop
-        </Link>
+    <main className="bg-white">
+      <div className="section-grounded py-12">
+        {/* Product section */}
+        <ProductClient
+          product={{
+            id: product.id,
+            name: product.name,
+            price: startingPrice,
+            compareAtPrice: product.compareAtPrice ?? null,
+            image: product.image,
+            stock: product.stock,
+            description: product.description,
+          }}
+          sizes={product.variants.map((variant) => ({
+            size: variant.size,
+            color: variant.color ?? undefined,
+            stock: variant.stock,
+            price: variant.price ?? product.price,
+          }))}
+          productImages={product.images.map((img) => ({
+            id: img.id,
+            color: img.color,
+            url: img.url,
+          }))}
+        />
 
-        <div className="mt-10 grid gap-10 md:grid-cols-2">
-          <ProductImage
-            image={product.image}
-            name={product.name}
-          />
-
-          <ProductInfo product={product} />
-        </div>
+        {/* You Might Also Like */}
+        {relatedProducts.length > 0 && (
+          <section className="mt-20">
+            <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+              You might also like
+            </h2>
+            <div className="mt-8">
+              <ProductGrid products={relatedProducts} />
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );

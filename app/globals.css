@@ -1,26 +1,148 @@
+/* ===== TAILWIND IMPORT ===== */
 @import "tailwindcss";
 
+/* ===== FONTS ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Veldic Wear — Design Tokens (v2: white/product-forward direction) */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Color */
+  --color-bone: #FAFAF8;       /* near-white page background */
+  --color-white: #FFFFFF;      /* pure white — cards, product tiles */
+  --color-ink: #171512;
+  --color-moss: #455A38;
+  --color-moss-hover: #37472C;
+  --color-clay: #B5602E;
+  --color-clay-bg: rgba(181, 96, 46, 0.12);
+  --color-stone: #8C8677;
+  --color-stone-border: rgba(23, 21, 18, 0.08); /* lightened for white bg */
+  --color-shadow: rgba(23, 21, 18, 0.06);
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Surface / text roles */
+  --surface-page: var(--color-bone);
+  --surface-card: var(--color-white);
+  --surface-nav: var(--color-ink);
+  --text-primary: var(--color-ink);
+  --text-inverse: var(--color-bone);
+  --text-muted: var(--color-stone);
+  --text-accent: var(--color-moss);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Typography */
+  --font-display: "General Sans", "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.5rem;
+  --text-3xl: 3.5rem;
+
+  /* Layout */
+  --container-max: 1280px;
+  --gutter-mobile: 24px;
+  --gutter-desktop: 64px;
+  --grid-gap-mobile: 16px;
+  --grid-gap-desktop: 24px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Depth — replaces bg-tint as the separation cue on white */
+  --shadow-card: 0 1px 3px var(--color-shadow);
+  --shadow-card-hover: 0 4px 12px var(--color-shadow);
+
+  /* Motion */
+  --dur-fast: 150ms;
+  --dur-base: 300ms;
+  --dur-slow: 600ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-snap: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Card / product tile — depth via shadow + hairline border, not bg tint */
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--color-stone-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--dur-fast) var(--ease-snap),
+              border-color var(--dur-fast) var(--ease-snap),
+              transform var(--dur-fast) var(--ease-snap);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--color-moss);
+  transform: scale(1.02);
+}
+
+/* Utility classes */
+.text-muted { color: var(--text-muted); }
+.text-accent { color: var(--text-accent); }
+.bg-nav { background: var(--surface-nav); color: var(--text-inverse); }
+.badge-clay {
+  background: var(--color-clay-bg);
+  color: var(--color-clay);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* Form input borders — darker than card borders for WCAG 1.4.11
+   (3:1 non-text contrast). Uses ink-based rgba for sufficient contrast
+   on white backgrounds. */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
+  border-color: rgba(23, 21, 18, 0.25);
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--color-moss);
+}
+
+/* Tailwind v4 theme mapping — keep in sync with @theme block in your
+   actual globals.css if using Tailwind v4 inline theming */
+@theme {
+  --color-bone: #FAFAF8;
+  --color-white: #FFFFFF;
+  --color-ink: #171512;
+  --color-moss: #455A38;
+  --color-clay: #B5602E;
+  --color-stone: #8C8677;
 }

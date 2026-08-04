@@ -1,0 +1,372 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                String   @id @default(cuid())
+  name              String?
+  email             String   @unique
+  emailVerified     Boolean  @default(false)
+  image             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  firstName         String
+  lastName          String
+  phone             String?
+  role              String   @default("customer")
+  twoFactorEnabled  Boolean  @default(false)
+
+  backupCodes String?
+  totpKey     String?
+
+  accounts          Account[]
+  sessions          Session[]
+  orders            Order[]
+  twoFactorSessions TwoFactorSession[]
+  securityLogs      SecurityAuditLog[]
+  wishlistItems     WishlistItem[]
+  reviews           Review[]
+
+  @@map("User")
+}
+
+model Account {
+  id          String   @id @default(cuid())
+  userId      String
+  accountId   String
+  providerId  String
+  type        String?
+  password    String?
+  refresh_token String?
+  refresh_token_expires_in Int?
+  access_token String?
+  expires_at  Int?
+  token_type  String?
+  scope       String?
+  id_token    String?
+  session_state String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@map("Account")
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  expiresAt   DateTime
+  token       String   @unique
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("Session")
+}
+
+model Verification {
+  id        String   @id @default(cuid())
+  identifier String
+  value     String
+  expiresAt DateTime
+
+  @@unique([identifier, value])
+  @@map("Verification")
+}
+
+model Product {
+  id              String          @id @default(cuid())
+  name            String
+  description     String
+  image           String
+  price           Float
+  compareAtPrice  Float?
+  stock           Int             @default(0)
+  sku             String?
+  barcode         String?
+  trackInventory  Boolean         @default(true)
+  sellOutOfStock  Boolean         @default(false)
+  weight          Float?
+  weightUnit      String?         @default("kg")
+  featured        Boolean         @default(false)
+  active          Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+
+  collectionId    String?
+  collection      Collection?     @relation(fields: [collectionId], references: [id])
+
+  variants        ProductVariant[]
+  images          ProductImage[]
+  orderItems      OrderItem[]
+  wishlistItems   WishlistItem[]
+  reviews         Review[]
+
+  @@map("Product")
+}
+
+model Collection {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  image       String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  products    Product[]
+
+  @@map("Collection")
+}
+
+model ProductVariant {
+  id          String  @id @default(cuid())
+  size        String
+  color       String? // extracted from CJ variantProperty, e.g. "Red"
+  stock       Int     @default(0)
+  price       Float?
+  costPrice   Float?  // CJ wholesale cost (manual entry — not exposed by CJ API)
+  productId   String
+  cjVariantId String? // CJ variant ID (vid) from product/sku/getSkuList
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, size, color])
+  @@map("ProductVariant")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  color     String?
+  url       String
+  productId String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("ProductImage")
+}
+
+model Order {
+  id                  String      @id @default(cuid())
+  orderNumber         String      @unique
+  firstName           String
+  lastName            String
+  email               String
+  phone               String
+  country             String
+  city                String
+  address             String
+  postalCode          String
+  paymentMethod       String
+  total               Float
+  status              String      @default("pending")
+  trackingNumber      String?
+  trackingCarrier     String?
+  hasShippingProtection Boolean   @default(false)
+  createdAt           DateTime    @default(now())
+  deliveredAt         DateTime?
+
+  cjOrderId           String?    // CJ order ID after payment completed
+  cjFulfillmentStatus String?    // "pending" | "ready_to_pay" | "sent" | "failed" | null
+  cjCartReference     String?    // CJ cart/order reference from add-cart/confirm-cart
+
+  userId             String?
+  stripeSessionId    String?      @unique
+
+  user               User?        @relation(fields: [userId], references: [id])
+  items              OrderItem[]
+  couponCode         String?
+
+  @@map("Order")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  name      String
+  size      String
+  color     String? // color of the variant the customer ordered (null when product has no color data)
+  quantity  Int
+  price     Float
+  productId String
+  orderId   String
+
+  product Product @relation(fields: [productId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("OrderItem")
+}
+
+model Coupon {
+  id         String    @id @default(cuid())
+  code       String    @unique
+  type       String    @default("percentage")
+  value      Float
+  minOrder   Float?
+  maxUses    Int?
+  usedCount  Int       @default(0)
+  active     Boolean   @default(true)
+  startsAt   DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@map("Coupon")
+}
+
+model SiteSection {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  label     String?
+  content   String?
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("SiteSection")
+}
+
+model TwoFactorSession {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+  @@map("TwoFactorSession")
+}
+
+model SecurityAuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  ipAddress String?
+  userAgent String?
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("SecurityAuditLog")
+}
+
+model Homepage {
+  id                     String   @id @default("homepage")
+  heroTitle              String
+  heroSubtitle           String
+  heroTagline            String   @default("Fall / Winter 2026")
+  heroImage              String
+  heroButtonText         String
+  heroButtonLink         String
+  trustProductCount      String   @default("200+")
+  trustMemberCount       String   @default("50K+")
+  trustRating            String   @default("4.9")
+  featuredSectionTitle   String   @default("New Arrivals")
+  featuredSectionSubtitle String  @default("The latest drops engineered for the relentless.")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("Homepage")
+}
+
+model StoreSettings {
+  id              String   @id @default("store")
+  storeName        String   @default("VELDIC WEAR")
+  logo            String?
+  email           String?
+  phone           String?
+  address         String?
+  instagram       String?
+  facebook        String?
+  twitter         String?
+  tiktok          String?
+  youtube         String?
+  copyrightText   String   @default("All rights reserved.")
+  footerNavLinks  String?
+  currency        String   @default("USD")
+  currencySymbol  String   @default("$")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("StoreSettings")
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("WishlistItem")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("Review")
+}
+
+model CmsPage {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  title           String
+  content         String
+  seoTitle        String?
+  metaDescription String?
+  published       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("CmsPage")
+}
+
+model Announcement {
+  id        String    @id @default(cuid())
+  message   String
+  link      String?
+  style     String    @default("info")
+  active    Boolean   @default(false)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("Announcement")
+}
+
+model FAQ {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  sortOrder Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("FAQ")
+}

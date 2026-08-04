@@ -1,0 +1,163 @@
+# Veldic Wear — Design System
+
+## Brand identity
+
+Veldic Wear is a premium lifestyle & activewear brand. The name draws on
+"veld" (open grassland/terrain) — the brand voice and visuals lean into
+terrain, ground, and movement rather than generic gym-culture imagery.
+
+**Tagline:** Wear the Ground You Cover.
+**Subhead:** Premium lifestyle & activewear for every journey.
+
+**Tone:** Grounded, confident, unhurried. Not shouty gym-bro energy, not
+soft wellness-brand energy. Think rugged-minimalist, closer to Vuori or
+Fjällräven than Gymshark.
+
+---
+
+## Color
+
+Tokens live in `globals.css` as CSS custom properties. Never hardcode hex
+values in components — reference the variable.
+
+| Token              | Hex                      | Role                                                |
+| ------------------ | ------------------------ | ---------------------------------------------------- |
+| `--color-ink`       | `#171512`                | Primary text, nav background, footer                 |
+| `--color-bone`      | `#FAFAF8` (v2, was `#F3EEE3`) | Page-level surface only (Hero, body) — see note below |
+| `--color-white`     | `#FFFFFF`                | Card / product-tile surface — sits "above" the page   |
+| `--color-moss`      | `#455A38`                | Primary accent — CTAs, active nav state, links        |
+| `--color-clay`      | `#B5602E`                | Secondary accent — sale tags, highlights (sparingly)  |
+| `--color-stone`     | `#8C8677`                | Muted text, dividers, secondary labels                |
+
+**v2 note (white/product-forward direction):** the page background moved
+from a warm bone tint to near-white, matching the product-photography-led
+pattern used by major sportswear retailers. This introduced a **two-white
+system**: `--color-bone` (`#FAFAF8`) is the page-level surface (Hero
+section, `<body>`) and `--color-white` (`#FFFFFF`) is the elevated
+surface for cards and product tiles. Depth between the two is carried by
+`--shadow-card` / `--shadow-card-hover` and a hairline `border-stone/10`,
+not by a background color difference alone — the two whites are close
+enough that shadow/border are doing the real separation work.
+
+**Rules:**
+- Moss is the one accent allowed on primary CTAs. Never put moss and clay
+  on the same CTA — clay is for badges/tags only, never buttons.
+- Ink is a warm near-black, not pure `#000`. Never substitute `#000000`.
+- Max one accent-filled button per view. Everything else is outline/ghost.
+- Page-level surfaces (Hero, `<body>`) use `--color-bone`. Card/tile
+  surfaces use `--color-white`. Don't use them interchangeably — that's
+  what preserves the "lifted" feeling of product tiles.
+- Form inputs (`input`, `textarea`, `select`) use a darker global border
+  (`rgba(23, 21, 18, 0.25)`, ink-based) rather than the lighter
+  `border-stone` tokens used on cards — inputs are interactive and need
+  stronger boundary contrast (WCAG 1.4.11) than static containers do.
+  Focus state uses `--color-moss`.
+
+---
+
+## Typography
+
+| Role     | Font              | Weight        | Usage                                |
+| -------- | ----------------- | ------------- | -------------------------------------- |
+| Display  | General Sans      | 600 (semibold)| Headlines, hero copy, section titles   |
+| Body     | Inter             | 400 / 500     | Paragraph copy, nav, buttons           |
+| Data/UI  | JetBrains Mono    | 400           | Prices, sizes, specs, SKU labels        |
+
+**Scale** (defined as CSS vars in globals.css):
+`--text-xs` 12px · `--text-sm` 14px · `--text-base` 16px ·
+`--text-lg` 20px · `--text-xl` 28px · `--text-2xl` 40px · `--text-3xl` 56px
+
+Display type is used with restraint — one hero headline, section titles.
+Never apply the display face to body paragraphs or long-form copy.
+
+---
+
+## Layout
+
+- Container max-width: 1280px, with 24px gutter on mobile, 64px on desktop.
+- Grid: 12-column, `gap: 24px` desktop / `16px` mobile.
+- Structural labels use terrain language where it fits a real hierarchy —
+  e.g. product tiers as "Low ground / Mid ground / High ground" — never
+  numbered 01/02/03 markers unless the content is a genuine sequence.
+
+### Hero signature element
+
+The hero background uses an animated topographic contour-line SVG —
+thin elevation-map-style lines that draw in on page load (staggered
+`pathLength` animation) and sit subtly behind the headline. This is the
+one signature visual moment for the brand. Do not repeat this motif
+decoratively elsewhere on the page — it belongs to the hero only, so it
+stays meaningful.
+
+---
+
+## Motion (Framer Motion)
+
+Motion tokens (durations/easing) are defined in globals.css and should be
+imported into Framer Motion `transition` objects rather than re-declared
+per component.
+
+| Token             | Value                         | Usage                          |
+| ----------------- | ------------------------------ | -------------------------------- |
+| `--dur-fast`      | 150ms                          | Hover states                     |
+| `--dur-base`      | 300ms                          | Standard reveals                 |
+| `--dur-slow`      | 600ms                          | Hero sequence, page transitions  |
+| `--ease-out`      | cubic-bezier(0.16, 1, 0.3, 1)  | Reveals, entrances                |
+| `--ease-snap`     | cubic-bezier(0.4, 0, 0.2, 1)   | Hover/press feedback              |
+
+**Patterns:**
+- Hero load: contour lines draw in first (staggered 80ms per line), then
+  headline fades/slides up 20px, then CTA. One orchestrated sequence.
+- Scroll reveals: product cards animate in via `whileInView`, `opacity`
+  0→1 + `y` 20px→0, staggered via `staggerChildren: 0.08`.
+- Hover: cards scale to 1.02 + border color shifts to moss, 150ms,
+  `--ease-snap`. No box-shadow — keep it flat.
+- Do not add motion to every element. The hero contour animation is the
+  one "signature" moment; everything else should feel quiet by comparison.
+
+---
+
+## Components
+
+- **Buttons:** outline style by default (1px border, ink text). Primary
+  CTA only: moss fill, white text, `--radius-md`, no shadow.
+- **Cards (`.card` class):** white background, 1px `stone/10` border,
+  `--shadow-card`, `--radius-lg`, padding `24px`. Hover: border → moss,
+  `--shadow-card-hover`, scale 1.02.
+- **Nav:** ink background, bone/white text, moss underline on
+  active/hover link state. Nav stays ink even on white pages — a fully
+  white nav on a white page loses brand presence, so this is intentional
+  and shouldn't be "corrected" to match the page surface.
+- **Badges/tags:** clay background at 12% opacity, clay text, used only
+  for sale/new/limited labels — never as a primary color anywhere else.
+
+---
+
+## Known exceptions
+
+These are intentional, tracked deviations from the token system —
+documented so they read as decisions, not oversights, if a future
+contributor (or Cline session) stumbles on them.
+
+- **Auth pages** (`login`, `register`, `forgot-password`,
+  `reset-password`) use a separate hex-based styling system
+  (`border-[#1C1917]/20`, `bg-white`, `text-[#1C1917]`) rather than the
+  `--color-ink` / `--color-white` tokens. `#1C1917` and `#171512` are two
+  different near-black values from separate sources — visually close to
+  indistinguishable, but not drawing from the same source of truth. This
+  is a known gap, not a bug. **Next time auth pages are touched, migrate
+  them onto the token system** rather than patching the hex values in
+  place, so a future palette change doesn't silently miss these four
+  pages.
+
+---
+
+## Voice & copy
+
+- Sentence case always. No title case, no all-caps except tiny eyebrow
+  labels where it reads as a design device, not shouting.
+- Verb-first CTAs: "Shop new arrivals," "Explore activewear" — not
+  "Click here" or "Learn more" alone.
+- Copy leans grounded/confident, avoids generic fitness-brand hype words
+  ("crush," "beast mode," "no excuses"). Prefer language rooted in
+  terrain/movement: "ground," "journey," "terrain," "built for."
