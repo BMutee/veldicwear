@@ -3,6 +3,24 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import type { CartItem } from "@/lib/cart";
 
+type ProductWithVariants = {
+  id: string;
+  name: string;
+  price: number;
+  active: boolean;
+  image: string;
+  variants: Array<{
+    id: string;
+    size: string;
+    color: string | null;
+    stock: number;
+    price: number | null;
+    costPrice: number | null;
+    productId: string;
+    cjVariantId: string | null;
+  }>;
+};
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
   apiVersion: "2026-06-24.dahlia",
 });
@@ -26,19 +44,12 @@ export async function POST(request: NextRequest) {
     }
 
     const productIds = [...new Set(cart.map((item) => item.id))];
-    const dbProducts = await prisma.product.findMany({
+    const dbProducts: ProductWithVariants[] = await prisma.product.findMany({
       where: { id: { in: productIds } },
       include: { variants: true },
     });
 
-    const productMap = new Map(dbProducts.map((p: {
-      id: string;
-      name: string;
-      price: number;
-      active: boolean;
-      image: string;
-      variants: Array<{ id: string; size: string; color: string | null; stock: number; price: number | null }>;
-    }) => [p.id, p]));
+    const productMap = new Map(dbProducts.map((p) => [p.id, p]));
 
     const validatedItems: {
       name: string;
@@ -56,7 +67,7 @@ export async function POST(request: NextRequest) {
       }
 
       const variant = dbProduct.variants.find(
-        (v: { size: string; color: string | null }) => v.size === item.size && (item.color == null || v.color === item.color),
+        (v) => v.size === item.size && (item.color == null || v.color === item.color),
       );
       if (!variant) {
         return NextResponse.json(
