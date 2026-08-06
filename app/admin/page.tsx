@@ -45,7 +45,7 @@ export default async function AdminDashboardPage() {
   for (const order of ordersLast30Days) {
     for (const item of order.items) {
       const matchingVariant = item.product.variants.find(
-        (v) => v.size === item.size
+        (v: { size: string; costPrice: number | null }) => v.size === item.size
       );
       const costPrice = matchingVariant?.costPrice ?? null;
       const itemRevenue = item.price * item.quantity;
