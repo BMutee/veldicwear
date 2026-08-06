@@ -29,7 +29,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 
   // ── Attach costPrice from matching variant to each item ──
-  const enrichedItems = order.items.map((item) => {
+  const enrichedItems = order.items.map((item: {
+    id: string;
+    name: string;
+    size: string;
+    color: string | null;
+    quantity: number;
+    price: number;
+    productId: string;
+    product: {
+      variants: Array<{ id: string; size: string; color: string | null; stock: number; price: number | null; costPrice: number | null; productId: string; cjVariantId: string | null }>;
+    };
+  }) => {
     const matchingVariant = item.product?.variants?.find(
       (v) => v.size === item.size
     );
