@@ -103,7 +103,12 @@ export async function checkSingleCjTracking(
           orderNumber: order.orderNumber,
           trackingCarrier: cjCarrier || undefined,
           trackingNumber: cjTrackingNumber,
-          items: order.items.map((item) => ({
+          items: order.items.map((item: {
+            name: string;
+            size: string;
+            quantity: number;
+            price: number;
+          }) => ({
             name: item.name,
             size: item.size,
             quantity: item.quantity,
@@ -170,7 +175,7 @@ export async function checkAllCjTracking(): Promise<{
   let notYetShipped = 0;
   let errors = 0;
 
-  for (const order of pendingOrders) {
+  for (const order of pendingOrders as Array<{ id: string; orderNumber: string }>) {
     try {
       const result = await checkSingleCjTracking(order.id);
       results.push({
