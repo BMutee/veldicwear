@@ -86,7 +86,12 @@ export async function syncSingleProductStock(
 
     // If CJ returns no inventory data, set all variants to 0 (out of stock)
     if (cjInventoryList.length === 0) {
-      for (const variant of product.variants) {
+      for (const variant of product.variants as Array<{
+        id: string;
+        size: string;
+        stock: number;
+        cjVariantId: string | null;
+      }>) {
         if (variant.stock !== 0) {
           await prisma.productVariant.update({
             where: { id: variant.id },
@@ -113,7 +118,12 @@ export async function syncSingleProductStock(
       }
 
       // Update each of our variants
-      for (const variant of product.variants) {
+      for (const variant of product.variants as Array<{
+        id: string;
+        size: string;
+        stock: number;
+        cjVariantId: string | null;
+      }>) {
         // Find the matching CJ stock by cjVariantId
         let newStock: number | null = null;
 
@@ -206,7 +216,7 @@ export async function syncAllCjProductStock(): Promise<{
     select: { id: true, name: true },
   });
 
-  const cjProducts = allProducts.filter((p) => isCjProductId(p.id));
+  const cjProducts = allProducts.filter((p: { id: string; name: string }) => isCjProductId(p.id));
 
   const results: Array<{
     productId: string;
@@ -225,7 +235,7 @@ export async function syncAllCjProductStock(): Promise<{
   let errors = 0;
   let totalVariantsUpdated = 0;
 
-  for (const product of cjProducts) {
+  for (const product of cjProducts as Array<{ id: string; name: string }>) {
     try {
       const result = await syncSingleProductStock(product.id);
 
