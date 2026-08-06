@@ -141,7 +141,7 @@ export async function cjFulfillOrder(orderId: string): Promise<void> {
       let vid: string | null = null;
       if (item.size && item.size !== "N/A") {
         const matchingVariant = product.variants.find(
-          (v) =>
+          (v: { size: string; color: string | null; cjVariantId: string | null }) =>
             v.size === item.size &&
             (item.color == null || v.color === item.color) &&
             v.cjVariantId
