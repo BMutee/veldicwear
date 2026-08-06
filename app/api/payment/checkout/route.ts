@@ -31,7 +31,14 @@ export async function POST(request: NextRequest) {
       include: { variants: true },
     });
 
-    const productMap = new Map(dbProducts.map((p) => [p.id, p]));
+    const productMap = new Map(dbProducts.map((p: {
+      id: string;
+      name: string;
+      price: number;
+      active: boolean;
+      image: string;
+      variants: Array<{ id: string; size: string; color: string | null; stock: number; price: number | null }>;
+    }) => [p.id, p]));
 
     const validatedItems: {
       name: string;
@@ -49,7 +56,7 @@ export async function POST(request: NextRequest) {
       }
 
       const variant = dbProduct.variants.find(
-        (v) => v.size === item.size && (item.color == null || v.color === item.color),
+        (v: { size: string; color: string | null }) => v.size === item.size && (item.color == null || v.color === item.color),
       );
       if (!variant) {
         return NextResponse.json(

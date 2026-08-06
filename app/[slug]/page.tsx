@@ -7,7 +7,7 @@ export async function generateStaticParams() {
     where: { published: true },
     select: { slug: true },
   });
-  return pages.map((p) => ({ slug: p.slug }));
+  return pages.map((p: { slug: string }) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {

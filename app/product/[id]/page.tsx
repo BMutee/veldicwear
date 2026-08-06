@@ -24,7 +24,7 @@ export default async function ProductPage({
 
   // Find lowest variant price for initial display
   const variantPrices = product.variants.map(
-    (variant) => (variant.price ?? product.price),
+    (variant: { price: number | null }) => (variant.price ?? product.price),
   );
   const startingPrice =
     variantPrices.length > 0
@@ -59,13 +59,13 @@ export default async function ProductPage({
             stock: product.stock,
             description: product.description,
           }}
-          sizes={product.variants.map((variant) => ({
+          sizes={product.variants.map((variant: { size: string; color: string | null; stock: number; price: number | null }) => ({
             size: variant.size,
             color: variant.color ?? undefined,
             stock: variant.stock,
             price: variant.price ?? product.price,
           }))}
-          productImages={product.images.map((img) => ({
+          productImages={product.images.map((img: { id: string; color: string | null; url: string }) => ({
             id: img.id,
             color: img.color,
             url: img.url,
