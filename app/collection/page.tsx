@@ -3,8 +3,20 @@ import Link from "next/link";
 import ProductGrid from "@/components/ProductGrid";
 import { normalizeImageSrc } from "@/lib/image";
 
+type CollectionWithRelations = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  image: string | null;
+  createdAt: Date;
+  active: boolean;
+  _count: { products: number };
+  products: Array<{ image: string }>;
+};
+
 export default async function CollectionsIndexPage() {
-  const collections = await prisma.collection.findMany({
+  const collections: CollectionWithRelations[] = await prisma.collection.findMany({
     include: {
       _count: { select: { products: true } },
       products: {
