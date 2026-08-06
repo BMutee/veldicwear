@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       include: { variants: true },
     });
 
-    const productMap = new Map(dbProducts.map((p) => [p.id, p]));
+    const productMap = new Map(dbProducts.map((p: { id: string; variants: Array<{ size: string; stock: number; price: number | null }> }) => [p.id, p]));
 
     const prices: Record<string, { price: number; variantStock: number }> = {};
 
