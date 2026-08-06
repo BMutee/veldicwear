@@ -1,6 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+type ProductWithVariants = {
+  id: string;
+  name: string;
+  price: number;
+  active: boolean;
+  image: string;
+  stock: number;
+  variants: Array<{
+    id: string;
+    size: string;
+    color: string | null;
+    stock: number;
+    price: number | null;
+    costPrice: number | null;
+    productId: string;
+    cjVariantId: string | null;
+  }>;
+};
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -11,12 +30,12 @@ export async function POST(request: NextRequest) {
     }
 
     const productIds = [...new Set(items.map((item) => item.id))];
-    const dbProducts = await prisma.product.findMany({
+    const dbProducts: ProductWithVariants[] = await prisma.product.findMany({
       where: { id: { in: productIds } },
       include: { variants: true },
     });
 
-    const productMap = new Map(dbProducts.map((p: { id: string; variants: Array<{ size: string; stock: number; price: number | null }> }) => [p.id, p]));
+    const productMap = new Map(dbProducts.map((p) => [p.id, p]));
 
     const prices: Record<string, { price: number; variantStock: number }> = {};
 
