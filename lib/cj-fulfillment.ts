@@ -121,7 +121,17 @@ export async function cjFulfillOrder(orderId: string): Promise<void> {
       quantity: number;
     }> = [];
 
-    for (const item of order.items) {
+    for (const item of order.items as Array<{
+      id: string;
+      name: string;
+      size: string;
+      color: string | null;
+      quantity: number;
+      product: {
+        id: string;
+        variants: Array<{ size: string; color: string | null; cjVariantId: string | null }>;
+      };
+    }>) {
       const product = item.product;
 
       // Skip non-CJ products (products not imported from CJ)
@@ -181,8 +191,8 @@ export async function cjFulfillOrder(orderId: string): Promise<void> {
     // Track which items were sent to CJ vs skipped (non-CJ items need manual handling)
     const cjItemNames = cjItems.map((i) => i.pid).join(",");
     const nonCjItemNames = order.items
-      .filter((item) => !isCjProductId(item.product.id))
-      .map((item) => item.name)
+      .filter((item: { name: string; product: { id: string } }) => !isCjProductId(item.product.id))
+      .map((item: { name: string }) => item.name)
       .join(", ");
 
     // Call CJ add-cart + confirm-cart
