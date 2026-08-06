@@ -158,7 +158,7 @@ export default async function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((order) => (
+                {recentOrders.map((order: { id: string; orderNumber: string; firstName: string; lastName: string; status: string; total: number }) => (
                   <tr key={order.id} className="border-b border-stone/20 last:border-0 hover:bg-white transition-colors">
                     <td className="px-4 py-3 font-medium text-ink">#{order.orderNumber}</td>
                     <td className="px-4 py-3 text-stone">{order.firstName} {order.lastName}</td>
