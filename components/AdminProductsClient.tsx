@@ -1,15 +1,47 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import type { Prisma } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
-type ProductWithRelations = Prisma.ProductGetPayload<{
-  include: {
-    variants: true;
-    images: true;
-  };
-}>;
+type ProductVariant = {
+  id: string;
+  size: string;
+  color: string | null;
+  stock: number;
+  price: number | null;
+  costPrice: number | null;
+  productId: string;
+  cjVariantId: string | null;
+};
+
+type ProductImage = {
+  id: string;
+  color: string | null;
+  url: string;
+  productId: string;
+};
+
+type ProductWithRelations = {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  price: number;
+  compareAtPrice: number | null;
+  stock: number;
+  sku: string | null;
+  barcode: string | null;
+  trackInventory: boolean;
+  sellOutOfStock: boolean;
+  weight: number | null;
+  weightUnit: string | null;
+  featured: boolean;
+  active: boolean;
+  createdAt: Date;
+  collectionId: string | null;
+  variants: ProductVariant[];
+  images: ProductImage[];
+};
 
 type AdminProductsClientProps = {
   initialProducts: ProductWithRelations[];
