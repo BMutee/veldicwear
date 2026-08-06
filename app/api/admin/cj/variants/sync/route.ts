@@ -125,7 +125,7 @@ export async function POST(request: Request) {
     });
 
     // Filter to only numeric IDs (CJ products)
-    const cjPids = cjProducts.filter((p) => /^\d+$/.test(p.id));
+    const cjPids = cjProducts.filter((p: { id: string; name: string }) => /^\d+$/.test(p.id));
 
     const results: Array<{
       pid: string;
