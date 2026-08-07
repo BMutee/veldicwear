@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 
 /**
  * Hide Navbar & Footer on admin/auth pages.
- * The pathname is injected by middleware.ts via x-pathname header.
+ * The pathname is injected by proxy.ts via x-pathname header.
  */
 export default async function RootLayout({
   children,
