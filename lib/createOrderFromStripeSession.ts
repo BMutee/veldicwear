@@ -171,7 +171,10 @@ export async function createOrderFromStripeSession(
       color: itemColor,
       quantity: item.quantity ?? 1,
       price: itemPrice,
-      productId,
+      // `productId` is guaranteed to be a string here: the fallback above
+      // creates a placeholder product if no match was found. The non-null
+      // assertion satisfies Prisma's required `productId: String` on OrderItem.
+      productId: productId!,
     });
   }
 
