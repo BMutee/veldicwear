@@ -10,15 +10,9 @@
     # public values that get bundled into client-side code by Next.js (false positives).
     SECRETS_SCAN_OMIT_KEYS = "BETTER_AUTH_URL,NEXT_PUBLIC_BASE_URL,NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET"
 
-# Next.js plugin for Netlify (handles SSR, ISR, API routes, middleware)
+# Next.js plugin for Netlify (handles SSR, ISR, API routes, middleware, and routing)
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-# Redirects
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/__nextjs_original_path"
-  status = 200
 
 # Security headers
 [[headers]]
