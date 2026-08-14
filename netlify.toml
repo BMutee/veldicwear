@@ -5,6 +5,11 @@
   command = "npm run build"
   publish = ".next"
 
+  [build.environment]
+    # Ignore NEXT_PUBLIC_* vars in Netlify secrets scanner - these are intentionally
+    # public values that get bundled into client-side code by Next.js (false positives).
+    SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_BASE_URL,NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET"
+
 # Next.js plugin for Netlify (handles SSR, ISR, API routes, middleware)
 [[plugins]]
   package = "@netlify/plugin-nextjs"
