@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { Analytics } from "@vercel/analytics/react";
 import { headers } from "next/headers";
 
 const inter = Inter({
@@ -60,6 +61,7 @@ export default async function RootLayout({
         {!hideUI && <Navbar />}
         {children}
         {!hideUI && <Footer />}
+        <Analytics />
       </body>
     </html>
   );
