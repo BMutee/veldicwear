@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
+import { stripe } from "@/lib/stripe";
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { auth } from "@/lib/auth-server";
 import { createOrderFromStripeSession } from "@/lib/createOrderFromStripeSession";
 import { createOrderTrackingToken } from "@/lib/order-tracking";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "");
 
 export async function POST(request: NextRequest) {
   let sessionId: string | null = null;

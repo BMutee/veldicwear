@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
+import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import type { CartItem } from "@/lib/cart";
 
@@ -20,10 +20,6 @@ type ProductWithVariants = {
     cjVariantId: string | null;
   }>;
 };
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
-  apiVersion: "2026-06-24.dahlia",
-});
 
 export async function POST(request: NextRequest) {
   try {

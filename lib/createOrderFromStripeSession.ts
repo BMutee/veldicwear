@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import { stripe } from "@/lib/stripe";
 import { incrementCouponUsage } from "@/lib/coupon";
 import { cjFulfillOrder } from "@/lib/cj-fulfillment";
 
@@ -75,7 +76,6 @@ export async function createOrderFromStripeSession(
   }
 
   // Fetch line items from Stripe
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "");
   const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, {
     limit: 100,
     expand: ["data.price.product"],
