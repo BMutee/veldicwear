@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { headers } from "next/headers";
 
 const inter = Inter({
@@ -62,6 +63,7 @@ export default async function RootLayout({
         {children}
         {!hideUI && <Footer />}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
