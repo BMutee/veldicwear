@@ -2,7 +2,6 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "gitignoreIgnore": true,
 
   "headers": [
     {
@@ -25,14 +24,6 @@
           "value": "camera=(), microphone=(), geolocation=()"
         }
       ]
-    }
-  ],
-
-  "redirects": [
-    {
-      "source": "/:path*",
-      "destination": "/.netlify/functions/__nextjs_original_path",
-      "statusCode": 200
     }
   ]
 }

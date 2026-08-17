@@ -25,7 +25,7 @@ function buildAuth() {
   const secret = process.env.BETTER_AUTH_SECRET;
   if (!secret) {
     throw new Error(
-      "Missing BETTER_AUTH_SECRET environment variable. Set it in your Netlify site environment variables.",
+      "Missing BETTER_AUTH_SECRET environment variable. Set it in your deployment environment variables.",
     );
   }
 
@@ -119,8 +119,8 @@ function buildAuth() {
  * - During `next build`, Next.js imports route modules to collect page data.
  *   If we eagerly call `betterAuth({ secret: process.env.BETTER_AUTH_SECRET! })`
  *   AND that env var is missing, BetterAuth throws or worse — silently uses
- *   an insecure default secret. Either way, the build breaks on Netlify where
- *   runtime secrets are NOT exposed to the build worker.
+ *   an insecure default secret. Either way, the build breaks when the runtime
+ *   secret is not exposed to the build worker.
  * - Defer construction to first property access so the module loads cleanly
  *   during build. The first actual auth call at runtime still throws a clear
  *   error if BETTER_AUTH_SECRET is missing.

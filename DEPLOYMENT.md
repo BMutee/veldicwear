@@ -1,6 +1,6 @@
-# Veldic Wear — Deployment Guide
+# Veldic Wear — Vercel Deployment Guide
 
-Your codebase is ready to deploy. This guide covers Netlify and Vercel configurations.
+Your codebase is configured to deploy on Vercel (via `vercel.json`). Netlify has been removed.
 
 ---
 
@@ -48,23 +48,7 @@ Your codebase is ready to deploy. This guide covers Netlify and Vercel configura
 
 ---
 
-## Netlify Deployment
-
-### Option 1: Git + Netlify UI (Recommended)
-
-1. Push to GitHub
-2. Go to https://app.netlify.com → Add new site → Import from GitHub
-3. Netlify auto-detects `netlify.toml` (build: `npm run build`, publish: `.next`)
-4. Add Environment Variables in Site settings
-5. Deploy
-
-### Option 2-3: Netlify CLI or Drag & Drop
-
-See original guide for CLI/drag-drop options.
-
----
-
-## Environment Variables (Both Platforms)
+## Environment Variables (Vercel)
 
 ```
 DATABASE_URL              postgresql://neondb_owner:...&pgbouncer=true&connect_timeout=15&pool_timeout=15

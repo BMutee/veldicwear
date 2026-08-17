@@ -13,7 +13,7 @@ declare global {
  * Why lazy:
  * - During `next build`, Next.js imports route modules to collect page data.
  *   If we eagerly `throw` when DATABASE_URL is missing, EVERY build breaks on
- *   Netlify (which does not expose runtime env vars to the build worker).
+ *   the hosting provider (which may not expose runtime env vars to the build).
  * - Defer construction to first use so the module loads cleanly during build.
  *   The first DB access at runtime still throws a clear error if DATABASE_URL
  *   is missing.
