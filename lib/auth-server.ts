@@ -2,6 +2,7 @@ import { betterAuth, type User as BetterAuthUser } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor } from "better-auth/plugins/two-factor";
 import { prisma } from "./prisma";
+import { resolveBaseUrl } from "./base-url";
 
 export type AuthUser = {
   id: string;
@@ -108,7 +109,7 @@ function buildAuth() {
       }),
     ],
     secret,
-    baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
+    baseURL: resolveBaseUrl(),
   });
 }
 

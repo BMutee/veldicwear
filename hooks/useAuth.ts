@@ -3,6 +3,7 @@
 import { createAuthClient } from "better-auth/react";
 import { inferAdditionalFields, twoFactorClient } from "better-auth/client/plugins";
 import type { auth } from "@/lib/auth-server";
+import { resolveBaseUrl } from "@/lib/base-url";
 
 export type User = {
   id: string;
@@ -16,7 +17,7 @@ export type User = {
 
 // Create a shared client instance with 2FA support
 const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
+  baseURL: resolveBaseUrl(),
   plugins: [
     inferAdditionalFields<typeof auth>(),
     twoFactorClient(),
