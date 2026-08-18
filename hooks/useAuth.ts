@@ -39,8 +39,12 @@ export function useAuth() {
       }
       const role = (data?.user as User | undefined)?.role;
       return { success: true, role };
-    } catch {
-      return { success: false, error: "Unable to connect. Please try again." };
+    } catch (err) {
+      // Surface the underlying network/API failure instead of a generic message,
+      // so login problems are not silently hidden.
+      console.error("signIn.email threw:", err);
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: message || "Unable to connect. Please try again." };
     }
   };
 
