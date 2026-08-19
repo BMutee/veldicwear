@@ -153,5 +153,20 @@ export const auth: ReturnType<typeof buildAuth> = new Proxy(
       const value = instance[prop as keyof ReturnType<typeof buildAuth>];
       return typeof value === "function" ? value.bind(instance) : value;
     },
+    has(_target, prop) {
+      // `toNextJsHandler` does `"handler" in auth`. The `in` operator does
+      // NOT go through the `get` trap, so without a `has` trap it would look
+      // at the empty `{}` target and wrongly report `false` — which made
+      // better-auth fall back to `auth(request)` and throw
+      // `TypeError: e is not a function`. Forward the check to the real instance.
+      const instance = getAuth();
+      return prop in instance;
+    },
+    apply(_target, _thisArg, args) {
+      // Older better-auth instances are callable directly (auth(request))
+      // instead of exposing `auth.handler`. Forward calls for full compatibility.
+      const instance = getAuth();
+      return (instance as unknown as (...a: unknown[]) => unknown)(...args);
+    },
   },
 );
