@@ -3,7 +3,6 @@
 import { createAuthClient } from "better-auth/react";
 import { inferAdditionalFields, twoFactorClient } from "better-auth/client/plugins";
 import type { auth } from "@/lib/auth-server";
-import { resolveBaseUrl } from "@/lib/base-url";
 
 export type User = {
   id: string;
@@ -15,9 +14,15 @@ export type User = {
   role?: string;
 };
 
-// Create a shared client instance with 2FA support
+// Create a shared client instance with 2FA support.
+//
+// NOTE: we intentionally do NOT pass `baseURL` here. better-auth's client
+// falls back to a relative "/api/auth" path, which resolves against the
+// origin the user is actually browsing. Passing an absolute URL (e.g. from
+// NEXT_PUBLIC_BASE_URL, which is baked into the bundle at build time) made
+// the browser POST to `http://localhost:3000/...` and fail with "Failed to
+// fetch". A relative path works in every environment automatically.
 const authClient = createAuthClient({
-  baseURL: resolveBaseUrl(),
   plugins: [
     inferAdditionalFields<typeof auth>(),
     twoFactorClient(),
