@@ -52,7 +52,7 @@ Your codebase is configured to deploy on Vercel (via `vercel.json`). Netlify has
 ## Environment Variables (Vercel)
 
 ```
-DATABASE_URL              postgresql://neondb_owner:...?sslmode=require&connect_timeout=60&pool_timeout=60
+DATABASE_URL              postgresql://neondb_owner:...?sslmode=require&uselibpqcompat=true&connect_timeout=60&pool_timeout=60
 BETTER_AUTH_SECRET        ***REMOVED***...
 BETTER_AUTH_URL           https://veldicwear.com
 STRIPE_SECRET_KEY         sk_test_...
