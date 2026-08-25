@@ -6,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { CartItem, getCart } from "@/lib/cart";
 import OrderSummary from "@/components/OrderSummary";
+import { EUR_ESTIMATE_DISCLAIMER } from "@/lib/currency-map";
+import { useViewerCurrency } from "@/lib/use-viewer-currency";
 
 const shippingSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -28,6 +30,10 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
   const [hasShippingProtection, setHasShippingProtection] = useState(false);
+
+  // Viewer-currency context: used for the EUR-estimate note and to surface
+  // the stale-rate USD fallback notice before redirecting to Stripe.
+  const vc = useViewerCurrency();
 
   const {
     register,
@@ -81,6 +87,14 @@ export default function CheckoutPage() {
 
       if (!data.url) {
         throw new Error("Checkout URL was not returned.");
+      }
+
+      // Stale-rate fallback (CAD -> USD): show the customer a clear notice
+      // briefly before redirecting so they aren't surprised by a USD charge.
+      if (data.notice) {
+        setMessage(data.notice);
+        setTimeout(() => window.location.assign(data.url), 3000);
+        return; // stay in loading state during the notice
       }
 
       window.location.assign(data.url);
@@ -296,6 +310,11 @@ export default function CheckoutPage() {
               hasShippingProtection={hasShippingProtection}
               onShippingProtectionChange={setHasShippingProtection}
             />
+            {vc.currency === "EUR" && (
+              <p className="mt-3 text-center font-sans text-xs leading-relaxed text-[#78716C]">
+                {EUR_ESTIMATE_DISCLAIMER}
+              </p>
+            )}
           </div>
         </div>
       </div>

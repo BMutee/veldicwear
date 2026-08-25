@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin-guard-api";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { parseCtaFields, sanitizeHtml } from "@/lib/sanitize";
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { error } = await requireAdminApi();
@@ -21,6 +21,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ slug
 
   if (!body.title?.trim()) errs.push("Title is required.");
   if (!body.content?.trim()) errs.push("Content is required.");
+  const cta = parseCtaFields(body.ctaLabel, body.ctaUrl);
+  if (cta.error) errs.push(cta.error);
 
   const newSlug = body.slug?.trim() || slug;
   if (!/^[a-z0-9-]+$/.test(newSlug)) errs.push("Slug: only lowercase letters, numbers, hyphens.");
@@ -38,6 +40,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ slug
       slug: newSlug,
       title: body.title.trim(),
       content: sanitizeHtml(body.content),
+      ctaLabel: cta.ctaLabel,
+      ctaUrl: cta.ctaUrl,
       seoTitle: body.seoTitle?.trim() || null,
       metaDescription: body.metaDescription?.trim() || null,
       published: body.published ?? false,

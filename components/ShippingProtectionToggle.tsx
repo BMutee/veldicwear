@@ -1,18 +1,17 @@
 "use client";
 
 import { SHIPPING_PROTECTION_PRICE, SHIPPING_PROTECTION_DESCRIPTION } from "@/lib/shipping-protection";
+import { useViewerCurrency } from "@/lib/use-viewer-currency";
 
 type Props = {
   checked: boolean;
   onChange: (checked: boolean) => void;
 };
 
-const money = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
-
 export default function ShippingProtectionToggle({ checked, onChange }: Props) {
+  // Converted at the same rate checkout will charge (whole-unit rounding).
+  const vc = useViewerCurrency();
+  const money = { format: (usd: number) => vc.fmt(vc.toDisplay(usd)) };
   return (
     <div className="border-t border-stone/10 pt-4">
       <label className="flex cursor-pointer items-start gap-3 group">

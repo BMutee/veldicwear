@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -10,6 +10,11 @@ if (!databaseUrl) {
 const adapter = new PrismaPg({ connectionString: databaseUrl });
 const prisma = new PrismaClient({ adapter });
 
+// Only three product photos ship in public/products (hoodie.jpg, tshirt.jpg,
+// jacket.jpg). Products without a dedicated photo (jeans, beanie, bag) reuse a
+// real, existing photo as a placeholder so /_next/image never 404s/400s — and
+// the mapping spreads them across the three files so a product grid doesn't
+// show triplicates. Gallery rows likewise reuse each product's main photo.
 const products = [
   {
     name: "Classic Black Hoodie",
@@ -32,10 +37,10 @@ const products = [
       { size: "XL", stock: 0, price: 54.0 },
     ],
     images: [
-      { color: "Black", url: "/products/hoodie-black-1.jpg" },
-      { color: "Black", url: "/products/hoodie-black-2.jpg" },
-      { color: "Gray", url: "/products/hoodie-gray-1.jpg" },
-      { color: "Gray", url: "/products/hoodie-gray-2.jpg" },
+      { color: "Black", url: "/products/hoodie.jpg" },
+      { color: "Black", url: "/products/hoodie.jpg" },
+      { color: "Gray", url: "/products/hoodie.jpg" },
+      { color: "Gray", url: "/products/hoodie.jpg" },
     ],
   },
   {
@@ -59,8 +64,8 @@ const products = [
       { size: "XL", stock: 2, price: 32.0 },
     ],
     images: [
-      { color: "White", url: "/products/tshirt-white-1.jpg" },
-      { color: "Black", url: "/products/tshirt-black-1.jpg" },
+      { color: "White", url: "/products/tshirt.jpg" },
+      { color: "Black", url: "/products/tshirt.jpg" },
     ],
   },
   {
@@ -83,14 +88,14 @@ const products = [
       { size: "XL", stock: 1, price: 95.0 },
     ],
     images: [
-      { color: "Black", url: "/products/jacket-black-1.jpg" },
-      { color: "Olive", url: "/products/jacket-olive-1.jpg" },
+      { color: "Black", url: "/products/jacket.jpg" },
+      { color: "Olive", url: "/products/jacket.jpg" },
     ],
   },
   {
     name: "Slim Fit Jeans",
     description: "Modern slim-fit jeans with a comfortable stretch fabric.",
-    image: "/products/jeans.jpg",
+    image: "/products/tshirt.jpg",
     price: 59.0,
     compareAtPrice: 79.0,
     stock: 15,
@@ -108,14 +113,14 @@ const products = [
       { size: "36", stock: 2, price: 64.0 },
     ],
     images: [
-      { color: "Indigo", url: "/products/jeans-indigo-1.jpg" },
-      { color: "Black", url: "/products/jeans-black-1.jpg" },
+      { color: "Indigo", url: "/products/tshirt.jpg" },
+      { color: "Black", url: "/products/tshirt.jpg" },
     ],
   },
   {
     name: "Wool Beanie",
     description: "Classic knitted wool beanie to keep you warm in style.",
-    image: "/products/beanie.jpg",
+    image: "/products/hoodie.jpg",
     price: 19.0,
     compareAtPrice: null,
     stock: 30,
@@ -130,14 +135,14 @@ const products = [
       { size: "One Size", stock: 30, price: 19.0 },
     ],
     images: [
-      { color: "Black", url: "/products/beanie-black-1.jpg" },
-      { color: "Gray", url: "/products/beanie-gray-1.jpg" },
+      { color: "Black", url: "/products/hoodie.jpg" },
+      { color: "Gray", url: "/products/hoodie.jpg" },
     ],
   },
   {
     name: "Leather Crossbody Bag",
     description: "Sleek genuine leather crossbody bag for everyday carry.",
-    image: "/products/bag.jpg",
+    image: "/products/jacket.jpg",
     price: 79.0,
     compareAtPrice: 99.0,
     stock: 8,
@@ -152,31 +157,92 @@ const products = [
       { size: "One Size", stock: 8, price: 79.0 },
     ],
     images: [
-      { color: "Black", url: "/products/bag-black-1.jpg" },
-      { color: "Brown", url: "/products/bag-brown-1.jpg" },
+      { color: "Black", url: "/products/jacket.jpg" },
+      { color: "Brown", url: "/products/jacket.jpg" },
     ],
   },
 ];
 
 const defaultSections = [
   {
+    key: "navbar",
+    label: "Navbar",
+    content: {
+      navLinks: [
+        { label: "Shop", href: "/shop" },
+        { label: "Collections", href: "/collection" },
+        { label: "About", href: "/about" },
+      ],
+      styles: {
+        height: { mobile: 64, desktop: 64 },
+        paddingX: { mobile: 24, desktop: 64 },
+        backgroundColor: "#171512",
+        textColor: "#FAFAF8",
+        linkColor: "#CDCCCA",
+        linkHoverColor: "#FAFAF8",
+      },
+    },
+  },
+  {
+    key: "hero",
+    label: "Hero",
+    content: {
+      heroTitle: "Wear the ground\nyou cover",
+      heroSubtitle: "Premium lifestyle & activewear for every journey.",
+      heroTagline: "First on the terrain",
+      heroImage: "/products/jacket.jpg",
+      heroButtonText: "Shop new arrivals",
+      heroButtonLink: "/shop",
+      trustProductCount: "200+",
+      trustMemberCount: "50K+",
+      trustRating: "4.9",
+      styles: {
+        paddingTop: { mobile: 64, desktop: 96 },
+        paddingBottom: { mobile: 32, desktop: 48 },
+        paddingX: { mobile: 24, desktop: 64 },
+        backgroundColor: "#FAFAF8",
+        textColor: "#171512",
+        headlineFontSize: { mobile: 40, desktop: 96 },
+      },
+    },
+  },
+  {
+    key: "banner",
+    label: "Banner",
+    content: {
+      heading: "Free Shipping on Every Order",
+      subtext: "No minimums, no surprises — always free.",
+      cta: { label: "Shop Now", link: "/shop" },
+      styles: {
+        paddingTop: { mobile: 24, desktop: 40 },
+        paddingBottom: { mobile: 24, desktop: 40 },
+        paddingX: { mobile: 16, desktop: 24 },
+        backgroundColor: "#171512",
+        textColor: "#FAFAF8",
+        headingFontSize: { mobile: 20, desktop: 28 },
+        ctaBackgroundColor: "#CA8A04",
+        ctaTextColor: "#FAFAF8",
+      },
+    },
+  },
+  {
     key: "brand-story",
     label: "Brand Story",
     content: {
-      badge: "Our Story",
-      headline: "BUILT FOR THE\nUNDERGROUND",
-      headlineAccent: "UNDERGROUND",
+      badge: "Our story",
+      headline: "Built for the\nground you cover",
+      headlineAccent: "ground you cover",
       paragraphs: [
-        "Veldic Wear was born from the intersection of street culture, music, and raw self-expression. We don't follow trends — we set them.",
-        "Every piece is crafted with premium materials, meticulous attention to detail, and a deep respect for the culture that shaped us. From the block to the stage, our gear is made to move, to stand out, and to last.",
-        "This isn't just clothing. It's a statement. It's an identity. It's the uniform of those who dare to be different."
+        "Veldic Wear is rooted in the open terrain — the veld, the trail, the long way home. We design for the journey, not the image.",
+        "Every piece is cut from premium fabrics, made to move with you and last beyond the season. Built for the ground, not the gym mirror.",
+        "This is clothing for people who measure progress in miles and mornings, not hype."
       ],
       stats: [
         { value: "2018", label: "Founded" },
-        { value: "15+", label: "Drops" },
-        { value: "100%", label: "Authentic" }
+        { value: "40+", label: "Drops" },
+        { value: "100%", label: "Ground-ready" }
       ],
-      ctaText: "Read Our Story",
+      ctaText: "Read our story",
       ctaLink: "/about",
       gradientFrom: "from-orange-400",
       gradientTo: "to-orange-600",
@@ -191,11 +257,11 @@ const defaultSections = [
       headline: "CURATED LOOKS",
       description: "Pre-styled outfits designed to inspire your next fit.",
       looks: [
-        { title: "Urban Edge", description: "Oversized silhouettes meet sharp tailoring", gradient: "from-orange-500/20 via-black to-zinc-900", accent: "bg-orange-500" },
-        { title: "Midnight Luxe", description: "Dark tones elevated with premium textures", gradient: "from-zinc-900 via-black to-zinc-800", accent: "bg-zinc-400" },
-        { title: "Street Minimal", description: "Clean lines, bold statements, zero compromise", gradient: "from-black via-zinc-900 to-orange-500/10", accent: "bg-orange-500" }
+        { id: 1, title: "Low Ground", description: "Easy layers for everyday terrain", background: "bg-stone/10", accent: "bg-moss" },
+        { id: 2, title: "Mid Ground", description: "Versatile pieces for shifting weather", background: "bg-stone/20", accent: "bg-moss" },
+        { id: 3, title: "High Ground", description: "Technical kit for the long way up", background: "bg-stone/30", accent: "bg-moss" }
       ],
-      ctaText: "View Full Lookbook",
+      ctaText: "View full lookbook",
       ctaLink: "/collection"
     }
   },
@@ -203,14 +269,14 @@ const defaultSections = [
     key: "newsletter",
     label: "Newsletter",
     content: {
-      badge: "Stay Connected",
-      headline: "NEVER MISS A DROP",
+      badge: "Stay connected",
+      headline: "Never miss a drop",
       description: "Be the first to know about new collections, exclusive drops, and limited-edition releases.",
       placeholder: "Enter your email",
       buttonText: "Subscribe",
-      successMessage: "✓ You're in! Welcome to the Veldic community.",
+      successMessage: "You're in! Welcome to the Veldic community.",
       errorMessage: "Please enter a valid email address.",
-      disclaimer: "No spam. Unsubscribe anytime. We respect your inbox."
+      disclaimer: "No spam. Unsubscribe anytime."
     }
   },
   {
@@ -218,26 +284,41 @@ const defaultSections = [
     label: "Social Feed",
     content: {
       badge: "Social",
-      headline: "FOLLOW THE MOVEMENT",
+      headline: "Follow the journey",
       description: "Tag us in your fits for a chance to be featured.",
       posts: [
         { id: 1, label: "@veldicwear", gradient: "from-orange-500/20 to-black" },
         { id: 2, label: "#VELDIC", gradient: "from-zinc-800 to-black" },
-        { id: 3, label: "STREET STYLE", gradient: "from-black to-orange-500/10" },
-        { id: 4, label: "DROP 015", gradient: "from-zinc-900 to-black" },
-        { id: 5, label: "COMMUNITY", gradient: "from-black to-zinc-800" },
-        { id: 6, label: "EXCLUSIVE", gradient: "from-orange-500/10 to-zinc-900" }
+        { id: 3, label: "TRAIL READY", gradient: "from-ink to-moss/10" },
+        { id: 4, label: "DROP 015", gradient: "from-stone/20 to-ink" },
+        { id: 5, label: "COMMUNITY", gradient: "from-ink to-stone/30" },
+        { id: 6, label: "EXCLUSIVE", gradient: "from-moss/10 to-stone/20" }
       ],
       ctaLabel: "@veldicwear",
       ctaLink: "https://instagram.com/veldicwear"
     }
   },
   {
+    key: "featured-products",
+    label: "Featured Products",
+    content: {
+      featuredSectionTitle: "New Arrivals",
+      featuredSectionSubtitle: "Considered pieces, built to last.",
+      styles: {
+        paddingTop: { mobile: 48, desktop: 96 },
+        paddingBottom: { mobile: 48, desktop: 96 },
+        paddingX: { mobile: 24, desktop: 24 },
+        backgroundColor: "#FAFAF8",
+        textColor: "#171512",
+        headingFontSize: { mobile: 32, desktop: 48 },
+      },
+    },
+  },
+  {
     key: "footer",
     label: "Footer",
     content: {
-      brandName: "VELDIC WEAR",
-      brandDescription: "Performance-driven apparel engineered for the relentless. Train. Dominate. Repeat.",
+      brandDescription: "Premium lifestyle & activewear for every journey. Wear the ground you cover.",
       shopLinks: [
         { label: "All Products", href: "/shop" },
         { label: "Collections", href: "/collection" },
@@ -255,17 +336,16 @@ const defaultSections = [
         { label: "Careers", href: "/careers" },
         { label: "Press", href: "/press" }
       ],
-      socialLinks: [
-        { platform: "Instagram", href: "https://instagram.com/veldicwear", ariaLabel: "Instagram" },
-        { platform: "Twitter", href: "https://twitter.com/veldicwear", ariaLabel: "Twitter / X" },
-        { platform: "TikTok", href: "https://tiktok.com/@veldicwear", ariaLabel: "TikTok" },
-        { platform: "YouTube", href: "https://youtube.com/@veldicwear", ariaLabel: "YouTube" }
-      ],
       paymentMethods: ["Visa", "MC", "Amex", "PayPal", "Apple Pay"],
-      bottomLinks: [
-        { label: "Privacy", href: "/privacy" },
-        { label: "Terms", href: "/terms" }
-      ]
+      styles: {
+        paddingTop: { mobile: 40, desktop: 64 },
+        paddingBottom: { mobile: 40, desktop: 64 },
+        paddingX: { mobile: 24, desktop: 24 },
+        backgroundColor: "#171512",
+        textColor: "#FAFAF8",
+        linkColor: "#A8A29E",
+        linkHoverColor: "#FAFAF8",
+      }
     }
   },
   {
@@ -273,8 +353,8 @@ const defaultSections = [
     label: "Categories Section Header",
     content: {
       badge: "Collections",
-      headline: "SHOP BY COLLECTION",
-      description: "From statement outerwear to everyday essentials — find your look."
+      headline: "Shop by terrain",
+      description: "From low ground to high ground — find your journey."
     }
   }
 ];
@@ -324,6 +404,95 @@ async function main() {
       },
     });
     console.log(`  Seeded section: ${section.label} (${section.key})`);
+  }
+
+  // The Hero is a Block owned by SiteSection("hero") via `sectionKey`.
+  // Mirror the one-time migration so fresh DBs get the block too.
+  const heroSection = defaultSections.find((section) => section.key === "hero");
+  if (heroSection) {
+    const heroContent = heroSection.content as {
+      heroTitle: string; heroSubtitle: string; heroTagline: string; heroImage: string;
+      heroButtonText: string; heroButtonLink: string; trustProductCount: string;
+      trustMemberCount: string; trustRating: string; styles: Record<string, unknown>;
+    };
+    const heroBlockContent = {
+      heading: heroContent.heroTitle,
+      subtext: heroContent.heroSubtitle,
+      backgroundImage: { src: heroContent.heroImage, alt: "" },
+      cta: { label: heroContent.heroButtonText, url: heroContent.heroButtonLink },
+      tagline: heroContent.heroTagline,
+      trustProductCount: heroContent.trustProductCount,
+      trustMemberCount: heroContent.trustMemberCount,
+      trustRating: heroContent.trustRating,
+    };
+    const existingHeroBlock = await prisma.block.findFirst({ where: { sectionKey: "hero", type: "HERO" }, orderBy: { order: "asc" } });
+    const heroStyles = heroContent.styles as Prisma.InputJsonValue;
+    if (existingHeroBlock) {
+      await prisma.block.update({ where: { id: existingHeroBlock.id }, data: { content: heroBlockContent, styles: heroStyles } });
+    } else {
+      await prisma.block.create({ data: { section: { connect: { key: "hero" } }, type: "HERO", order: 0, content: heroBlockContent, styles: heroStyles } });
+    }
+    console.log("  Seeded hero block (sectionKey: hero)");
+  }
+
+  // The Banner is also a Block owned by SiteSection("banner") via `sectionKey`,
+  // reusing the HERO type ("Banner = Hero without a mandatory background
+  // image"). Mirror the one-time migration so fresh DBs get the block too.
+  const bannerSection = defaultSections.find((section) => section.key === "banner");
+  if (bannerSection) {
+    const bannerContent = bannerSection.content as {
+      heading: string; subtext: string; cta: { label: string; link: string };
+      styles: Record<string, unknown>;
+    };
+    const styles = bannerContent.styles as Record<string, unknown>;
+    const { ctaBackgroundColor, ctaTextColor, ...stylesWithoutCtaColors } = styles;
+    const bannerBlockContent = {
+      heading: bannerContent.heading,
+      subtext: bannerContent.subtext,
+      cta: {
+        label: bannerContent.cta.label,
+        url: bannerContent.cta.link,
+        ...(typeof ctaBackgroundColor === "string" ? { ctaBackgroundColor } : {}),
+        ...(typeof ctaTextColor === "string" ? { ctaTextColor } : {}),
+      },
+      // backgroundImage deliberately omitted — the banner never shows an image.
+    };
+    const existingBannerBlock = await prisma.block.findFirst({ where: { sectionKey: "banner", type: "HERO" }, orderBy: { order: "asc" } });
+    const bannerStyles = stylesWithoutCtaColors as Prisma.InputJsonValue;
+    if (existingBannerBlock) {
+      await prisma.block.update({ where: { id: existingBannerBlock.id }, data: { content: bannerBlockContent, styles: bannerStyles } });
+    } else {
+      await prisma.block.create({ data: { section: { connect: { key: "banner" } }, type: "HERO", order: 0, content: bannerBlockContent, styles: bannerStyles } });
+    }
+    console.log("  Seeded banner block (sectionKey: banner)");
+  }
+
+  // FeaturedProducts is now a FEATURED_PRODUCTS block owned by
+  // SiteSection("featured-products") — mirror the one-time migration so fresh
+  // DBs get the block too, seeded from the currently-featured products in
+  // display order.
+  const featuredSection = defaultSections.find((section) => section.key === "featured-products");
+  if (featuredSection) {
+    const featuredContent = featuredSection.content as {
+      featuredSectionTitle: string;
+      featuredSectionSubtitle: string;
+      styles: Record<string, unknown>;
+    };
+    const featuredRows = await prisma.product.findMany({ take: 8, where: { featured: true }, orderBy: { createdAt: "desc" }, select: { id: true } });
+    const liveRows = featuredRows.length > 0 ? featuredRows : await prisma.product.findMany({ take: 8, orderBy: { createdAt: "desc" }, select: { id: true } });
+    const featuredBlockContent = {
+      productIds: liveRows.map((p) => p.id),
+      featuredSectionTitle: featuredContent.featuredSectionTitle,
+      featuredSectionSubtitle: featuredContent.featuredSectionSubtitle,
+    };
+    const featuredBlockStyles = featuredContent.styles as Prisma.InputJsonValue;
+    const existingFeaturedBlock = await prisma.block.findFirst({ where: { sectionKey: "featured-products", type: "FEATURED_PRODUCTS" }, orderBy: { order: "asc" } });
+    if (existingFeaturedBlock) {
+      await prisma.block.update({ where: { id: existingFeaturedBlock.id }, data: { content: featuredBlockContent, styles: featuredBlockStyles } });
+    } else {
+      await prisma.block.create({ data: { section: { connect: { key: "featured-products" } }, type: "FEATURED_PRODUCTS", order: 0, content: featuredBlockContent, styles: featuredBlockStyles } });
+    }
+    console.log("  Seeded featured-products block (sectionKey: featured-products)");
   }
 
   console.log("Seeding complete!");

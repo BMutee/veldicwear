@@ -3,6 +3,7 @@ import ProductGrid from "@/components/ProductGrid";
 
 export default async function ShopPage() {
   const products = await prisma.product.findMany({
+    where: { active: true },
     include: {
       variants: true,
       images: true,

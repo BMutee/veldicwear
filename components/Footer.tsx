@@ -1,63 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
-
-type FooterLink = {
-  label: string;
-  href: string;
-};
-
-type SocialLink = {
-  platform: string;
-  href: string;
-  ariaLabel: string;
-};
-
-type FooterContent = {
-  brandName?: string;
-  brandDescription?: string;
-  shopLinks?: FooterLink[];
-  supportLinks?: FooterLink[];
-  companyLinks?: FooterLink[];
-  socialLinks?: SocialLink[];
-  paymentMethods?: string[];
-  bottomLinks?: FooterLink[];
-};
-
-const fallback: FooterContent = {
-  brandName: "Veldic Wear",
-  brandDescription:
-    "Premium lifestyle & activewear for every journey. Wear the ground you cover.",
-  shopLinks: [
-    { label: "All Products", href: "/shop" },
-    { label: "Collections", href: "/collection" },
-    { label: "New Arrivals", href: "/shop?category=new-arrivals" },
-    { label: "Limited Edition", href: "/shop?category=limited" },
-  ],
-  supportLinks: [
-    { label: "Contact", href: "/contact" },
-    { label: "FAQ", href: "/faq" },
-    { label: "Shipping & Returns", href: "/shipping" },
-    { label: "Size Guide", href: "/size-guide" },
-  ],
-  companyLinks: [
-    { label: "About Us", href: "/about" },
-    { label: "Careers", href: "/careers" },
-    { label: "Press", href: "/press" },
-  ],
-  socialLinks: [
-    { platform: "Instagram", href: "https://instagram.com/veldicwear", ariaLabel: "Instagram" },
-    { platform: "Twitter", href: "https://twitter.com/veldicwear", ariaLabel: "Twitter / X" },
-    { platform: "TikTok", href: "https://tiktok.com/@veldicwear", ariaLabel: "TikTok" },
-    { platform: "YouTube", href: "https://youtube.com/@veldicwear", ariaLabel: "YouTube" },
-  ],
-  paymentMethods: ["Visa", "MC", "Amex", "PayPal", "Apple Pay"],
-  bottomLinks: [
-    { label: "Privacy", href: "/privacy" },
-    { label: "Terms", href: "/terms" },
-  ],
-};
+import { parseFooterContent } from "@/lib/footer-section";
+import type { StoreSettings } from "@/lib/store-settings";
+import {
+  getStoreSocialLinks,
+  getFooterNavLinks,
+  DEFAULT_STORE_SETTINGS,
+} from "@/lib/store-settings";
+import Reveal from "@/components/motion/Reveal";
 
 const SocialIcon = ({ platform }: { platform: string }) => {
   if (platform === "Instagram") {
@@ -91,23 +43,51 @@ const SocialIcon = ({ platform }: { platform: string }) => {
       </svg>
     );
   }
+  if (platform === "Facebook") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+        <path d="M18 2H15C13.9 2 13 2.9 13 4v3h-2V4c0-1.1-.9-2-2-2H8.5V7H8c-1.1 0-2 .9-2 2v5.5c0 .55.45 1 1 1h6.5v6h2v-6H18l.5-1V7c0-1.1-.9-2-2-2z" />
+      </svg>
+    );
+  }
   return null;
 };
 
-export default function Footer() {
-  const [content, setContent] = useState<FooterContent | null>(null);
+export default function Footer({
+  content,
+  settings,
+}: {
+  content?: unknown;
+  settings?: StoreSettings | null;
+}) {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    fetch("/api/sections/footer")
-      .then((r) => r.json())
-      .then((data) => setContent(data))
-      .catch(() => {});
-  }, []);
+  const data = parseFooterContent(content);
+  const styles = data.styles;
 
-  const data = content || fallback;
+  // Brand identity, contact, social links, copyright and footer nav now come
+  // from the singleton StoreSettings row (edited in the Settings tab). The
+  // footer SiteSection content now only carries description, link groups,
+  // payment methods and the admin-editable visual styles.
+  const base = settings ?? DEFAULT_STORE_SETTINGS;
+  const storeName = base.storeName || "Veldic Wear";
+  const copyrightText = base.copyrightText || "All rights reserved.";
+  const socialLinks = getStoreSocialLinks(settings);
+  const footerNavLinks = getFooterNavLinks(settings);
+
+  const cssVars = {
+    "--footer-link": styles.linkColor,
+    "--footer-link-hover": styles.linkHoverColor,
+  } as React.CSSProperties;
+
+  // Contact details that are actually set in store settings.
+  const contactItems = [
+    { label: "Email", value: base.email, href: base.email ? `mailto:${base.email}` : null },
+    { label: "Phone", value: base.phone, href: base.phone ? `tel:${base.phone}` : null },
+    { label: "Address", value: base.address, href: null },
+  ].filter((c) => c.value);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,19 +98,51 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-nav px-6 py-16">
+    <>
+      <style>{`\n        .veldic-footer {\n          --footer-pad-top: ${styles.paddingTop.mobile}px;\n          --footer-pad-bottom: ${styles.paddingBottom.mobile}px;\n          --footer-pad-x: ${styles.paddingX.mobile}px;\n        }\n        @media (min-width: 768px) {\n          .veldic-footer {\n            --footer-pad-top: ${styles.paddingTop.desktop}px;\n            --footer-pad-bottom: ${styles.paddingBottom.desktop}px;\n            --footer-pad-x: ${styles.paddingX.desktop}px;\n          }\n        }\n      `}</style>
+      <footer
+        className="veldic-footer"
+        style={{
+          backgroundColor: styles.backgroundColor,
+          color: styles.textColor,
+          paddingTop: "var(--footer-pad-top)",
+          paddingBottom: "var(--footer-pad-bottom)",
+          paddingLeft: "var(--footer-pad-x)",
+          paddingRight: "var(--footer-pad-x)",
+          ...cssVars,
+        }}
+      >
+      {/* Entrance animation (admin-configurable); reduced-motion is fully
+          disabled via CSS regardless of this setting. */}
+      <Reveal type={styles.animation.type} scrollTrigger={styles.animation.scrollTrigger}>
       <div className="mx-auto max-w-[1280px]">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <Link
-              href="/"
-              className="font-display text-lg font-semibold tracking-tight text-bone"
-            >
-              {data.brandName}
+            <Link href="/" className="font-display text-lg font-semibold tracking-tight">
+              {storeName}
             </Link>
-            <p className="mt-4 max-w-xs font-sans text-sm leading-relaxed text-bone/60">
+            <p className="mt-4 max-w-xs font-sans text-sm leading-relaxed opacity-60">
               {data.brandDescription}
             </p>
+
+            {contactItems.length > 0 && (
+              <div className="mt-6">
+                <h4 className="eyebrow">Contact</h4>
+                <ul className="mt-3 space-y-1.5 font-sans text-sm text-stone">
+                  {contactItems.map((c) => (
+                    <li key={c.label}>
+                      {c.href ? (
+                        <a href={c.href} className="footer-link cursor-pointer" aria-label={`${c.label}: ${c.value}`}>
+                          {c.value}
+                        </a>
+                      ) : (
+                        <span className="opacity-60">{c.value}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <form onSubmit={handleSubscribe} className="mt-6 flex gap-2">
               <input
@@ -140,11 +152,11 @@ export default function Footer() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="flex-1 border-b border-bone/20 bg-transparent px-0 py-2.5 font-sans text-sm text-bone outline-none transition-colors duration-150 placeholder:text-bone/50 focus:border-moss"
+                className="flex-1 border-b border-bone/20 bg-transparent px-0 py-2.5 font-sans text-sm outline-none transition-colors duration-150 placeholder:text-bone/50 focus:border-moss"
               />
               <button
                 type="submit"
-className="bg-white px-5 py-2.5 font-sans text-xs font-medium text-ink transition-colors duration-150 hover:bg-white/90 cursor-pointer"
+                className="bg-white px-5 py-2.5 font-sans text-xs font-medium text-ink transition-colors duration-150 hover:bg-white/90 cursor-pointer"
               >
                 {subscribed ? "Done!" : "Subscribe"}
               </button>
@@ -157,10 +169,7 @@ className="bg-white px-5 py-2.5 font-sans text-xs font-medium text-ink transitio
               <ul className="mt-5 space-y-3">
                 {data.shopLinks.map((link, i) => (
                   <li key={i}>
-                    <Link
-                      href={link.href}
-                      className="font-sans text-sm text-bone/60 transition-colors duration-150 hover:text-bone cursor-pointer"
-                    >
+                    <Link href={link.href} className="footer-link font-sans text-sm cursor-pointer">
                       {link.label}
                     </Link>
                   </li>
@@ -175,10 +184,7 @@ className="bg-white px-5 py-2.5 font-sans text-xs font-medium text-ink transitio
               <ul className="mt-5 space-y-3">
                 {data.supportLinks.map((link, i) => (
                   <li key={i}>
-                    <Link
-                      href={link.href}
-                      className="font-sans text-sm text-bone/60 transition-colors duration-150 hover:text-bone cursor-pointer"
-                    >
+                    <Link href={link.href} className="footer-link font-sans text-sm cursor-pointer">
                       {link.label}
                     </Link>
                   </li>
@@ -194,10 +200,7 @@ className="bg-white px-5 py-2.5 font-sans text-xs font-medium text-ink transitio
                 <ul className="mt-5 space-y-3">
                   {data.companyLinks.map((link, i) => (
                     <li key={i}>
-                      <Link
-                        href={link.href}
-                        className="font-sans text-sm text-bone/60 transition-colors duration-150 hover:text-bone cursor-pointer"
-                      >
+                      <Link href={link.href} className="footer-link font-sans text-sm cursor-pointer">
                         {link.label}
                       </Link>
                     </li>
@@ -206,15 +209,15 @@ className="bg-white px-5 py-2.5 font-sans text-xs font-medium text-ink transitio
               </>
             )}
 
-            {data.socialLinks && data.socialLinks.length > 0 && (
+            {socialLinks.length > 0 && (
               <div className="mt-6 flex items-center gap-4">
-                {data.socialLinks.map((link, i) => (
+                {socialLinks.map((link, i) => (
                   <a
                     key={i}
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-bone/60 transition-colors duration-150 hover:text-bone cursor-pointer"
+                    className="footer-link cursor-pointer"
                     aria-label={link.ariaLabel}
                   >
                     <SocialIcon platform={link.platform} />
@@ -226,25 +229,25 @@ className="bg-white px-5 py-2.5 font-sans text-xs font-medium text-ink transitio
         </div>
 
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-bone/10 pt-8 sm:flex-row">
-          <p className="font-sans text-xs text-bone/40">
-            &copy; {new Date().getFullYear()} {data.brandName}. All rights reserved.
+          <p className="font-sans text-xs opacity-40">
+            &copy; {new Date().getFullYear()} {storeName}. {copyrightText}
           </p>
 
           {data.paymentMethods && data.paymentMethods.length > 0 && (
-            <div className="flex items-center gap-3 text-bone/40">
+            <div className="flex items-center gap-3 opacity-40">
               {data.paymentMethods.map((method, i) => (
                 <span key={i} className="font-mono text-xs tracking-wide">{method}</span>
               ))}
             </div>
           )}
 
-          {data.bottomLinks && data.bottomLinks.length > 0 && (
+          {footerNavLinks.length > 0 && (
             <div className="flex gap-6">
-              {data.bottomLinks.map((link, i) => (
+              {footerNavLinks.map((link, i) => (
                 <Link
                   key={i}
                   href={link.href}
-                  className="font-sans text-xs text-bone/40 transition-colors duration-150 hover:text-bone cursor-pointer"
+                  className="footer-link font-sans text-xs cursor-pointer"
                 >
                   {link.label}
                 </Link>
@@ -253,6 +256,9 @@ className="bg-white px-5 py-2.5 font-sans text-xs font-medium text-ink transitio
           )}
         </div>
       </div>
-    </footer>
+      </Reveal>
+      </footer>
+    </>
   );
 }
+

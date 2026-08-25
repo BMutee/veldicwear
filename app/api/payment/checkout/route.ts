@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import type { CartItem } from "@/lib/cart";
+import { validateCoupon } from "@/lib/coupon";
+import {
+  SHIPPING_PROTECTION_PRICE,
+  SHIPPING_PROTECTION_LABEL,
+  SHIPPING_PROTECTION_DESCRIPTION,
+} from "@/lib/shipping-protection";
+import { CURRENCY_COOKIE } from "@/lib/currency-map";
+import {
+  resolveCheckoutCurrencyPlan,
+  toStripeUnitAmount,
+} from "@/lib/checkout-currency";
 
 type ProductWithVariants = {
   id: string;
@@ -89,20 +100,94 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // ── Currency resolution ──
+    // The proxy matcher EXCLUDES /api routes, so x-viewer-currency is not
+    // forwarded here — read the currency cookie directly (set by proxy on
+    // page responses / by the navbar picker). Missing cookie -> USD.
+    const displayCurrency =
+      request.cookies.get(CURRENCY_COOKIE)?.value ?? "USD";
+    const plan = await resolveCheckoutCurrencyPlan(displayCurrency);
+    const chargeCurrency = plan.chargeCurrency; // "USD" | "CAD"
+    const stripeCurrency = chargeCurrency.toLowerCase(); // Stripe wants lowercase
+
     const lineItems = validatedItems.map((item) => ({
       price_data: {
-        currency: "usd",
+        currency: stripeCurrency,
         product_data: {
           name: item.name,
           description: `Size: ${item.size}${item.color ? `, Color: ${item.color}` : ""}`,
-          images: item.image ? [item.image] : [],
+          // Stripe only accepts fully-qualified http(s) URLs; the DB may store
+          // relative paths (served via next/image locally), so filter those out.
+          images: /^https?:\/\//i.test(item.image) ? [item.image] : [],
         },
-        unit_amount: Math.round(item.price * 100),
+        unit_amount: toStripeUnitAmount(item.price, chargeCurrency, plan.rate),
       },
       quantity: item.quantity,
     }));
 
-    // ── Extract shipping info from request body ──
+    // ── Shipping protection (server-priced, converted at the locked rate) ──
+    const wantsShippingProtection = body.hasShippingProtection === true;
+    if (wantsShippingProtection) {
+      lineItems.push({
+        price_data: {
+          currency: stripeCurrency,
+          product_data: {
+            name: SHIPPING_PROTECTION_LABEL,
+            description: SHIPPING_PROTECTION_DESCRIPTION,
+            images: [],
+          },
+          unit_amount: toStripeUnitAmount(
+            SHIPPING_PROTECTION_PRICE,
+            chargeCurrency,
+            plan.rate,
+          ),
+        },
+        quantity: 1,
+      });
+    }
+
+    // ── Coupon (validated server-side against the USD subtotal) ──
+    // Percentage discounts need no conversion. Fixed-amount discounts convert
+    // via the SAME locked rate used for line items ("auto-converted" pricing).
+    let couponDiscount: Extract<
+      Awaited<ReturnType<typeof validateCoupon>>,
+      { valid: true }
+    > | null = null;
+    let stripeCouponId: string | undefined;
+    const couponCodeInput =
+      typeof body.couponCode === "string" ? body.couponCode.trim() : "";
+    if (couponCodeInput) {
+      const usdSubtotal = validatedItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0,
+      );
+      const result = await validateCoupon(couponCodeInput, usdSubtotal);
+      if (!result.valid) {
+        return NextResponse.json({ error: result.error }, { status: 400 });
+      }
+      couponDiscount = result;
+      if (result.discountAmount > 0) {
+        const stripeCoupon =
+          result.type === "percentage"
+            ? await stripe.coupons.create({
+                percent_off: result.value,
+                duration: "once",
+                name: result.code,
+              })
+            : await stripe.coupons.create({
+                amount_off: toStripeUnitAmount(
+                  result.discountAmount,
+                  chargeCurrency,
+                  plan.rate,
+                ),
+                currency: stripeCurrency,
+                duration: "once",
+                name: result.code,
+              });
+        stripeCouponId = stripeCoupon.id;
+      }
+    }
+
     const { shipping } = body;
     const customerEmail = shipping?.email ?? "";
     const customerName = `${shipping?.firstName ?? ""} ${shipping?.lastName ?? ""}`.trim();
@@ -123,6 +208,7 @@ export async function POST(request: NextRequest) {
       mode: "payment",
       payment_method_types: ["card"],
       line_items: lineItems,
+      ...(stripeCouponId ? { discounts: [{ coupon: stripeCouponId }] } : {}),
       success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cart`,
       customer_email: customerEmail || undefined,
@@ -134,10 +220,25 @@ export async function POST(request: NextRequest) {
         cart_items: JSON.stringify(
           cart.map((i) => ({ id: i.id, size: i.size, color: i.color ?? null, quantity: i.quantity })),
         ),
+        // ── Locked checkout-currency context ──
+        // The rate is captured HERE and later written to Order.currency /
+        // Order.exchangeRateUsed exactly once (at order creation). It is
+        // never recomputed after this point.
+        charge_currency: chargeCurrency,
+        exchange_rate_used: plan.rate.toFixed(6),
+        display_currency: plan.displayCurrency,
+        currency_fallback_to_usd: plan.fallbackToUsd ? "1" : "0",
+        ...(wantsShippingProtection ? { shipping_protection: "1" } : {}),
+        ...(couponDiscount ? { coupon_code: couponDiscount.code } : {}),
       },
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({
+      url: session.url,
+      chargeCurrency,
+      displayCurrency: plan.displayCurrency,
+      notice: plan.notice,
+    });
   } catch (error) {
     console.error("Checkout error:", error);
     return NextResponse.json(

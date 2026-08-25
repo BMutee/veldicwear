@@ -5,11 +5,8 @@ import { CartItem } from "@/lib/cart";
 import CouponInput from "./CouponInput";
 import ShippingProtectionToggle from "./ShippingProtectionToggle";
 import { SHIPPING_PROTECTION_PRICE } from "@/lib/shipping-protection";
-
-const money = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
+import { useViewerCurrency } from "@/lib/use-viewer-currency";
+import { EUR_ESTIMATE_DISCLAIMER } from "@/lib/currency-map";
 
 type OrderSummaryProps = {
   cart: CartItem[];
@@ -39,6 +36,10 @@ export default function OrderSummary({
   onShippingProtectionChange,
 }: OrderSummaryProps) {
   const router = useRouter();
+  // Display conversion in the visitor's browsing currency (same rounding as
+  // the checkout charge — displayed == charged).
+  const vc = useViewerCurrency();
+  const money = { format: (usd: number) => vc.fmt(vc.toDisplay(usd)) };
   const protectionCost = hasShippingProtection ? SHIPPING_PROTECTION_PRICE : 0;
   const total = subtotal - discountAmount + protectionCost;
 
@@ -94,6 +95,11 @@ export default function OrderSummary({
             <span>Total</span>
             <span>{money.format(total)}</span>
           </div>
+          {vc.currency === "EUR" && (
+            <p className="mt-2 font-sans text-xs leading-relaxed text-stone">
+              {EUR_ESTIMATE_DISCLAIMER}
+            </p>
+          )}
         </div>
 
         <ShippingProtectionToggle

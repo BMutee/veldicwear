@@ -9,34 +9,29 @@ import {
 } from "framer-motion";
 import Link from "next/link";
 import { useRef } from "react";
+import type { HeroBlockContent, HeroBlockStyles } from "@/lib/block-section";
+import { defaultBlockContent, HERO_BLOCK_DEFAULT_STYLES } from "@/lib/block-section";
+import Reveal from "@/components/motion/Reveal";
 
-type HomepageData = {
-  heroTitle: string;
-  heroSubtitle: string;
-  heroTagline: string;
-  heroImage: string;
-  heroButtonText: string;
-  heroButtonLink: string;
-  trustProductCount: string;
-  trustMemberCount: string;
-  trustRating: string;
-};
-
-const fallback: HomepageData = {
-  heroTitle: "Wear the ground\nyou cover",
-  heroSubtitle:
-    "Premium lifestyle & activewear for every journey.",
-  heroTagline: "First on the terrain",
-  heroImage: "/products/jacket.jpg",
-  heroButtonText: "Shop new arrivals",
-  heroButtonLink: "/shop",
-  trustProductCount: "200+",
-  trustMemberCount: "50K+",
-  trustRating: "4.9",
-};
+// =============================================================================
+// Hero
+// =============================================================================
+// Reads the HERO Block owned by SiteSection("hero") via app/page.tsx.
+//
+// All three style values are applied as inline `style` on the rendered DOM:
+// Tailwind has no way to express "use whatever hex the admin picked at
+// runtime" without emitting per-render arbitrary-value classes, which would
+// (a) violate the design system's "no hardcoded hex" rule, (b) pollute the
+// Tailwind JIT cache, and (c) risk SSR/hydration mismatch. Inline styles are
+// deterministic and design-system-agnostic.
+//
+// The contour-line signature motif, parallax, motion variants, and copy face
+// are unchanged — they belong to the brand, not the admin.
+// =============================================================================
 
 type HeroProps = {
-  content?: HomepageData | null;
+  content?: HeroBlockContent | null;
+  styles?: HeroBlockStyles | null;
 };
 
 // Easing/duration tokens as declared in globals.css
@@ -52,8 +47,25 @@ const CONTOURS = [
   "M-100 540 C 180 500, 380 620, 640 560 S 980 520, 1240 640",
 ];
 
-export default function Hero({ content }: HeroProps) {
-  const data = content || fallback;
+export default function Hero({ content, styles: storedStyles }: HeroProps) {
+  const dataContent = content ?? defaultBlockContent("HERO") as HeroBlockContent;
+  const styles = storedStyles ?? HERO_BLOCK_DEFAULT_STYLES;
+  // The HERO block type is shared with the banner variant (which omits
+  // backgroundImage and uses headingFontSize). The hero's own rows always
+  // carry both, but these fallbacks keep the component robust if a banner
+  // row were ever rendered here.
+  const headlineFs = styles.headlineFontSize ?? HERO_BLOCK_DEFAULT_STYLES.headlineFontSize!;
+  const data = {
+    heroTitle: dataContent.heading,
+    heroSubtitle: dataContent.subtext ?? "",
+    heroTagline: dataContent.tagline ?? "",
+    heroImage: dataContent.backgroundImage?.src ?? "",
+    heroButtonText: dataContent.cta?.label ?? "",
+    heroButtonLink: dataContent.cta?.url ?? "",
+    trustProductCount: dataContent.trustProductCount ?? "",
+    trustMemberCount: dataContent.trustMemberCount ?? "",
+    trustRating: dataContent.trustRating ?? "",
+  };
   const titleLines = data.heroTitle.split("\n").filter(Boolean);
   const reduceMotion = useReducedMotion();
   const containerRef = useRef<HTMLElement>(null);
@@ -131,11 +143,24 @@ export default function Hero({ content }: HeroProps) {
     },
   };
 
+  // Section-level dynamic styles (background, text color, padding).
+  const sectionStyle: React.CSSProperties = {
+    backgroundColor: styles.backgroundColor,
+    color: styles.textColor,
+  };
+  // Fade overlay that bleeds the image into the dynamic background.
+  const overlayStyle: React.CSSProperties = {
+    background: `linear-gradient(to right, ${styles.backgroundColor} 0%, ${styles.backgroundColor}cc 40%, transparent 100%)`,
+  };
+
   return (
-    <section
-      ref={containerRef}
-      className="relative min-h-screen overflow-hidden bg-bone"
-    >
+    <>
+      <style>{`\n        .veldic-hero {\n          --hero-pad-top: ${styles.paddingTop.mobile}px;\n          --hero-pad-bottom: ${styles.paddingBottom.mobile}px;\n          --hero-pad-x: ${styles.paddingX.mobile}px;\n          --hero-headline-fs: ${headlineFs.mobile}px;\n        }\n        @media (min-width: 768px) {\n          .veldic-hero {\n            --hero-pad-top: ${styles.paddingTop.desktop}px;\n            --hero-pad-bottom: ${styles.paddingBottom.desktop}px;\n            --hero-pad-x: ${styles.paddingX.desktop}px;\n            --hero-headline-fs: ${headlineFs.desktop}px;\n          }\n        }\n      `}</style>
+      <section
+        ref={containerRef}
+        style={sectionStyle}
+        className="veldic-hero relative min-h-screen overflow-hidden"
+      >
       {/* === HERO IMAGE (right) with parallax === */}
       {data.heroImage ? (
         <motion.div
@@ -149,13 +174,16 @@ export default function Hero({ content }: HeroProps) {
             className="h-full w-full bg-cover bg-center"
             style={{ backgroundImage: `url(${data.heroImage})` }}
           />
-          {/* Subtle bone overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-bone via-bone/60 to-transparent" />
+          {/* Subtle overlay fading image into the dynamic background */}
+          <div className="absolute inset-0" style={overlayStyle} aria-hidden="true" />
         </motion.div>
       ) : (
-        /* Fallback: large geometric monogram on bone surface */
+        /* Fallback: large geometric monogram on the dynamic surface */
         <div className="absolute inset-y-0 right-0 hidden lg:flex w-3/5 items-center justify-center">
-          <span className="font-display text-[20rem] font-semibold leading-none select-none text-ink/5">
+          <span
+            className="font-display text-[20rem] font-semibold leading-none select-none"
+            style={{ color: styles.textColor, opacity: 0.05 }}
+          >
             VW
           </span>
         </div>
@@ -186,12 +214,21 @@ export default function Hero({ content }: HeroProps) {
       </svg>
 
       {/* === CONTENT === */}
-      <motion.div className="relative z-20 section-grounded">
+      {/* Overflow defense layer 3 of 3 (html/body clip + section overflow-hidden): keep the content column from ever exceeding the viewport. */}
+      {/* Entrance animation (admin-configurable) wrapping the content column;
+          reduced-motion is fully disabled via CSS. The hero's own staggered
+          framer-motion choreography composes inside this container reveal. */}
+      <Reveal type={styles.animation.type} scrollTrigger={styles.animation.scrollTrigger}>
+      <motion.div
+        className="relative z-20 max-w-full"
+        style={{ paddingLeft: "var(--hero-pad-x)", paddingRight: "var(--hero-pad-x)" }}
+      >
         <motion.div
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="flex min-h-screen flex-col justify-center pb-16 pt-32 lg:w-3/5 lg:pb-12 lg:pt-24"
+          style={{ paddingTop: "var(--hero-pad-top)", paddingBottom: "var(--hero-pad-bottom)" }}
+          className="flex min-h-screen flex-col justify-center lg:w-3/5"
         >
           {/* Tagline with moss accent line */}
           <motion.div variants={taglineVariants}>
@@ -202,7 +239,10 @@ export default function Hero({ content }: HeroProps) {
           </motion.div>
 
           {/* Headline — display, sentence case */}
-          <h1 className="mt-6 font-display text-5xl font-semibold leading-[0.95] tracking-tight text-ink sm:text-7xl lg:text-8xl">
+          <h1
+            className="mt-6 font-display font-semibold leading-[0.95] tracking-tight"
+            style={{ fontSize: "var(--hero-headline-fs)", color: styles.textColor }}
+          >
             {titleLines.map((line, i) => (
               <motion.span key={i} custom={i} variants={headlineVariants} className="block">
                 {line}
@@ -243,21 +283,21 @@ export default function Hero({ content }: HeroProps) {
             className="mt-16 flex items-center gap-8 sm:gap-12"
           >
             <div className="flex flex-col">
-              <span className="font-mono text-3xl text-ink">{data.trustProductCount}</span>
+              <span className="font-mono text-3xl">{data.trustProductCount}</span>
               <span className="mt-1 text-xs uppercase tracking-wider text-stone">
                 Products
               </span>
             </div>
             <div className="h-12 w-px bg-stone/30" />
             <div className="flex flex-col">
-              <span className="font-mono text-3xl text-ink">{data.trustMemberCount}</span>
+              <span className="font-mono text-3xl">{data.trustMemberCount}</span>
               <span className="mt-1 text-xs uppercase tracking-wider text-stone">
                 Members
               </span>
             </div>
             <div className="h-12 w-px bg-stone/30" />
             <div className="flex flex-col">
-              <span className="font-mono text-3xl text-ink">{data.trustRating}</span>
+              <span className="font-mono text-3xl">{data.trustRating}</span>
               <span className="mt-1 text-xs uppercase tracking-wider text-stone">
                 Rating
               </span>
@@ -265,6 +305,8 @@ export default function Hero({ content }: HeroProps) {
           </motion.div>
         </motion.div>
       </motion.div>
-    </section>
+      </Reveal>
+      </section>
+    </>
   );
 }

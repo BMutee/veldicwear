@@ -11,6 +11,7 @@ export default async function SingleCollectionPage({ params }: { params: Promise
     where: { slug },
     include: {
       products: {
+        where: { active: true },
         include: { variants: true, images: true },
         orderBy: { createdAt: "desc" },
       },

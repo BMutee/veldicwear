@@ -8,6 +8,10 @@ export type CouponValidation = {
   discountAmount: number;
   code: string;
   couponId: string;
+  /** "percentage" | "fixed" — lets checkout convert fixed amounts per currency. */
+  type: "percentage" | "fixed";
+  /** Raw coupon value (percent number for percentage, USD amount for fixed). */
+  value: number;
 };
 
 export async function validateCoupon(code: string, subtotal: number): Promise<CouponValidation> {
@@ -61,6 +65,8 @@ export async function validateCoupon(code: string, subtotal: number): Promise<Co
     discountAmount,
     code: coupon.code,
     couponId: coupon.id,
+    type: coupon.type === "percentage" ? "percentage" : "fixed",
+    value: coupon.value,
   };
 }
 

@@ -1,50 +1,28 @@
 import { requireAdmin } from "@/lib/admin-guard";
 import { prisma } from "@/lib/prisma";
-import AdminHomepageClient from "@/components/AdminHomepageClient";
+import AdminBlocksClient from "@/components/AdminBlocksClient";
 
-type HomepageData = {
-  id: string;
-  heroTitle: string;
-  heroSubtitle: string;
-  heroTagline: string;
-  heroImage: string;
-  heroButtonText: string;
-  heroButtonLink: string;
-  trustProductCount: string;
-  trustMemberCount: string;
-  trustRating: string;
-  featuredSectionTitle: string;
-  featuredSectionSubtitle: string;
-  updatedAt: Date;
-};
+const HERO_SECTION_KEY = "hero";
 
-const defaults: HomepageData = {
-  id: "homepage",
-  heroTitle: "FORGE\nYOUR\nEDGE",
-  heroSubtitle: "Performance-driven apparel engineered for the relentless. Train. Dominate. Repeat.",
-  heroTagline: "Fall / Winter 2026",
-  heroImage: "",
-  heroButtonText: "Shop Now",
-  heroButtonLink: "/shop",
-  trustProductCount: "200+",
-  trustMemberCount: "50K+",
-  trustRating: "4.9",
-  featuredSectionTitle: "New Arrivals",
-  featuredSectionSubtitle: "The latest drops engineered for the relentless.",
-  updatedAt: new Date(),
-};
-
+// The Hero is now a Block owned by SiteSection("hero") via `sectionKey`.
+// This page is the block editor bound to that section. The legacy
+// `SiteSection("hero")` content row is left in place but UNREAD — the same
+// "documented as unused, not deleted" pattern as the old `Homepage` model.
 export default async function AdminHomepagePage() {
   await requireAdmin();
 
-  const dbData = (await prisma.homepage.findUnique({ where: { id: "homepage" } })) as HomepageData | null;
-  const homepage: HomepageData = dbData || defaults;
+  const section = await prisma.siteSection.findUnique({
+    where: { key: HERO_SECTION_KEY },
+    select: { key: true },
+  });
+  if (!section) throw new Error(`Missing SiteSection("${HERO_SECTION_KEY}")`);
 
   return (
-    <main className="min-h-screen bg-white px-6 py-8 text-black">
-      <div className="mx-auto max-w-3xl">
-        <AdminHomepageClient homepage={homepage} />
+    <main className="min-h-screen bg-white px-6 py-8 text-ink">
+      <div className="mx-auto max-w-7xl">
+        <AdminBlocksClient sectionKey={HERO_SECTION_KEY} />
       </div>
     </main>
   );
 }
+

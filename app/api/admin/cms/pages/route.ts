@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin-guard-api";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { parseCtaFields, sanitizeHtml } from "@/lib/sanitize";
 
 export async function GET() {
   const { error } = await requireAdminApi();
@@ -22,6 +22,8 @@ export async function POST(request: Request) {
   if (!body.slug?.trim()) errs.push("Slug is required.");
   else if (!/^[a-z0-9-]+$/.test(body.slug)) errs.push("Slug: only lowercase letters, numbers, hyphens.");
   if (!body.content?.trim()) errs.push("Content is required.");
+  const cta = parseCtaFields(body.ctaLabel, body.ctaUrl);
+  if (cta.error) errs.push(cta.error);
 
   if (errs.length) return NextResponse.json({ error: "Validation failed", details: errs }, { status: 400 });
 
@@ -33,6 +35,8 @@ export async function POST(request: Request) {
       slug: body.slug.trim(),
       title: body.title.trim(),
       content: sanitizeHtml(body.content),
+      ctaLabel: cta.ctaLabel,
+      ctaUrl: cta.ctaUrl,
       seoTitle: body.seoTitle?.trim() || null,
       metaDescription: body.metaDescription?.trim() || null,
       published: body.published ?? false,

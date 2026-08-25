@@ -74,6 +74,20 @@ body {
   line-height: 1.6;
 }
 
+/* ===== OVERFLOW DEFENSE (layer 1 of 3) =====
+   Clips horizontal overflow at the document level without creating a scroll
+   container (unlike `hidden`, `clip` keeps position:sticky and 100vw/100%
+   children working). Layer 2 is `main { overflow-x: clip }`; layer 3 is each
+   full-bleed section's own `overflow-hidden` (e.g. .veldic-hero). */
+html,
+body {
+  overflow-x: clip;
+}
+
+main {
+  overflow-x: clip;
+}
+
 h1, h2, h3, .font-display {
   font-family: var(--font-display);
   font-weight: 600;
@@ -111,6 +125,119 @@ h1, h2, h3, .font-display {
   padding: 4px 10px;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+}
+
+/* Eyebrow labels — tiny mono uppercase device label (MASTER.md: all-caps only
+   for tiny eyebrow labels). Components may override color with utilities
+   (e.g. `text-bone/70` on dark backgrounds). */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Buttons — MASTER.md: outline by default (1px border, ink text); primary CTA
+   is moss fill + inverse text + radius-md, no shadow, max ONE moss-filled
+   button per view. Defined in @layer components so Tailwind utilities
+   (flex/inline-flex, w-full, mt-*, text-*) still win where components add
+   their own display/sizing classes. */
+@layer components {
+  .btn-primary,
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      background-color var(--dur-fast) var(--ease-snap),
+      border-color var(--dur-fast) var(--ease-snap),
+      color var(--dur-fast) var(--ease-snap);
+  }
+  .btn-primary {
+    background: var(--color-moss);
+    border: 1px solid var(--color-moss);
+    color: var(--text-inverse);
+    box-shadow: none;
+  }
+  .btn-primary:hover {
+    background: var(--color-moss-hover);
+    border-color: var(--color-moss-hover);
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid currentColor;
+    color: var(--color-ink);
+  }
+  .btn-outline:hover {
+    border-color: var(--color-moss);
+    color: var(--color-moss);
+  }
+  .btn-primary:focus-visible,
+  .btn-outline:focus-visible {
+    outline: 2px solid var(--color-moss);
+    outline-offset: 2px;
+  }
+}
+
+/* Footer links — dynamic color + hover via CSS custom properties set inline
+   from SiteSection("footer").content.styles (linkColor / linkHoverColor).
+   Inline styles can't express :hover, so a tiny class + CSS vars is the clean
+   way to keep link colors admin-editable. Defaults mirror the WCAG AA values. */
+.footer-link {
+  color: var(--footer-link, #A8A29E);
+  transition: color var(--dur-fast) var(--ease-snap);
+}
+.footer-link:hover {
+  color: var(--footer-link-hover, var(--color-bone));
+}
+
+/* ===== Entrance animation presets (admin-configurable per section/block) =====
+   How it works, in order:
+   1. SSR renders the element with data-anim="FADE|SLIDE_UP|SLIDE_IN" and NO
+      visible class — the hidden initial state below is pure CSS, so server
+      HTML and the client's first render are identical (no hydration mismatch)
+      and there is no layout shift (opacity/transform never affect layout).
+   2. After hydration, <Reveal> (components/motion/Reveal.tsx) observes the
+      element; when it scrolls into view — or immediately on mount when
+      scrollTrigger is false — it adds .veldic-anim-visible and CSS transitions
+      to the final state.
+   3. prefers-reduced-motion FULLY disables everything: content renders in its
+      final visible state immediately via pure CSS, before any JS runs,
+      regardless of what the admin configured. */
+.veldic-anim[data-anim="FADE"] {
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-out);
+}
+.veldic-anim[data-anim="SLIDE_UP"] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+}
+.veldic-anim[data-anim="SLIDE_IN"] {
+  opacity: 0;
+  transform: translateX(-40px);
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+}
+.veldic-anim.veldic-anim-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .veldic-anim[data-anim] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
 }
 
 /* Form input borders — darker than card borders for WCAG 1.4.11

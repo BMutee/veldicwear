@@ -7,7 +7,7 @@ function PagesTab() {
   const [pages, setPages] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", slug: "", content: "", seoTitle: "", metaDescription: "", published: false });
+  const [form, setForm] = useState({ title: "", slug: "", content: "", ctaLabel: "", ctaUrl: "", seoTitle: "", metaDescription: "", published: false });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [success, setSuccess] = useState<string | null>(null);
@@ -20,7 +20,7 @@ function PagesTab() {
       {success && <div className="rounded-lg border border-moss/20 bg-moss/5 px-4 py-3 text-sm text-moss">{success}</div>}
       {errors.length > 0 && <div className="rounded-lg border border-clay/20 bg-clay/5 px-4 py-3">{errors.map((m, i) => <p key={i} className="text-sm text-red-700">{m}</p>)}</div>}
 
-      <button type="button" onClick={() => { setShowForm(true); setEditing(null); setForm({ title: "", slug: "", content: "", seoTitle: "", metaDescription: "", published: false }); setErrors([]); setSuccess(null); }}
+      <button type="button" onClick={() => { setShowForm(true); setEditing(null); setForm({ title: "", slug: "", content: "", ctaLabel: "", ctaUrl: "", seoTitle: "", metaDescription: "", published: false }); setErrors([]); setSuccess(null); }}
         className="cursor-pointer rounded-lg bg-clay px-4 py-2 text-sm font-semibold text-white hover:bg-[#B57904] focus:outline-none focus:ring-2 focus:ring-[#CA8A04]/40">+ New Page</button>
 
       {showForm && (
@@ -33,7 +33,7 @@ function PagesTab() {
             const data = await res.json();
             if (!res.ok) { setErrors(data.details || [data.error]); setSaving(false); return; }
             setSuccess(editing ? "Page updated." : "Page created.");
-            setSaving(false); setShowForm(false); setEditing(null); setForm({ title: "", slug: "", content: "", seoTitle: "", metaDescription: "", published: false });
+            setSaving(false); setShowForm(false); setEditing(null); setForm({ title: "", slug: "", content: "", ctaLabel: "", ctaUrl: "", seoTitle: "", metaDescription: "", published: false });
             const list = await fetch("/api/admin/cms/pages").then(r => r.json()); setPages(list); router.refresh();
           } catch { setErrors(["Network error."]); setSaving(false); }
         }} className="rounded-xl border border-stone/20 bg-white p-6 shadow-sm space-y-4">
@@ -43,6 +43,10 @@ function PagesTab() {
             <label className="space-y-1 text-sm font-medium text-stone">Slug <input required value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 font-mono" /></label>
           </div>
           <label className="space-y-1 text-sm font-medium text-stone">Content (HTML) <textarea required rows={12} value={form.content} onChange={e => setForm({...form, content: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 font-mono resize-y" /></label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="space-y-1 text-sm font-medium text-stone">Button text (optional) <input value={form.ctaLabel} onChange={e => setForm({...form, ctaLabel: e.target.value})} placeholder="Shop new arrivals" className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
+            <label className="space-y-1 text-sm font-medium text-stone">Button link (optional) <input value={form.ctaUrl} onChange={e => setForm({...form, ctaUrl: e.target.value})} placeholder="/shop or https://example.com" className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="space-y-1 text-sm font-medium text-stone">SEO Title <input value={form.seoTitle} onChange={e => setForm({...form, seoTitle: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
             <label className="space-y-1 text-sm font-medium text-stone">Meta Description <input value={form.metaDescription} onChange={e => setForm({...form, metaDescription: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
@@ -71,8 +75,9 @@ function PagesTab() {
                 <td className="px-4 py-3"><span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${p.published ? "bg-moss/5 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>{p.published ? "Published" : "Draft"}</span></td>
                 <td className="px-4 py-3 text-xs text-stone">{new Date(p.updatedAt).toLocaleDateString()}</td>
                 <td className="px-4 py-3 text-right"><div className="flex justify-end gap-2">
-                  <button type="button" onClick={() => { setEditing(p); setShowForm(true); setForm({ title: p.title, slug: p.slug, content: p.content, seoTitle: p.seoTitle || "", metaDescription: p.metaDescription || "", published: p.published }); setErrors([]); setSuccess(null); }}
+                  <button type="button" onClick={() => { setEditing(p); setShowForm(true); setForm({ title: p.title, slug: p.slug, content: p.content, ctaLabel: p.ctaLabel || "", ctaUrl: p.ctaUrl || "", seoTitle: p.seoTitle || "", metaDescription: p.metaDescription || "", published: p.published }); setErrors([]); setSuccess(null); }}
                     className="cursor-pointer rounded-lg border border-stone/20 px-3 py-1 text-xs font-medium text-stone hover:bg-white">Edit</button>
+                  <a href={`/admin/pages/${p.slug}/blocks`} className="cursor-pointer rounded-lg border border-moss/20 px-3 py-1 text-xs font-medium text-moss hover:bg-moss/5">Blocks</a>
                   <button type="button" onClick={async () => { if (!confirm("Delete this page?")) return; await fetch(`/api/admin/cms/pages/${p.slug}`, { method: "DELETE" }); setPages((prev: any[]) => prev.filter((x: any) => x.slug !== p.slug)); }}
                     className="cursor-pointer rounded-lg border border-clay/20 px-3 py-1 text-xs font-medium text-clay hover:bg-clay/5">Delete</button>
                 </div></td>
@@ -218,7 +223,7 @@ function AnnouncementsTab() {
 
 // ─── Settings ────────────────────────────
 function SettingsTab() {
-  const [form, setForm] = useState<any>({ storeName: "", email: "", phone: "", address: "", instagram: "", facebook: "", twitter: "", tiktok: "", youtube: "", copyrightText: "" });
+  const [form, setForm] = useState<any>({ storeName: "", logo: "", email: "", phone: "", address: "", instagram: "", facebook: "", twitter: "", tiktok: "", youtube: "", copyrightText: "", footerNavLinks: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -235,11 +240,12 @@ function SettingsTab() {
       {success && <div className="rounded-lg border border-moss/20 bg-moss/5 px-4 py-3 text-sm text-moss">{success}</div>}
       <h3 className="text-lg font-bold font-display text-ink">Store Settings</h3>
       <div className="grid gap-4 sm:grid-cols-2">
-        {[["storeName","Store Name"],["email","Email"],["phone","Phone"],["address","Address"],["instagram","Instagram URL"],["facebook","Facebook URL"],["twitter","Twitter/X URL"],["tiktok","TikTok URL"],["youtube","YouTube URL"]].map(([key, label]) => (
+        {[["storeName","Store Name"],["logo","Logo URL"],["email","Email"],["phone","Phone"],["address","Address"],["instagram","Instagram URL"],["facebook","Facebook URL"],["twitter","Twitter/X URL"],["tiktok","TikTok URL"],["youtube","YouTube URL"]].map(([key, label]) => (
           <label key={key} className="space-y-1 text-sm font-medium text-stone">{label} <input value={form[key] || ""} onChange={e => setForm({...form, [key]: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
         ))}
       </div>
       <label className="space-y-1 text-sm font-medium text-stone">Copyright Text <input value={form.copyrightText} onChange={e => setForm({...form, copyrightText: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
+      <label className="space-y-1 text-sm font-medium text-stone">Footer Nav Links (JSON, e.g. &#91;&#123;&quot;label&quot;:&quot;Privacy&quot;,&quot;href&quot;:&quot;/privacy&quot;&#125;&#93;) <textarea value={form.footerNavLinks || ""} onChange={e => setForm({...form, footerNavLinks: e.target.value})} rows={3} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 font-mono" /></label>
       <button type="submit" disabled={saving} className="cursor-pointer rounded-lg bg-clay px-5 py-2 text-sm font-semibold text-white hover:bg-[#B57904] disabled:opacity-50">{saving ? "Saving..." : "Save Settings"}</button>
     </form>
   );
@@ -319,7 +325,6 @@ const SECTION_DEFAULTS: Record<string, { label: string; defaultContent: any }> =
   "footer": {
     label: "Footer",
     defaultContent: {
-      brandName: "VELDIC WEAR",
       brandDescription: "Performance-driven apparel engineered for the relentless. Train. Dominate. Repeat.",
       shopLinks: [
         { label: "All Products", href: "/shop" },
@@ -338,17 +343,7 @@ const SECTION_DEFAULTS: Record<string, { label: string; defaultContent: any }> =
         { label: "Careers", href: "/careers" },
         { label: "Press", href: "/press" }
       ],
-      socialLinks: [
-        { platform: "Instagram", href: "https://instagram.com/veldicwear", ariaLabel: "Instagram" },
-        { platform: "Twitter", href: "https://twitter.com/veldicwear", ariaLabel: "Twitter / X" },
-        { platform: "TikTok", href: "https://tiktok.com/@veldicwear", ariaLabel: "TikTok" },
-        { platform: "YouTube", href: "https://youtube.com/@veldicwear", ariaLabel: "YouTube" }
-      ],
-      paymentMethods: ["Visa", "MC", "Amex", "PayPal", "Apple Pay"],
-      bottomLinks: [
-        { label: "Privacy", href: "/privacy" },
-        { label: "Terms", href: "/terms" }
-      ]
+      paymentMethods: ["Visa", "MC", "Amex", "PayPal", "Apple Pay"]
     }
   },
   "categories-header": {

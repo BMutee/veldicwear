@@ -40,7 +40,7 @@ export async function PUT(request: Request) {
 
   const data: any = {};
   const fields = [
-    "storeName", "email", "phone", "address", "instagram", "facebook",
+    "storeName", "logo", "email", "phone", "address", "instagram", "facebook",
     "twitter", "tiktok", "youtube", "copyrightText", "footerNavLinks",
     "currency", "currencySymbol",
   ];

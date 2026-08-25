@@ -6,11 +6,7 @@ import Image from "next/image";
 import { CartItem, getCart, saveCart } from "@/lib/cart";
 import { normalizeImageSrc } from "@/lib/image";
 import CouponInput from "@/components/CouponInput";
-
-const money = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
+import { useViewerCurrency } from "@/lib/use-viewer-currency";
 
 function Icon({ name, className = "h-5 w-5" }: { name: "minus" | "plus" | "trash" | "bag" | "arrow"; className?: string }) {
   const common = { className, fill: "none", stroke: "currentColor", strokeWidth: 1.8, viewBox: "0 0 24 24", "aria-hidden": true };
@@ -26,6 +22,12 @@ export default function CartPage() {
   const [syncing, setSyncing] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
+
+  // Viewer-currency display conversion (USD cart values -> browsing currency).
+  // Uses the same convertPrice()/whole-unit rounding as checkout, so the
+  // displayed total matches what will actually be charged.
+  const vc = useViewerCurrency();
+  const money = { format: (usd: number) => vc.fmt(vc.toDisplay(usd)) };
 
   const cartGeneration = useRef(0);
 

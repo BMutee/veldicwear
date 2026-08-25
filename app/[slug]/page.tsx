@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import BlockRenderer from "@/components/blocks/BlockRenderer";
 
 export async function generateStaticParams() {
   const pages: { slug: string }[] = await prisma.cmsPage.findMany({
@@ -35,6 +36,7 @@ export default async function CmsPage({ params }: { params: Promise<{ slug: stri
     }
     notFound();
   }
+  const blocks = await prisma.block.findMany({ where: { pageId: page.id }, orderBy: { order: "asc" } });
 
   return (
     <main className="min-h-screen bg-[#FAFAF9]">
@@ -71,6 +73,21 @@ export default async function CmsPage({ params }: { params: Promise<{ slug: stri
           "
           dangerouslySetInnerHTML={{ __html: page.content }}
         />
+        {page.ctaLabel && page.ctaUrl && (
+          <Link href={page.ctaUrl} className="btn-primary mt-8 inline-flex cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-moss/40">
+            {page.ctaLabel}
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </Link>
+        )}
+        {blocks.length > 0 && (
+          <div className="mt-12 space-y-0">
+            {blocks.map((block) => (
+              <BlockRenderer key={block.id} block={block} />
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

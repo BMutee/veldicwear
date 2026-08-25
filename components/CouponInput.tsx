@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-const money = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
+import { useViewerCurrency } from "@/lib/use-viewer-currency";
 
 type Props = {
   subtotal: number;
@@ -19,6 +15,9 @@ export default function CouponInput({ subtotal, onApply, onRemove, appliedCode, 
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Discount display in the browsing currency (same rounding as checkout).
+  const vc = useViewerCurrency();
+  const money = { format: (usd: number) => vc.fmt(vc.toDisplay(usd)) };
 
   const handleApply = async () => {
     if (loading || !code.trim()) return;

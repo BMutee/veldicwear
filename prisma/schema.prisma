@@ -181,6 +181,9 @@ model Order {
   userId             String?
   stripeSessionId    String?      @unique
 
+  currency           Currency     @default(USD)
+  exchangeRateUsed   Decimal?     @db.Decimal(18, 6)
+
   user               User?        @relation(fields: [userId], references: [id])
   items              OrderItem[]
   couponCode         String?
@@ -220,6 +223,15 @@ model Coupon {
   @@map("Coupon")
 }
 
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  currency  Currency @unique
+  rate      Decimal  @db.Decimal(18, 6)
+  fetchedAt DateTime @default(now())
+
+  @@map("ExchangeRate")
+}
+
 model SiteSection {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -228,6 +240,8 @@ model SiteSection {
   published Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  blocks    Block[]
 
   @@map("SiteSection")
 }
@@ -263,6 +277,14 @@ model SecurityAuditLog {
   @@map("SecurityAuditLog")
 }
 
+// DEPRECATED (unused) — do not read from or write to this model.
+// The live hero now renders from a Block of type HERO owned by
+// SiteSection("hero") via `sectionKey` (see components/Hero.tsx,
+// app/page.tsx, and the 20260821130000_migrate_hero_to_block migration).
+// The legacy SiteSection("hero").content row is also left in place but unread.
+// This table/model is kept only for historical data; it is not referenced
+// anywhere in application code. Safe to drop in a future migration once the
+// old rows are no longer needed.
 model Homepage {
   id                     String   @id @default("homepage")
   heroTitle              String
@@ -337,13 +359,49 @@ model CmsPage {
   slug            String    @unique
   title           String
   content         String
+  ctaLabel        String?
+  ctaUrl          String?
   seoTitle        String?
   metaDescription String?
   published       Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  blocks          Block[]
+
   @@map("CmsPage")
+}
+
+enum Currency {
+  USD
+  CAD
+  EUR
+}
+
+enum BlockType {
+  HERO
+  RICH_TEXT
+  IMAGE
+  BUTTON
+  IMAGE_TEXT
+  GALLERY
+  FEATURED_PRODUCTS
+}
+
+model Block {
+  id         String       @id @default(cuid())
+  pageId     String?
+  sectionKey String?
+  type       BlockType
+  order      Int          @default(0)
+  content    Json
+  styles     Json
+  page       CmsPage?     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  section    SiteSection? @relation(fields: [sectionKey], references: [key], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([pageId, order])
+  @@index([sectionKey, order])
+  @@map("Block")
 }
 
 model Announcement {
@@ -355,6 +413,7 @@ model Announcement {
   startDate DateTime?
   endDate   DateTime?
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@map("Announcement")
 }

@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+
 import { incrementCouponUsage } from "@/lib/coupon";
 import { cjFulfillOrder } from "@/lib/cj-fulfillment";
 
@@ -76,6 +76,7 @@ export async function createOrderFromStripeSession(
   }
 
   // Fetch line items from Stripe
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "");
   const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, {
     limit: 100,
     expand: ["data.price.product"],
@@ -171,10 +172,7 @@ export async function createOrderFromStripeSession(
       color: itemColor,
       quantity: item.quantity ?? 1,
       price: itemPrice,
-      // `productId` is guaranteed to be a string here: the fallback above
-      // creates a placeholder product if no match was found. The non-null
-      // assertion satisfies Prisma's required `productId: String` on OrderItem.
-      productId: productId!,
+      productId,
     });
   }
 

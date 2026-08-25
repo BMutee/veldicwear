@@ -18,9 +18,12 @@ type CollectionWithRelations = {
 export default async function CollectionsIndexPage() {
   const collections: CollectionWithRelations[] = await prisma.collection.findMany({
     include: {
-      _count: { select: { products: true } },
+      _count: {
+        select: { products: { where: { active: true } } },
+      },
       products: {
         take: 1,
+        where: { active: true },
         select: { image: true },
       },
     },
@@ -28,6 +31,7 @@ export default async function CollectionsIndexPage() {
   });
 
   const allProducts = await prisma.product.findMany({
+    where: { active: true },
     include: { variants: true, images: true },
     orderBy: { createdAt: "desc" },
     take: 12,

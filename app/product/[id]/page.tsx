@@ -10,8 +10,8 @@ export default async function ProductPage({
 }) {
   const { id } = await params;
 
-  const product = await prisma.product.findUnique({
-    where: { id },
+  const product = await prisma.product.findFirst({
+    where: { id, active: true },
     include: {
       variants: true,
       images: true,
@@ -36,6 +36,7 @@ export default async function ProductPage({
     take: 4,
     where: {
       id: { not: product.id },
+      active: true,
     },
     include: {
       variants: true,

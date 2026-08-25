@@ -2,17 +2,33 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import CartIcon from "./CartIcon";
+import CurrencyPicker from "./CurrencyPicker";
 import { useAuth } from "@/hooks/useAuth";
+import type { StoreSettings } from "@/lib/store-settings";
+import { parseNavbarContent } from "@/lib/navbar-section";
+import Reveal from "@/components/motion/Reveal";
 
-export default function Navbar() {
+export default function Navbar({
+  settings,
+  content,
+  currency,
+}: {
+  settings?: StoreSettings | null;
+  content?: unknown;
+  currency?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { user, logout } = useAuth();
   const router = useRouter();
+  const data = parseNavbarContent(content);
+  const styles = data.styles;
 
   const greetingName = user
     ? user.firstName?.trim() || user.name?.trim() || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email
@@ -39,35 +55,53 @@ export default function Navbar() {
     }
   }, [showSearch]);
 
-  const navLink =
-    "text-bone/80 transition-colors duration-150 hover:text-bone cursor-pointer";
+  const storeName = settings?.storeName || "Veldic Wear";
 
   return (
-    <header className="bg-nav sticky top-0 z-50 border-b border-white/10">
-      <div className="mx-auto flex max-w-[1280px] items-center justify-between px-6 py-4 md:px-16">
-        {/* Wordmark — display (Space Grotesk) */}
-        <Link
-          href="/"
-          className="font-display text-xl font-semibold tracking-tight text-bone"
-        >
-          Veldic<span className="text-bone/50">Wear</span>
-        </Link>
+    <>
+      <style>{`\n        .veldic-navbar-link { color: ${styles.linkColor}; }\n        .veldic-navbar-link:hover { color: ${styles.linkHoverColor}; }\n        .veldic-navbar-control { color: ${styles.textColor}; }\n        .veldic-navbar-control:hover { color: ${styles.linkHoverColor}; }\n        .veldic-navbar-row {\n          --navbar-height: ${styles.height.mobile}px;\n          --navbar-pad-x: ${styles.paddingX.mobile}px;\n        }\n        @media (min-width: 768px) {\n          .veldic-navbar-row {\n            --navbar-height: ${styles.height.desktop}px;\n            --navbar-pad-x: ${styles.paddingX.desktop}px;\n          }\n        }\n      `}</style>
+      <header
+        className="veldic-navbar sticky top-0 z-50 border-b border-white/10"
+        style={{ backgroundColor: styles.backgroundColor, color: styles.textColor }}
+      >
+      {/* Entrance animation (admin-configurable; defaults to load-triggered
+          for above-the-fold chrome). Reduced-motion is fully disabled via CSS. */}
+      <Reveal type={styles.animation.type} scrollTrigger={styles.animation.scrollTrigger}>
+      <div
+        className="veldic-navbar-row mx-auto flex max-w-[1280px] items-center justify-between"
+        style={{
+          minHeight: "var(--navbar-height)",
+          paddingLeft: "var(--navbar-pad-x)",
+          paddingRight: "var(--navbar-pad-x)",
+        }}
+      >
+        {/* Wordmark — display (Space Grotesk). Renders the store logo if set,
+            otherwise falls back to the text wordmark. */}
+        {settings?.logo?.trim() && !logoFailed ? (
+          <Link
+            href="/"
+            className="font-display text-xl font-semibold tracking-tight text-bone"
+            aria-label={storeName}
+          >
+            <Image src={settings.logo} alt={storeName} width={180} height={32} unoptimized onError={() => setLogoFailed(true)} className="max-w-[180px] object-contain" style={{ width: "auto", height: "auto", maxHeight: "calc(var(--navbar-height) - 16px)" }} />
+          </Link>
+        ) : (
+          <Link
+            href="/"
+            className="font-display text-xl font-semibold tracking-tight text-bone"
+          >
+            {storeName}
+          </Link>
+        )}
 
         {/* Desktop Nav Links */}
         <nav className="hidden items-center gap-8 md:flex">
-          <Link href="/shop" className={`group relative font-sans text-sm ${navLink}`}>
-            Shop
-            {/* Moss underline */}
-            <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-moss transition-all duration-150 group-hover:w-full" />
-          </Link>
-          <Link href="/collection" className={`group relative font-sans text-sm ${navLink}`}>
-            Collections
-            <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-moss transition-all duration-150 group-hover:w-full" />
-          </Link>
-          <Link href="/about" className={`group relative font-sans text-sm ${navLink}`}>
-            About
-            <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-moss transition-all duration-150 group-hover:w-full" />
-          </Link>
+          {data.navLinks.map((link) => (
+            <Link key={`${link.href}-${link.label}`} href={link.href} className="veldic-navbar-link group relative font-sans text-sm cursor-pointer transition-colors duration-150">
+              {link.label}
+              <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-moss transition-all duration-150 group-hover:w-full" />
+            </Link>
+          ))}
         </nav>
 
         {/* Desktop Right Icons */}
@@ -75,7 +109,7 @@ export default function Navbar() {
           {/* Search */}
           <button
             onClick={() => setShowSearch(!showSearch)}
-            className="text-bone/80 transition-colors duration-150 hover:text-bone cursor-pointer"
+            className="veldic-navbar-control transition-colors duration-150 cursor-pointer"
             aria-label="Search"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
@@ -88,7 +122,7 @@ export default function Navbar() {
           {user ? (
             <Link
               href="/account"
-              className="flex items-center gap-2 font-sans text-sm text-bone/80 transition-colors duration-150 hover:text-bone cursor-pointer"
+              className="veldic-navbar-control flex items-center gap-2 font-sans text-sm transition-colors duration-150 cursor-pointer"
               aria-label="Account"
             >
               <span className="hidden lg:inline">Hello, {greetingName}</span>
@@ -100,7 +134,7 @@ export default function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="text-bone/80 transition-colors duration-150 hover:text-bone cursor-pointer"
+              className="veldic-navbar-control transition-colors duration-150 cursor-pointer"
               aria-label="Account"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
@@ -110,6 +144,9 @@ export default function Navbar() {
             </Link>
           )}
 
+          {/* Currency */}
+          <CurrencyPicker initialCurrency={currency} />
+
           {/* Cart */}
           <CartIcon />
         </div>
@@ -117,7 +154,7 @@ export default function Navbar() {
         {/* Mobile Hamburger */}
         <button
           onClick={() => setOpen(!open)}
-          className="md:hidden text-bone cursor-pointer"
+          className="veldic-navbar-control md:hidden cursor-pointer"
           aria-label="Menu"
         >
           {open ? (
@@ -131,6 +168,7 @@ export default function Navbar() {
           )}
         </button>
       </div>
+      </Reveal>
 
       {/* Expanding Search Bar */}
       {showSearch && (
@@ -164,27 +202,16 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {open && (
         <div className="border-t border-white/10 px-6 py-6 space-y-6 md:hidden">
-          <Link
-            onClick={() => setOpen(false)}
-            href="/shop"
-            className="block font-display text-lg text-bone/80 transition-colors duration-150 hover:text-bone"
-          >
-            Shop
-          </Link>
-          <Link
-            onClick={() => setOpen(false)}
-            href="/collection"
-            className="block font-display text-lg text-bone/80 transition-colors duration-150 hover:text-bone"
-          >
-            Collections
-          </Link>
-          <Link
-            onClick={() => setOpen(false)}
-            href="/about"
-            className="block font-display text-lg text-bone/80 transition-colors duration-150 hover:text-bone"
-          >
-            About
-          </Link>
+          {data.navLinks.map((link) => (
+            <Link
+              key={`${link.href}-${link.label}-mobile`}
+              onClick={() => setOpen(false)}
+              href={link.href}
+              className="veldic-navbar-link block font-display text-lg transition-colors duration-150 cursor-pointer"
+            >
+              {link.label}
+            </Link>
+          ))}
 
           {/* Mobile Search */}
           <form
@@ -262,8 +289,13 @@ export default function Navbar() {
             </svg>
             Cart
           </Link>
+        {/* Mobile Currency */}
+          <div className="pt-2">
+            <CurrencyPicker variant="mobile" initialCurrency={currency} />
+          </div>
         </div>
       )}
-    </header>
+      </header>
+    </>
   );
 }
