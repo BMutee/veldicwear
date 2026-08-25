@@ -2,28 +2,40 @@ import { NextResponse } from "next/server";
 import { refreshExchangeRates } from "@/lib/exchange-rates";
 
 /**
- * Cron endpoint to refresh live USD->CAD / USD->EUR exchange rates into the
- * ExchangeRate table. Protected by CRON_SECRET — the cron job must pass
- * ?secret=YOUR_CRON_SECRET as a query parameter.
+ * Cron endpoint that refreshes live USD->CAD / USD->EUR exchange rates into the
+ * ExchangeRate table. Protected by CRON_SECRET.
  *
- * Set up cron-job.org (or similar) to call this endpoint every hour:
- *   https://yoursite.com/api/cron/exchange-rates?secret=YOUR_CRON_SECRET
+ * AUTH: the caller must present CRON_SECRET as EITHER
+ *   a) a query param  — ?secret=YOUR_CRON_SECRET  (cron-job.org et al.), or
+ *   b) an `Authorization: Bearer ${CRON_SECRET}` header — what Vercel Cron
+ *      attaches automatically, so the path in vercel.json needs NO secret.
  *
- * Recommended frequency: hourly.
- * - The ECB source rate updates ~once per business day, so hourly fetches
- *   refresh the cache promptly while staying well inside the 24h staleness
- *   gate even if several runs fail.
- * - ~24 requests/day against a free, no-key endpoint.
+ * SETUP OPTION A — External cron (recommended, hourly, any host):
+ *   Point cron-job.org at this route every hour:
+ *     https://yoursite.com/api/cron/exchange-rates?secret=YOUR_CRON_SECRET
+ *   ~24 requests/day against a free, no-key endpoint. Matches the existing
+ *   cj-stock-sync / cj-tracking-sync cron pattern in this codebase.
  *
- * Deploy note: this repo currently runs on Vercel (DEPLOYMENT.md). Vercel
- * Cron (vercel.json `crons`) is the zero-external-dependency alternative but
- * is limited to ~1 run/day on the Hobby tier. External cron (cron-job.org)
- * is the existing pattern in this codebase (see cj-stock-sync) and supports
- * arbitrary cadence on any host.
+ * SETUP OPTION B — Vercel Cron (native, zero external dependency):
+ *   The `crons` block in vercel.json calls `GET /api/cron/exchange-rates`.
+ *   Vercel auto-sends `Authorization: Bearer $CRON_SECRET`, so no secret is
+ *   committed to the repo. Caveat: the Hobby tier caps this at ~1 run/day,
+ *   which satisfies the 24h staleness gate but with less refresh buffer than
+ *   the hourly schedule (Option A).
+ *
+ * Both options enjoy the same Cadence logic below; Option A is preferred when
+ * hourly-refresh robustness beats zero external dependencies.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const secret = url.searchParams.get("secret");
+
+  // Accept the secret via query param OR Vercel's automatic bearer header.
+  const querySecret = url.searchParams.get("secret");
+  const authHeader = request.headers.get("authorization");
+  const bearerSecret = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length).trim()
+    : null;
+  const secret = querySecret ?? bearerSecret;
 
   const expectedSecret = process.env.CRON_SECRET;
 

@@ -3,6 +3,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
 
+  "crons": [
+    {
+      "path": "/api/cron/exchange-rates",
+      "schedule": "0 12 * * *"
+    }
+  ],
+
   "headers": [
     {
       "source": "/:all",

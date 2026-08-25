@@ -80,3 +80,46 @@ CONTACT_EMAIL_TO          Info@veldicwear.com
 # EMAIL_FROM="Veldic Wear <khalildigital.contact@gmail.com>"
 # CONTACT_EMAIL_TO=khalildigital.contact@gmail.com
 ```
+---
+
+## Exchange Rates (Frankfurter) — Cron Setup
+
+Frankfurter (`https://api.frankfurter.dev`) is free, keyless, and already wired into
+`lib/exchange-rates.ts` as the default rate source. The only operational task is a
+recurring job that calls the refresh endpoint to populate the `ExchangeRate` table.
+
+The endpoint is `GET /api/cron/exchange-rates` and is protected by `CRON_SECRET`,
+which the cron must present either as `?secret=` **or** as the `Authorization:
+Bearer ${CRON_SECRET}` header that Vercel Cron attaches automatically.
+
+### Option A — cron-job.org (Recommended, hourly, any host)
+
+Matches the existing `cj-stock-sync` pattern:
+
+1. Ensure `CRON_SECRET` is set in your env (already listed above).
+2. Create a cron-job.org job calling **every hour**:
+   ```
+   https://veldicwear.com/api/cron/exchange-rates?secret=<CRON_SECRET>
+   ```
+   Use `0 * * * *` (hourly) or a manual hourly interval. ~24 req/day, zero cost.
+
+### Option B — Vercel Cron (native, zero external dependency)
+
+Already configured in `vercel.json`:
+```json
+"crons": [{ "path": "/api/cron/exchange-rates", "schedule": "0 12 * * *" }]
+```
+Runs once daily at 12:00 UTC. Vercel auto-sends `Authorization: Bearer $CRON_SECRET`,
+so nothing secret is committed. **Caveat:** the Vercel Hobby tier limits cron to
+~1 run/day — sufficient for the 24h staleness gate, but Hourly robustness requires
+Option A.
+
+### Verify
+
+After a run, hit the endpoint once manually (browser/curl) with your secret and
+expect:
+```json
+{ "success": true, "base": "USD", "rates": { "CAD": 1.36, "EUR": 0.92 }, "fetchedAt": "..." }
+```
+Then confirm the storefront renders CAD/EUR (via the currency picker) instead of
+falling back to USD.
