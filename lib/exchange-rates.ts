@@ -1,5 +1,24 @@
 import { prisma } from "@/lib/prisma";
 import type { Currency } from "@prisma/client";
+// Pure, DB-free conversion helpers (edge/browser-safe). Re-exported below so
+// existing `import ... from "@/lib/exchange-rates"` call sites keep working.
+import {
+  BASE_CURRENCY,
+  SUPPORTED_CONVERSION_CURRENCIES,
+  STALE_RATE_THRESHOLD_MS,
+  type SupportedCurrency,
+  convertPrice,
+  roundConvertedPrice,
+} from "@/lib/currency-convert";
+
+export {
+  BASE_CURRENCY,
+  STALE_RATE_THRESHOLD_MS,
+  SUPPORTED_CONVERSION_CURRENCIES,
+  type SupportedCurrency,
+  convertPrice,
+  roundConvertedPrice,
+} from "@/lib/currency-convert";
 
 /**
  * Multi-currency rate infrastructure (data model phase only).
@@ -52,15 +71,11 @@ import type { Currency } from "@prisma/client";
  * threshold is a hard gate — a stale rate is treated exactly like no rate.
  */
 
-export const STALE_RATE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-export const SUPPORTED_CONVERSION_CURRENCIES = ["CAD", "EUR"] as const;
-export type SupportedCurrency = (typeof SUPPORTED_CONVERSION_CURRENCIES)[number];
-
-export const BASE_CURRENCY = "USD" as const;
-
 // Read lazily (per call) so tests and runtime env changes are honored,
 // mirroring lib/prisma.ts's lazy-construction pattern.
+// NOTE: STALE_RATE_THRESHOLD_MS / SUPPORTED_CONVERSION_CURRENCIES /
+// BASE_CURRENCY / SupportedCurrency / convertPrice / roundConvertedPrice live
+// in lib/currency-convert.ts (edge/browser-safe) and are re-exported above.
 function ratesApiUrl(): string {
   return process.env.EXCHANGE_RATES_API_URL ?? "https://api.frankfurter.dev/v1/latest";
 }
@@ -158,26 +173,6 @@ export async function getConversionRate(currency: Currency): Promise<number | nu
   }
   return Number(row.rate);
 }
-
-/**
- * Rounding rule for CONVERTED prices (shared utility — use this EVERYWHERE a
- * converted price is shown, never inline Math.round):
- *
- *   round to the nearest whole unit of the target currency.
- *
- * Rationale: USD prices use 2 decimals; a raw multiplication yields awkward
- * fractional prices (e.g. $49.99 -> CAD 68.49 -> EUR 45.57). Whole units keep
- * converted prices clean and consistent across the catalog, which is the
- * standard approach for cross-border display. This is the DISPLAY/quote
- * rounding; the exact rounding at charge time is a later checkout-phase
- * decision and belongs in the checkout wiring, not here.
- */
-export function roundConvertedPrice(value: number): number {
-  return Math.round(value);
-}
-
-/** Convert a USD price to the target currency, applying roundConvertedPrice. */
-export function convertPrice(usdPrice: number, rate: number): number {
-  return roundConvertedPrice(usdPrice * rate);
-}
+// NOTE: roundConvertedPrice() and convertPrice() moved to
+// lib/currency-convert.ts (edge/browser-safe) and are re-exported above.
 

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { convertPrice } from "@/lib/exchange-rates";
+// Import from the edge/browser-safe conversion module (NOT exchange-rates.ts,
+// which pulls Prisma/pg into the Client Component bundle).
+import { convertPrice } from "@/lib/currency-convert";
 
 /**
  * Client-side viewer-currency context for cart / checkout display.
