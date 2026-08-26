@@ -12,6 +12,18 @@ export type AuthUser = {
   phone: string | null;
 };
 
+/**
+ * Emails that are ALWAYS granted the "admin" role, enforced server-side on
+ * user creation via `databaseHooks`.
+ *
+ * Add or remove addresses here (lowercase) to manage permanent admins. This
+ * runs on every Better Auth `user.create`, so a DB reset or a fresh sign-up
+ * with one of these emails can never produce a plain "customer" account.
+ */
+const PERMANENT_ADMIN_EMAILS = new Set([
+  "abdulkhalilmohammadi78@gmail.com",
+]);
+
 declare global {
   // eslint-disable-next-line no-var
   var __betterAuth: ReturnType<typeof buildAuth> | undefined;
@@ -108,6 +120,19 @@ function buildAuth() {
         },
       }),
     ],
+databaseHooks: {
+      user: {
+        create: {
+          before: async (user) => {
+            const email = user.email?.trim().toLowerCase();
+            if (email && PERMANENT_ADMIN_EMAILS.has(email)) {
+              // Ensure this email can never be created as a plain customer.
+              return { data: { role: "admin" } };
+            }
+          },
+        },
+      },
+    },
     secret,
     baseURL: resolveBaseUrl(),
   });

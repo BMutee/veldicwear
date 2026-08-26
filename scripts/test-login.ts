@@ -2,8 +2,12 @@ import "dotenv/config";
 import { auth } from "../lib/auth-server";
 
 async function main() {
-  const email = "abdulkhalilmohammadi78@gmail.com";
-  const password = "12345678";
+  const email = process.argv[2] || "abdulkhalilmohammadi78@gmail.com";
+  const password = process.argv[3];
+  if (!password) {
+    console.error("Usage: npx tsx scripts/test-login.ts <email> <password>");
+    process.exit(1);
+  }
 
   console.log("Testing server-side login...");
   console.log("Email:", email);

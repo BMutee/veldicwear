@@ -17,19 +17,17 @@ async function main() {
 
   // Check account password
   const accounts: any = await prisma.$queryRawUnsafe(
-    `SELECT "providerId", LEFT(password, 30) as password_prefix FROM "Account" WHERE "userId" = $1`,
+    `SELECT "providerId", "accountId", LEFT(password, 30) as password_prefix FROM "Account" WHERE "userId" = $1`,
     rows[0]?.id || ""
   );
   console.log("Accounts:", JSON.stringify(accounts, null, 2));
 
-  // Check sessions
   const sessions: any = await prisma.$queryRawUnsafe(
     `SELECT COUNT(*) as count FROM "Session" WHERE "userId" = $1`,
     rows[0]?.id || ""
   );
   console.log("Sessions:", JSON.stringify(sessions, null, 2));
 
-  // Check 2FA sessions
   const tfaSessions: any = await prisma.$queryRawUnsafe(
     `SELECT COUNT(*) as count FROM "TwoFactorSession" WHERE "userId" = $1`,
     rows[0]?.id || ""
