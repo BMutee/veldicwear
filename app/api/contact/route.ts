@@ -4,7 +4,7 @@ import { escapeHtml } from "@/lib/sanitize";
 const DEO_MAIL_API_KEY = process.env.DEO_MAIL_API_KEY ?? "";
 const DEO_MAIL_API_URL = "https://api.deomail.com/v1/send";
 const DEFAULT_FROM = "info@veldicwear.com";
-const CONTACT_EMAIL_TO = process.env.CONTACT_EMAIL_TO ?? "khalildigital.contact@gmail.com";
+const CONTACT_EMAIL_TO = process.env.CONTACT_EMAIL_TO ?? "info@veldicwear.com";
 
 export async function POST(request: NextRequest) {
   try {

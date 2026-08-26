@@ -64,7 +64,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET  ForVeldic
 CJ_API_KEY                <REDACTED - set in Vercel, never commit>
 CRON_SECRET               <REDACTED - set in Vercel, never commit>
 ADMIN_SECRET              my-super-secret-key-change-this
-# EMAIL (deomail.com API - replaces Gmail SMTP)
+# EMAIL (deomail.com API)
 DEO_MAIL_API_KEY          <REDACTED - set in Vercel, never commit>
 EMAIL_HOST                api.doemail.com  # deomail.com API endpoint
 EMAIL_PORT                443  # HTTPS port for deomail.com API
@@ -72,13 +72,6 @@ EMAIL_USER                Info@veldicwear.com
 EMAIL_PASS                # Leave empty - uses API key auth instead
 EMAIL_FROM                Info@veldicwear.com
 CONTACT_EMAIL_TO          Info@veldicwear.com
-# OLD GMAIL (remove/comment out when ready to switch fully):
-# EMAIL_HOST=smtp.gmail.com
-# EMAIL_PORT=587
-# EMAIL_USER=khalildigital.contact@gmail.com
-# EMAIL_PASS=<REDACTED - legacy Gmail password rotated; set in Vercel only>
-# EMAIL_FROM="Veldic Wear <khalildigital.contact@gmail.com>"
-# CONTACT_EMAIL_TO=khalildigital.contact@gmail.com
 ```
 ---
 
