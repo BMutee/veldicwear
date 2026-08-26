@@ -52,8 +52,8 @@ Your codebase is configured to deploy on Vercel (via `vercel.json`). Netlify has
 ## Environment Variables (Vercel)
 
 ```
-DATABASE_URL              postgresql://neondb_owner:...?sslmode=require&uselibpqcompat=true&connect_timeout=60&pool_timeout=60
-BETTER_AUTH_SECRET        ***REMOVED***...
+DATABASE_URL              postgresql://neondb_owner:...?sslmode=verify-full&uselibpqcompat=true&connect_timeout=60&pool_timeout=60
+BETTER_AUTH_SECRET        <REDACTED - set in Vercel, never commit>
 BETTER_AUTH_URL           https://veldicwear.com
 STRIPE_SECRET_KEY         sk_test_...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY  pk_test_...
@@ -61,11 +61,11 @@ STRIPE_WEBHOOK_SECRET     whsec_...
 NEXT_PUBLIC_BASE_URL      https://veldicwear.com
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME  forveldicwear
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET  ForVeldic
-CJ_API_KEY                ***REMOVED***...
-CRON_SECRET               ***REMOVED***...
+CJ_API_KEY                <REDACTED - set in Vercel, never commit>
+CRON_SECRET               <REDACTED - set in Vercel, never commit>
 ADMIN_SECRET              my-super-secret-key-change-this
 # EMAIL (deomail.com API - replaces Gmail SMTP)
-DEO_MAIL_API_KEY          ***REMOVED***
+DEO_MAIL_API_KEY          <REDACTED - set in Vercel, never commit>
 EMAIL_HOST                api.doemail.com  # deomail.com API endpoint
 EMAIL_PORT                443  # HTTPS port for deomail.com API
 EMAIL_USER                Info@veldicwear.com
@@ -76,7 +76,7 @@ CONTACT_EMAIL_TO          Info@veldicwear.com
 # EMAIL_HOST=smtp.gmail.com
 # EMAIL_PORT=587
 # EMAIL_USER=khalildigital.contact@gmail.com
-# EMAIL_PASS=***REMOVED***
+# EMAIL_PASS=<REDACTED - legacy Gmail password rotated; set in Vercel only>
 # EMAIL_FROM="Veldic Wear <khalildigital.contact@gmail.com>"
 # CONTACT_EMAIL_TO=khalildigital.contact@gmail.com
 ```
