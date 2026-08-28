@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Veldic Import</title>
+    <style>
+      :root {
+        --ink: #1c1917;
+        --stone: #78716c;
+        --moss: #3f6212;
+        --moss-hover: #365314;
+        --bone: #faf9f7;
+        --border: #e7e5e4;
+        --error: #b91c1c;
+      }
+      * { box-sizing: border-box; }
+      body {
+        width: 320px;
+        margin: 0;
+        padding: 16px;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: var(--bone);
+      }
+      h1 {
+        margin: 0 0 2px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .sub {
+        margin: 0 0 14px;
+        font-size: 11px;
+        color: var(--stone);
+      }
+      label {
+        display: block;
+        margin: 10px 0 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--stone);
+      }
+      input {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 13px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: #fff;
+        color: var(--ink);
+        outline: none;
+      }
+      input:focus { border-color: var(--moss); }
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin: 12px 0;
+        padding: 8px 10px;
+        font-size: 12px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: #fff;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #d6d3d1;
+        flex-shrink: 0;
+      }
+      .status.ok .dot { background: #65a30d; }
+      .status.ok { border-color: #d9f99d; }
+      .status.bad .dot { background: var(--error); }
+      .status.bad { border-color: #fecaca; color: var(--error); }
+      .status .text { min-width: 0; overflow-wrap: anywhere; }
+      button {
+        width: 100%;
+        margin-top: 4px;
+        padding: 9px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+        background: var(--moss);
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      button:hover { background: var(--moss-hover); }
+      button:disabled { opacity: 0.5; cursor: default; }
+      .hint {
+        margin: 10px 0 0;
+        font-size: 11px;
+        line-height: 1.5;
+        color: var(--stone);
+      }
+      .hint code {
+        font-size: 10px;
+        padding: 1px 4px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Veldic Product Import</h1>
+    <p class="sub">Configure the connection used by the “Import to Store” button on CJ product pages.</p>
+
+    <div id="status" class="status" role="status">
+      <span class="dot"></span>
+      <span class="text" id="status-text">Loading…</span>
+    </div>
+
+    <form id="form">
+      <label for="base-url">Store API base URL</label>
+      <input
+        id="base-url"
+        type="url"
+        placeholder="https://your-store.com"
+        autocomplete="off"
+        spellcheck="false"
+        required
+      />
+
+      <label for="api-key">Extension API key</label>
+      <input
+        id="api-key"
+        type="password"
+        placeholder="vw_…"
+        autocomplete="off"
+        spellcheck="false"
+        required
+      />
+
+      <button type="submit" id="save">Save settings</button>
+    </form>
+
+    <p class="hint">
+      Generate a key in your store admin under
+      <code>Admin → Integrations</code>. The key is stored only in this
+      browser’s local extension storage and is sent only to your store’s API.
+    </p>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

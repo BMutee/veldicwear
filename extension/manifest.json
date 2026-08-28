@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Veldic Wear — CJ Importer",
+  "version": "1.0.0",
+  "description": "Adds an \"Import to Store\" button on CJ Dropshipping product pages. Imports products into your Veldic Wear store via its authenticated extension API.",
+  "permissions": ["storage"],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Veldic Wear importer settings"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://cjdropshipping.com/product/*",
+        "https://www.cjdropshipping.com/product/*",
+        "https://cjdropshipping.com/product-detail.html*",
+        "https://www.cjdropshipping.com/product-detail.html*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

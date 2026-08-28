@@ -97,6 +97,15 @@ export type CJProduct = {
   packingKey?: string;
   isActive?: boolean;
   description?: string;
+  // Returned by product/query (v2 API):
+  descriptionEn?: string;
+  bigImage?: string;
+  productImageSet?: string[];
+  videoUrl?: string;
+  sellPrice?: number | string;
+  nowPrice?: number | string;
+  discountPrice?: number | string;
+  listPrice?: number | string;
 };
 
 export type CJProductVariant = {

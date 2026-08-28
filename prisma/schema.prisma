@@ -7,18 +7,18 @@ datasource db {
 }
 
 model User {
-  id                String   @id @default(cuid())
-  name              String?
-  email             String   @unique
-  emailVerified     Boolean  @default(false)
-  image             String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  firstName         String
-  lastName          String
-  phone             String?
-  role              String   @default("customer")
-  twoFactorEnabled  Boolean  @default(false)
+  id               String   @id @default(cuid())
+  name             String?
+  email            String   @unique
+  emailVerified    Boolean  @default(false)
+  image            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  firstName        String
+  lastName         String
+  phone            String?
+  role             String   @default("customer")
+  twoFactorEnabled Boolean  @default(false)
 
   backupCodes String?
   totpKey     String?
@@ -35,22 +35,22 @@ model User {
 }
 
 model Account {
-  id          String   @id @default(cuid())
-  userId      String
-  accountId   String
-  providerId  String
-  type        String?
-  password    String?
-  refresh_token String?
+  id                       String   @id @default(cuid())
+  userId                   String
+  accountId                String
+  providerId               String
+  type                     String?
+  password                 String?
+  refresh_token            String?
   refresh_token_expires_in Int?
-  access_token String?
-  expires_at  Int?
-  token_type  String?
-  scope       String?
-  id_token    String?
-  session_state String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -59,14 +59,14 @@ model Account {
 }
 
 model Session {
-  id          String   @id @default(cuid())
-  userId      String
-  expiresAt   DateTime
-  token       String   @unique
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -74,66 +74,70 @@ model Session {
 }
 
 model Verification {
-  id        String   @id @default(cuid())
+  id         String   @id @default(cuid())
   identifier String
-  value     String
-  expiresAt DateTime
+  value      String
+  expiresAt  DateTime
 
   @@unique([identifier, value])
   @@map("Verification")
 }
 
 model Product {
-  id              String          @id @default(cuid())
-  name            String
-  description     String
-  image           String
-  price           Float
-  compareAtPrice  Float?
-  stock           Int             @default(0)
-  sku             String?
-  barcode         String?
-  trackInventory  Boolean         @default(true)
-  sellOutOfStock  Boolean         @default(false)
-  weight          Float?
-  weightUnit      String?         @default("kg")
-  featured        Boolean         @default(false)
-  active          Boolean         @default(true)
-  createdAt       DateTime        @default(now())
+  id             String  @id @default(cuid())
+  name           String
+  description    String
+  image          String
+  price          Float
+  compareAtPrice Float?
+  stock          Int     @default(0)
+  sku            String?
+  barcode        String?
+  trackInventory Boolean @default(true)
+  sellOutOfStock Boolean @default(false)
+  weight         Float?
+  weightUnit     String? @default("kg")
+  featured       Boolean @default(false)
+  videoUrl       String? // CJ product video (product/query videoUrl); null when CJ has none
 
-  collectionId    String?
-  collection      Collection?     @relation(fields: [collectionId], references: [id])
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
 
-  variants        ProductVariant[]
-  images          ProductImage[]
-  orderItems      OrderItem[]
-  wishlistItems   WishlistItem[]
-  reviews         Review[]
+  collectionId String?
+  collection   Collection? @relation(fields: [collectionId], references: [id])
+
+  variants      ProductVariant[]
+  images        ProductImage[]
+  orderItems    OrderItem[]
+  wishlistItems WishlistItem[]
+  reviews       Review[]
 
   @@map("Product")
 }
 
 model Collection {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
-  slug        String    @unique
+  slug        String   @unique
   description String?
   image       String?
-  active      Boolean   @default(true)
-  createdAt   DateTime  @default(now())
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
-  products    Product[]
+  products Product[]
 
   @@map("Collection")
 }
 
 model ProductVariant {
-  id          String  @id @default(cuid())
-  size        String
-  color       String? // extracted from CJ variantProperty, e.g. "Red"
+  id    String  @id @default(cuid())
+  size  String
+  color String? // extracted from CJ variantProperty, e.g. "Red"
+  sku   String? // CJ variant SKU (variantSku from product/sku/getSkuList)
+
   stock       Int     @default(0)
   price       Float?
-  costPrice   Float?  // CJ wholesale cost (manual entry — not exposed by CJ API)
+  costPrice   Float? // CJ wholesale cost (manual entry — not exposed by CJ API)
   productId   String
   cjVariantId String? // CJ variant ID (vid) from product/sku/getSkuList
 
@@ -155,38 +159,38 @@ model ProductImage {
 }
 
 model Order {
-  id                  String      @id @default(cuid())
-  orderNumber         String      @unique
-  firstName           String
-  lastName            String
-  email               String
-  phone               String
-  country             String
-  city                String
-  address             String
-  postalCode          String
-  paymentMethod       String
-  total               Float
-  status              String      @default("pending")
-  trackingNumber      String?
-  trackingCarrier     String?
+  id                    String    @id @default(cuid())
+  orderNumber           String    @unique
+  firstName             String
+  lastName              String
+  email                 String
+  phone                 String
+  country               String
+  city                  String
+  address               String
+  postalCode            String
+  paymentMethod         String
+  total                 Float
+  status                String    @default("pending")
+  trackingNumber        String?
+  trackingCarrier       String?
   hasShippingProtection Boolean   @default(false)
-  createdAt           DateTime    @default(now())
-  deliveredAt         DateTime?
+  createdAt             DateTime  @default(now())
+  deliveredAt           DateTime?
 
-  cjOrderId           String?    // CJ order ID after payment completed
-  cjFulfillmentStatus String?    // "pending" | "ready_to_pay" | "sent" | "failed" | null
-  cjCartReference     String?    // CJ cart/order reference from add-cart/confirm-cart
+  cjOrderId           String? // CJ order ID after payment completed
+  cjFulfillmentStatus String? // "pending" | "ready_to_pay" | "sent" | "failed" | null
+  cjCartReference     String? // CJ cart/order reference from add-cart/confirm-cart
 
-  userId             String?
-  stripeSessionId    String?      @unique
+  userId          String?
+  stripeSessionId String? @unique
 
-  currency           Currency     @default(USD)
-  exchangeRateUsed   Decimal?     @db.Decimal(18, 6)
+  currency         Currency @default(USD)
+  exchangeRateUsed Decimal? @db.Decimal(18, 6)
 
-  user               User?        @relation(fields: [userId], references: [id])
-  items              OrderItem[]
-  couponCode         String?
+  user       User?       @relation(fields: [userId], references: [id])
+  items      OrderItem[]
+  couponCode String?
 
   @@map("Order")
 }
@@ -208,17 +212,17 @@ model OrderItem {
 }
 
 model Coupon {
-  id         String    @id @default(cuid())
-  code       String    @unique
-  type       String    @default("percentage")
-  value      Float
-  minOrder   Float?
-  maxUses    Int?
-  usedCount  Int       @default(0)
-  active     Boolean   @default(true)
-  startsAt   DateTime?
-  expiresAt  DateTime?
-  createdAt  DateTime  @default(now())
+  id        String    @id @default(cuid())
+  code      String    @unique
+  type      String    @default("percentage")
+  value     Float
+  minOrder  Float?
+  maxUses   Int?
+  usedCount Int       @default(0)
+  active    Boolean   @default(true)
+  startsAt  DateTime?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
 
   @@map("Coupon")
 }
@@ -241,7 +245,7 @@ model SiteSection {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  blocks    Block[]
+  blocks Block[]
 
   @@map("SiteSection")
 }
@@ -259,6 +263,20 @@ model TwoFactorSession {
   @@index([userId])
   @@index([code])
   @@map("TwoFactorSession")
+}
+
+/// API keys for the browser extension (and other machine clients).
+/// Only a SHA-256 hash of the key is stored — the raw key is shown exactly
+/// once at creation time and cannot be recovered afterwards.
+model ExtensionApiKey {
+  id         String    @id @default(cuid())
+  keyHash    String    @unique
+  name       String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revoked    Boolean   @default(false)
+
+  @@map("ExtensionApiKey")
 }
 
 model SecurityAuditLog {
@@ -286,42 +304,42 @@ model SecurityAuditLog {
 // anywhere in application code. Safe to drop in a future migration once the
 // old rows are no longer needed.
 model Homepage {
-  id                     String   @id @default("homepage")
-  heroTitle              String
-  heroSubtitle           String
-  heroTagline            String   @default("Fall / Winter 2026")
-  heroImage              String
-  heroButtonText         String
-  heroButtonLink         String
-  trustProductCount      String   @default("200+")
-  trustMemberCount       String   @default("50K+")
-  trustRating            String   @default("4.9")
-  featuredSectionTitle   String   @default("New Arrivals")
-  featuredSectionSubtitle String  @default("The latest drops engineered for the relentless.")
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  id                      String   @id @default("homepage")
+  heroTitle               String
+  heroSubtitle            String
+  heroTagline             String   @default("Fall / Winter 2026")
+  heroImage               String
+  heroButtonText          String
+  heroButtonLink          String
+  trustProductCount       String   @default("200+")
+  trustMemberCount        String   @default("50K+")
+  trustRating             String   @default("4.9")
+  featuredSectionTitle    String   @default("New Arrivals")
+  featuredSectionSubtitle String   @default("The latest drops engineered for the relentless.")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   @@map("Homepage")
 }
 
 model StoreSettings {
-  id              String   @id @default("store")
-  storeName        String   @default("VELDIC WEAR")
-  logo            String?
-  email           String?
-  phone           String?
-  address         String?
-  instagram       String?
-  facebook        String?
-  twitter         String?
-  tiktok          String?
-  youtube         String?
-  copyrightText   String   @default("All rights reserved.")
-  footerNavLinks  String?
-  currency        String   @default("USD")
-  currencySymbol  String   @default("$")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default("store")
+  storeName      String   @default("VELDIC WEAR")
+  logo           String?
+  email          String?
+  phone          String?
+  address        String?
+  instagram      String?
+  facebook       String?
+  twitter        String?
+  tiktok         String?
+  youtube        String?
+  copyrightText  String   @default("All rights reserved.")
+  footerNavLinks String?
+  currency       String   @default("USD")
+  currencySymbol String   @default("$")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("StoreSettings")
 }
@@ -355,19 +373,19 @@ model Review {
 }
 
 model CmsPage {
-  id              String    @id @default(cuid())
-  slug            String    @unique
+  id              String   @id @default(cuid())
+  slug            String   @unique
   title           String
   content         String
   ctaLabel        String?
   ctaUrl          String?
   seoTitle        String?
   metaDescription String?
-  published       Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  published       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  blocks          Block[]
+  blocks Block[]
 
   @@map("CmsPage")
 }
