@@ -1,6 +1,7 @@
 import { cjGet } from "@/lib/cj";
 import { prisma } from "@/lib/prisma";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { syncSingleProductStock } from "@/lib/cj-stock-sync";
 
 /**
  * CJ variant response from product/sku/getSkuList
@@ -25,7 +26,7 @@ type CJProductDetail = {
   productImage?: string;
   // Full gallery array returned by CJ product/query (all supplier photos)
   productImageSet?: string[];
-  nameEn?: string;
+  productNameEn?: string;
   productName?: string;
   productSku?: string;
   // Rich HTML description — only present when features=["enable_description"]
@@ -58,6 +59,8 @@ export type CJImportResult = {
   existed: boolean;
   variantsSynced: number;
   imagesSynced: number;
+  stockSynced: boolean;
+  stockSyncError?: string | null;
 };
 
 type CJVariantListResponse = {
@@ -370,7 +373,13 @@ export async function syncVariants(
  */
 export async function syncProductVariantsByPid(
   pid: string
-): Promise<{ productId: string; variantsSynced: number; imagesSynced: number } | null> {
+): Promise<{
+  productId: string;
+  variantsSynced: number;
+  imagesSynced: number;
+  stockSynced: boolean;
+  stockSyncError?: string | null;
+} | null> {
   const existingProduct =
     (await prisma.product.findUnique({ where: { id: pid } })) ??
     (await prisma.product.findFirst({ where: { sku: pid } }));
@@ -403,7 +412,33 @@ export async function syncProductVariantsByPid(
         : [];
   await syncGalleryImages(existingProduct.id, galleryUrls);
 
-  return { productId: existingProduct.id, variantsSynced, imagesSynced };
+  const stockSync = await tryStockSyncAfterImport(existingProduct.id);
+  return {
+    productId: existingProduct.id,
+    variantsSynced,
+    imagesSynced,
+    stockSynced: stockSync.synced,
+    stockSyncError: stockSync.error ?? null,
+  };
+}
+
+/**
+ * Best-effort stock sync immediately after import/refresh so stock is live
+ * right away instead of waiting for the 6-hour cron or a manual click. Never
+ * throws — if CJ's inventory endpoint fails, the import itself already
+ * succeeded and we only report the failure separately.
+ */
+async function tryStockSyncAfterImport(
+  productId: string
+): Promise<{ synced: boolean; error?: string }> {
+  try {
+    const result = await syncSingleProductStock(productId);
+    return result.error ? { synced: false, error: result.error } : { synced: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown stock sync error";
+    console.error(`[cj-import] Post-import stock sync failed for ${productId}: ${msg}`);
+    return { synced: false, error: msg };
+  }
 }
 
 export async function importCJProduct(pid: string): Promise<CJImportResult> {
@@ -427,7 +462,7 @@ export async function importCJProduct(pid: string): Promise<CJImportResult> {
 
   const existingProduct = existingByPid || existingBySku;
 
-  const name = productData.nameEn || productData.productName || "CJ Product";
+  const name = productData.productNameEn || productData.productName || "CJ Product";
   const image = productData.bigImage || productData.productImage || "";
   const price = toNumber(productData.sellPrice ?? productData.nowPrice);
   const description = buildDescription(productData);
@@ -463,11 +498,14 @@ export async function importCJProduct(pid: string): Promise<CJImportResult> {
     await ensureMainProductImage(existingProduct.id, image);
     await syncGalleryImages(existingProduct.id, galleryUrls);
 
+    const stockSync = await tryStockSyncAfterImport(existingProduct.id);
     return {
       productId: existingProduct.id,
       existed: true,
       variantsSynced,
       imagesSynced,
+      stockSynced: stockSync.synced,
+      stockSyncError: stockSync.error ?? null,
     };
   }
 
@@ -500,10 +538,13 @@ export async function importCJProduct(pid: string): Promise<CJImportResult> {
   await ensureMainProductImage(created.id, image);
   await syncGalleryImages(created.id, galleryUrls);
 
+  const stockSync = await tryStockSyncAfterImport(created.id);
   return {
     productId: created.id,
     existed: false,
     variantsSynced,
     imagesSynced,
+    stockSynced: stockSync.synced,
+    stockSyncError: stockSync.error ?? null,
   };
 }

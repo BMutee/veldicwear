@@ -129,6 +129,8 @@ export async function POST(request: Request) {
     });
 
     let action: "imported" | "refreshed";
+    let stockSynced = false;
+    let stockSyncError: string | null = null;
     if (existingProduct) {
       const refreshed = await syncProductVariantsByPid(pid);
       if (!refreshed) {
@@ -137,9 +139,13 @@ export async function POST(request: Request) {
           { status: 500 }
         );
       }
+      stockSynced = refreshed.stockSynced;
+      stockSyncError = refreshed.stockSyncError ?? null;
       action = "refreshed";
     } else {
-      await importCJProduct(pid);
+      const result = await importCJProduct(pid);
+      stockSynced = result.stockSynced;
+      stockSyncError = result.stockSyncError ?? null;
       action = "imported";
     }
 
@@ -160,6 +166,9 @@ export async function POST(request: Request) {
         compareAtPrice: product.compareAtPrice,
         image: product.image,
         videoUrl: product.videoUrl,
+        stock: product.stock,
+        stockSynced,
+        stockSyncError,
         imageCount: product._count.images,
         variantCount: product._count.variants,
       },

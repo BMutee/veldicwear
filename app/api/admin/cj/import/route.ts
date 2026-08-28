@@ -15,15 +15,22 @@ export async function POST(request: Request) {
     }
 
     const result = await importCJProduct(pid);
+    const stockNote = result.stockSynced
+      ? " Stock synced."
+      : result.stockSyncError
+        ? ` Stock sync skipped: ${result.stockSyncError}`
+        : " Stock sync pending.";
 
     return NextResponse.json({
       product: { id: result.productId },
       existed: result.existed,
       variantsSynced: result.variantsSynced,
       imagesSynced: result.imagesSynced,
+      stockSynced: result.stockSynced,
+      stockSyncError: result.stockSyncError ?? null,
       message: result.existed
-        ? `Product already exists. ${result.variantsSynced > 0 ? `Synced ${result.variantsSynced} variant(s).` : "No variants synced."}${result.imagesSynced > 0 ? ` ${result.imagesSynced} image(s) synced.` : ""}`
-        : `Product imported. ${result.variantsSynced > 0 ? `Imported ${result.variantsSynced} variant(s).` : "No variants imported."}${result.imagesSynced > 0 ? ` ${result.imagesSynced} image(s) imported.` : ""}`,
+        ? `Product already exists. ${result.variantsSynced > 0 ? `Synced ${result.variantsSynced} variant(s).` : "No variants synced."}${result.imagesSynced > 0 ? ` ${result.imagesSynced} image(s) synced.` : ""}${stockNote}`
+        : `Product imported. ${result.variantsSynced > 0 ? `Imported ${result.variantsSynced} variant(s).` : "No variants imported."}${result.imagesSynced > 0 ? ` ${result.imagesSynced} image(s) imported.` : ""}${stockNote}`,
     });
   } catch (error) {
     return NextResponse.json(

@@ -65,16 +65,23 @@ export async function syncSingleProductStock(
   try {
     // Fetch CJ inventory for this product
     const inventoryResponse = await cjGet<{
-      inventoryList?: Array<{
-        vid?: string;
-        quantity?: number;
-        warehouseInventoryNum?: number;
-        [key: string]: unknown;
+      inventories?: Array<{
+        totalInventoryNum?: number;
+        cjInventoryNum?: number;
+        factoryInventoryNum?: number;
       }>;
-      [key: string]: unknown;
+      variantInventories?: Array<{
+        vid?: string;
+        inventory?: Array<{
+          totalInventory?: number;
+          cjInventory?: number;
+          factoryInventory?: number;
+        }>;
+      }>;
     }>("product/stock/getInventoryByPid", { pid: product.id });
 
-    const cjInventoryList = inventoryResponse.data?.inventoryList ?? [];
+    const data = inventoryResponse.data ?? {};
+    const cjInventoryList = data.variantInventories ?? [];
 
     const changes: Array<{
       variantId: string;
@@ -84,37 +91,46 @@ export async function syncSingleProductStock(
       cjVariantId: string | null;
     }> = [];
 
-    // If CJ returns no inventory data, set all variants to 0 (out of stock)
+    // If CJ returns no per-variant inventory, fall back to the product-level total
+    // (single-stock products); if there's no data at all, treat as out of stock.
     if (cjInventoryList.length === 0) {
+      const fallbackStock = Number(inventoryResponse.data?.inventories?.[0]?.totalInventoryNum ?? 0);
       for (const variant of product.variants as Array<{
         id: string;
         size: string;
         stock: number;
         cjVariantId: string | null;
       }>) {
-        if (variant.stock !== 0) {
+        if (variant.stock !== fallbackStock) {
           await prisma.productVariant.update({
             where: { id: variant.id },
-            data: { stock: 0 },
+            data: { stock: fallbackStock },
           });
           changes.push({
             variantId: variant.id,
             size: variant.size,
             oldStock: variant.stock,
-            newStock: 0,
+            newStock: fallbackStock,
             cjVariantId: variant.cjVariantId,
           });
         }
       }
     } else {
-      // Map CJ variant IDs to stock quantities
+      // Map CJ variant IDs to stock quantities. CJ returns per-variant entries as
+      // variantInventories[].inventory[] — sum the available quantity across each
+      // warehouse entry for a variant. Prefer totalInventory (CJ + factory), which
+      // matches the "in stock" figure CJ's catalog shows; fall back to cj+factory.
       const cjStockByVid = new Map<string, number>();
-      for (const item of cjInventoryList) {
-        const vid = item.vid;
-        const qty = item.quantity ?? item.warehouseInventoryNum ?? 0;
-        if (vid) {
-          cjStockByVid.set(vid, Number(qty));
+      for (const vi of cjInventoryList) {
+        if (!vi.vid) continue;
+        let total = 0;
+        for (const inv of vi.inventory ?? []) {
+          const entryValue =
+            inv.totalInventory ??
+            (inv.cjInventory ?? 0) + (inv.factoryInventory ?? 0);
+          total += Number(entryValue ?? 0);
         }
+        cjStockByVid.set(vi.vid, total);
       }
 
       // Update each of our variants
@@ -131,10 +147,10 @@ export async function syncSingleProductStock(
           newStock = cjStockByVid.get(variant.cjVariantId)!;
         }
 
-        // If we can't match by cjVariantId, try to use the first inventory item
-        // (for products without size variants)
-        if (newStock === null && cjInventoryList.length > 0 && !variant.cjVariantId) {
-          newStock = Number(cjInventoryList[0].quantity ?? cjInventoryList[0].warehouseInventoryNum ?? 0);
+        // If we can't match by cjVariantId, fall back to the product-level total
+        // (for products without size variants / single-variant products).
+        if (newStock === null && !variant.cjVariantId) {
+          newStock = Number(inventoryResponse.data?.inventories?.[0]?.totalInventoryNum ?? 0);
         }
 
         // If still no match, skip this variant
@@ -159,10 +175,20 @@ export async function syncSingleProductStock(
       }
     }
 
+    // Mirror CJ's product-level total onto Product.stock so the field (and the
+    // extension response) reflects real availability even without a size selected.
+    const productTotal = Number(inventoryResponse.data?.inventories?.[0]?.totalInventoryNum ?? 0);
+    if (productTotal !== product.stock) {
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { stock: productTotal },
+      });
+    }
+
     return {
       productId,
       productName: product.name,
-      updated: changes.length > 0,
+      updated: changes.length > 0 || productTotal !== product.stock,
       variantsUpdated: changes.length,
       changes,
     };

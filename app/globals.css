@@ -275,3 +275,9 @@ select:focus {
   --color-clay: #B5602E;
   --color-stone: #8C8677;
 }
+/* Prose images (e.g. CJ size charts embedded in product descriptions) must never overflow their container. */
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+

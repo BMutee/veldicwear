@@ -77,12 +77,13 @@ function Accordion({ data }: { data: AccordionItem[] }) {
             </button>
             <div
               className={`overflow-hidden transition-all duration-200 ${
-                isOpen ? "max-h-96 pb-4" : "max-h-0"
+                isOpen ? "max-h-[3000px] pb-4" : "max-h-0"
               }`}
             >
-              <p className="font-sans text-sm leading-relaxed text-stone">
-                {item.content}
-              </p>
+              <div
+                className="prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: item.content }}
+              />
             </div>
           </div>
         );
