@@ -55,9 +55,9 @@ async function main() {
   }
 
   // Normalize to a SINGLE credential account holding the correct hash.
-  // Better Auth picks the first credential account in the user's account list
-  // (sign-in.mjs: `user.accounts.find(a => a.providerId === "credential")`), so
-  // any leftover duplicate would win over the one we write here.
+  // Better Auth (>=1.2.x) matches a credential account on providerId = "credential",
+  // issuer = "local:credential", AND accountId = userId (sign-in.mjs), so all
+  // three must be set. Any leftover duplicate would win over the one we write here.
   await prisma.account.deleteMany({
     where: { userId: user.id, providerId: "credential" },
   });
@@ -65,6 +65,7 @@ async function main() {
     data: {
       userId: user.id,
       providerId: "credential",
+      issuer: "local:credential", // required by Better Auth >=1.2.x sign-in
       accountId: user.id,
       password: hashed,
       type: "email",

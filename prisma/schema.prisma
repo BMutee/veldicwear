@@ -39,6 +39,7 @@ model Account {
   userId                   String
   accountId                String
   providerId               String
+  issuer                   String?
   type                     String?
   password                 String?
   refresh_token            String?
