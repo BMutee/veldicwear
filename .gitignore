@@ -20,3 +20,7 @@ tmp/
 .cj-page.html
 .dev-server.log
 .ext-key-test.json
+
+# Python bytecode caches
+__pycache__/
+*.pyc
