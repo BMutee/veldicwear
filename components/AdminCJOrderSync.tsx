@@ -333,9 +333,6 @@ export default function AdminCJOrderSync() {
   return (
     <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold">CJ Order Sync</h2>
-      <p className="mt-3 text-black/70">
-        Use these tools to walk through CJ order creation and tracking from the admin panel.
-      </p>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-2">
         <section className="rounded-3xl border border-black/10 bg-slate-100 p-4">
@@ -397,9 +394,6 @@ export default function AdminCJOrderSync() {
 
         <section className="rounded-3xl border border-black/10 bg-slate-100 p-4">
           <h3 className="text-lg font-semibold">Order Flow Actions</h3>
-          <p className="mt-2 text-black/70">
-            Paste a CJ request body as JSON and invoke the selected order endpoint.
-          </p>
           <textarea
             value={jsonBody}
             onChange={(event) => setJsonBody(event.target.value)}
@@ -485,80 +479,6 @@ export default function AdminCJOrderSync() {
                 Update Shipping Info
               </button>
             </div>
-          </div>
-
-          <div className="mt-6 rounded-3xl border border-black/10 bg-slate-50 p-4 text-sm text-black/80">
-            <h4 className="text-base font-semibold text-black">CJ Endpoint Tips</h4>
-            <ul className="mt-3 list-disc space-y-2 pl-5">
-              <li>
-                <strong>Create Order V2:</strong> POST <code>/api/admin/cj/order/create-v2</code> with <code>shopLogisticsType</code>, <code>storageId</code>, and buyer/shipping details per item.
-                For sandbox orders, add <code>isSandbox: 1</code>.
-              </li>
-              <li>
-                <strong>Create Order V3:</strong> POST <code>/api/admin/cj/order/create-v3</code> with <code>logisticName</code> and order item details when using CJ logistics.
-                For sandbox orders, add <code>isSandbox: 1</code>.
-              </li>
-              <li>
-                <strong>Add Orders to Cart:</strong> POST <code>/api/admin/cj/order/add-cart</code> with <code>cartItems</code>, <code>productId</code>, <code>sku</code>, <code>quantity</code>, and <code>countryCode</code>.
-              </li>
-              <li>
-                <strong>Confirm Add Cart:</strong> POST <code>/api/admin/cj/order/confirm-cart</code> with the cart confirmation payload returned by Add Cart.
-              </li>
-              <li>
-                <strong>Generate Parent Order:</strong> POST <code>/api/admin/cj/order/save-generate-parent-order</code> with the cart ID or confirmation result to obtain payment information.
-              </li>
-              <li>
-                <strong>Pay Balance V2:</strong> POST <code>/api/admin/cj/order/pay-balance-v2</code> using the generated order ID and payment method to complete CJ checkout.
-              </li>
-              <li>
-                <strong>Upload Shipping Info:</strong> POST <code>/api/admin/cj/order/upload-shipping-info</code> after payment completes to submit waybill and shipping details.
-              </li>
-              <li>
-                <strong>Update Shipping Info:</strong> POST <code>/api/admin/cj/order/update-shipping-info</code> when order is still UNSHIPPED to update tracking and shipping details.
-              </li>
-            </ul>
-          </div>
-
-          <div className="mt-6 rounded-3xl border border-black/10 bg-slate-50 p-4 text-sm text-black/80">
-            <h4 className="text-base font-semibold text-black">CJ Query Parameter Reference</h4>
-            <div className="mt-3 space-y-3">
-              <div>
-                <p className="font-semibold">Query Inventory by PID</p>
-                <p><code>GET /api/admin/cj/order/inventory-by-pid?pid=...</code></p>
-                <p><code>pid</code> — CJ product PID (required)</p>
-              </div>
-              <div>
-                <p className="font-semibold">Query Order</p>
-                <p><code>GET /api/admin/cj/order/query-order?orderId=...</code></p>
-                <p><code>orderId</code> — CJ order ID (required)</p>
-              </div>
-              <div>
-                <p className="font-semibold">Query Tracking</p>
-                <p><code>GET /api/admin/cj/order/tracking?orderId=...</code></p>
-                <p><code>orderId</code> — CJ order ID (required)</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-3xl border border-black/10 bg-slate-50 p-4 text-sm text-black/80">
-            <h4 className="text-base font-semibold text-black">Postman / Manual Debugging</h4>
-            <p className="mt-3 text-black/70">
-              Use Postman to inspect CJ interface requests directly. Set the request URL to the CJ API base and include <code>CJ-Access-Token</code> in headers.
-            </p>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-black/80">
-              <li>
-                Recommended CJ API host: <code>https://developers.cjdropshipping.com/api2.0/v1</code>.
-              </li>
-              <li>
-                In Postman, you can define environment variables such as <code>host</code>, <code>token</code>, <code>email</code>, and <code>password</code> for debugging.
-              </li>
-              <li>
-                This app obtains and stores the access token on the backend via <code>CJ_API_KEY</code>; frontend requests should not directly expose <code>CJ-Access-Token</code>.
-              </li>
-              <li>
-                CJ now uses a points-based daily quota. Responses may include <code>pointsInfo</code> and 429 errors when points are exhausted.
-              </li>
-            </ul>
           </div>
         </section>
       </div>

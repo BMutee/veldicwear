@@ -4,7 +4,6 @@ import AdminCJStatus from "@/components/AdminCJStatus";
 import AdminCJProductSync from "@/components/AdminCJProductSync";
 import AdminCJInventory from "@/components/AdminCJInventory";
 import AdminCJOrderSync from "@/components/AdminCJOrderSync";
-import AdminCJIntegrationGuide from "@/components/AdminCJIntegrationGuide";
 
 export const runtime = "nodejs";
 
@@ -25,9 +24,6 @@ export default async function AdminCJPage() {
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="rounded-3xl border border-black/10 bg-slate-100 p-10 shadow-xl">
           <h1 className="text-4xl font-semibold">CJ Dropshipping</h1>
-          <p className="mt-4 text-black/70">
-            Browse and list products from the CJ website — they will be added to your store automatically.
-          </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a
               href="https://www.cjdropshipping.com/"
@@ -53,15 +49,10 @@ export default async function AdminCJPage() {
             <code className="mt-2 block rounded-lg bg-white px-3 py-2 font-mono text-xs break-all">
               {webhookUrl}
             </code>
-            <p className="mt-3 text-black/70">
-              When you use <strong>“List to store”</strong> on the CJ website, CJ sends a product notification to this
-              URL and the product is imported into your store automatically — no manual import needed.
-            </p>
           </div>
         </div>
 
         <AdminCJStatus />
-        <AdminCJIntegrationGuide webhookUrl={webhookUrl} />
         <AdminCJProductSync />
         <AdminCJInventory />
         <AdminCJOrderSync />

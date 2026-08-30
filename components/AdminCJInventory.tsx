@@ -177,10 +177,7 @@ export default function AdminCJInventory() {
 
   return (
     <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold">CJ Warehouse & Private Inventory</h2>
-      <p className="mt-3 text-black/70">
-        Use CJ storage info and private inventory endpoints to inspect warehouse details and stock.
-      </p>
+      <h2 className="text-xl font-semibold">CJ Warehouse &amp; Private Inventory</h2>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-2">
         <section className="rounded-3xl border border-black/10 bg-slate-100 p-4">
@@ -269,7 +266,6 @@ export default function AdminCJInventory() {
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
         <section className="rounded-3xl border border-black/10 bg-slate-100 p-4">
           <h3 className="text-lg font-semibold">CJ Product Categories</h3>
-          <p className="mt-2 text-black/70">Load CJ category groups and inspect third-level category IDs for product search filters.</p>
           <button
             type="button"
             onClick={fetchCategories}
@@ -304,7 +300,6 @@ export default function AdminCJInventory() {
 
         <section className="rounded-3xl border border-black/10 bg-slate-100 p-4">
           <h3 className="text-lg font-semibold">Global Warehouses</h3>
-          <p className="mt-2 text-black/70">Query CJ global warehouses to find available fulfillment locations and country codes.</p>
           <button
             type="button"
             onClick={fetchGlobalWarehouses}
