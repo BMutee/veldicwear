@@ -42,29 +42,38 @@ export function useViewerCurrency(): ViewerCurrency {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/currency/context", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (cancelled || !data) return;
-        setState({
-          currency: ["USD", "CAD", "EUR"].includes(data.displayCurrency)
-            ? data.displayCurrency
-            : "USD",
-          chargeCurrency: data.chargeCurrency === "CAD" ? "CAD" : "USD",
-          // Stale/missing rate -> render plain USD rather than broken prices.
-          rate:
-            typeof data.rate === "number" && data.rate > 0 ? data.rate : 1,
-          fallbackToUsd: !!data.fallbackToUsd,
-          notice: data.notice ?? null,
-          loaded: true,
+    const load = () => {
+      fetch("/api/currency/context", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (cancelled || !data) return;
+          setState({
+            currency: ["USD", "CAD", "EUR"].includes(data.displayCurrency)
+              ? data.displayCurrency
+              : "USD",
+            chargeCurrency: data.chargeCurrency === "CAD" ? "CAD" : "USD",
+            // Stale/missing rate -> render plain USD rather than broken prices.
+            rate:
+              typeof data.rate === "number" && data.rate > 0 ? data.rate : 1,
+            fallbackToUsd: !!data.fallbackToUsd,
+            notice: data.notice ?? null,
+            loaded: true,
+          });
+        })
+        .catch(() => {
+          if (!cancelled)
+            setState((s) => ({ ...s, loaded: true })); // stay USD on failure
         });
-      })
-      .catch(() => {
-        if (!cancelled)
-          setState((s) => ({ ...s, loaded: true })); // stay USD on failure
-      });
+    };
+    load();
+    // The picker persists the cookie BEFORE dispatching "currency:changed",
+    // so a re-fetch here always sees the new currency. router.refresh() alone
+    // does NOT remount client components — without this listener every
+    // hook-based price keeps the previous currency until a full navigation.
+    window.addEventListener("currency:changed", load);
     return () => {
       cancelled = true;
+      window.removeEventListener("currency:changed", load);
     };
   }, []);
 

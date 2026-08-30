@@ -10,6 +10,7 @@ import WishlistButton from "./WishlistButton";
 import StarRating from "./StarRating";
 import { addToCart } from "@/lib/cart";
 import { normalizeImageSrc } from "@/lib/image";
+import { useViewerCurrency } from "@/lib/use-viewer-currency";
 
 const container = {
   hidden: { opacity: 0 },
@@ -28,6 +29,10 @@ const item = {
 
 export default function ProductGrid({ products }: { products: any[] }) {
   const router = useRouter();
+  // Storefront prices are stored in USD; render them in the viewer's currency
+  // with the SAME conversion/rounding checkout uses (toDisplay), falling back
+  // to USD before the context loads or when the rate is stale.
+  const { toDisplay, fmt } = useViewerCurrency();
   const [reviewData, setReviewData] = useState<Record<string, { average: number; count: number }>>({});
 
   // Fetch review summaries for displayed products
@@ -99,12 +104,12 @@ export default function ProductGrid({ products }: { products: any[] }) {
         const hasVariants = variantPrices.length > 0;
         const isSinglePrice = minPrice === maxPrice;
 
-        let priceDisplay = `$${product.price.toFixed(2)}`;
+        let priceDisplay = fmt(toDisplay(product.price));
         if (hasVariants) {
           if (isSinglePrice) {
-            priceDisplay = `$${minPrice.toFixed(2)}`;
+            priceDisplay = fmt(toDisplay(minPrice));
           } else {
-            priceDisplay = `From $${minPrice.toFixed(2)}`;
+            priceDisplay = `From ${fmt(toDisplay(minPrice))}`;
           }
         }
 
@@ -156,7 +161,7 @@ export default function ProductGrid({ products }: { products: any[] }) {
                     </span>
                     {hasDiscount && (
                       <span className="font-sans text-xs text-stone line-through">
-                        ${product.compareAtPrice!.toFixed(2)}
+                        {fmt(toDisplay(product.compareAtPrice!))}
                       </span>
                     )}
                   </div>

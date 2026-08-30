@@ -7,6 +7,7 @@ import SizeSelector from "./SizeSelector";
 import WishlistButton from "./WishlistButton";
 import ReviewSection from "./ReviewSection";
 import { normalizeImageSrc } from "@/lib/image";
+import { useViewerCurrency } from "@/lib/use-viewer-currency";
 
 type Variant = {
   size: string;
@@ -137,6 +138,8 @@ export default function ProductClient({
   const [selectedColor, setSelectedColor] = useState("");
   const [activeImage, setActiveImage] = useState(product.image);
   const [quantity, setQuantity] = useState(1);
+  // USD-stored price rendered in the viewer's currency (same math as checkout).
+  const { toDisplay, fmt } = useViewerCurrency();
 
   const availableColors = sizes.reduce(
     (acc, variant) => {
@@ -252,11 +255,11 @@ export default function ProductClient({
         {/* Price */}
         <div className="mt-3 flex items-center gap-3">
           <span className="font-mono text-2xl text-ink">
-            ${displayPrice.toFixed(2)}
+            {fmt(toDisplay(displayPrice))}
           </span>
           {hasDiscount && (
             <span className="font-sans text-sm text-stone line-through">
-              ${product.compareAtPrice!.toFixed(2)}
+              {fmt(toDisplay(product.compareAtPrice!))}
             </span>
           )}
         </div>
