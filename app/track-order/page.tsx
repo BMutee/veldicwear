@@ -9,7 +9,8 @@ type TrackingOrder = {
   status: string;
   createdAt: string;
   deliveredAt: string | null;
-  OrderItem: { name: string; size: string; quantity: number }[];
+  // Must match /api/orders/track, which selects the Order.items relation.
+  items: { name: string; size: string; quantity: number }[];
 };
 
 export default function TrackOrderPage() {
@@ -66,7 +67,7 @@ function TrackOrderPageInner() {
           <p className="mt-1 font-sans text-sm text-[#44403C]">Placed {new Date(order.createdAt).toLocaleDateString()}</p>
           {order.deliveredAt && <p className="mt-1 font-sans text-sm text-[#44403C]">Delivered {new Date(order.deliveredAt).toLocaleDateString()}</p>}
           <h2 className="mt-6 font-display text-sm font-bold uppercase text-[#1C1917]">Items</h2>
-          <ul className="mt-3 space-y-2 font-sans text-sm text-[#44403C]">{order.OrderItem.map((item, index) => <li key={`${item.name}-${item.size}-${index}`}>{item.quantity} × {item.name} ({item.size})</li>)}</ul>
+          <ul className="mt-3 space-y-2 font-sans text-sm text-[#44403C]">{(order.items ?? []).map((item, index) => <li key={`${item.name}-${item.size}-${index}`}>{item.quantity} × {item.name} ({item.size})</li>)}</ul>
         </section>}
         <Link href="/shop" className="mt-8 inline-block font-sans text-sm font-semibold text-[#1C1917] underline decoration-[#CA8A04] underline-offset-4">Continue shopping</Link>
       </div>

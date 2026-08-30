@@ -2,6 +2,8 @@
  * End-to-end smoke test for POST /api/extension/cj-import against a running
  * dev server. Usage: npx tsx --env-file=.env scripts/test-extension-endpoint.ts <rawKey>
  */
+export {}; // module scope — a bare `main` here collided with other scripts (TS2393)
+
 const BASE = process.env.TEST_BASE_URL ?? "http://localhost:3000";
 const rawKey = process.argv[2];
 const EXISTING_PID = "2508300653521615300"; // already imported sunglasses
