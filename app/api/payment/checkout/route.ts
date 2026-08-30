@@ -13,6 +13,7 @@ import {
   resolveCheckoutCurrencyPlan,
   toStripeUnitAmount,
 } from "@/lib/checkout-currency";
+import { resolveRequestBaseUrl } from "@/lib/base-url";
 
 type ProductWithVariants = {
   id: string;
@@ -202,7 +203,11 @@ export async function POST(request: NextRequest) {
       .join(", ");
     const customerPhone = shipping?.phone ?? "";
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    // Derive from the actual request host (x-forwarded-host) so Stripe always
+    // gets a valid public success/cancel URL, even when NEXT_PUBLIC_BASE_URL
+    // is missing or set to localhost on the deployment (live mode rejects
+    // localhost with "Not a valid URL").
+    const baseUrl = resolveRequestBaseUrl(request);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
