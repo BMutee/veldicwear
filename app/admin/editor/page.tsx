@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { SECTION_REGISTRY } from "@/lib/section-registry";
 import { createPreviewToken } from "@/lib/preview-token";
 import AdminEditorClient, { type EditorSection } from "@/components/AdminEditorClient";
+import Script from "next/script";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,14 @@ export default async function AdminEditorPage() {
     defaultContent: section.defaultContent,
   }));
 
-  return <AdminEditorClient initialSections={initialSections} defs={defs} previewToken={createPreviewToken()} />;
+  return (
+    <>
+      <AdminEditorClient initialSections={initialSections} defs={defs} previewToken={createPreviewToken()} />
+      {/* Cloudinary Upload Widget — the inline hero editor's image picker relies on it,
+          and this page sits outside the (dashboard) layout that normally loads it. */}
+      <Script src="https://upload-widget.cloudinary.com/global/all.js" strategy="afterInteractive" />
+    </>
+  );
 }
 
 function parseContent(raw: string | null): Record<string, unknown> {

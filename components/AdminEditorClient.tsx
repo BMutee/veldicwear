@@ -32,6 +32,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { SectionFieldDef } from "@/lib/section-registry";
 import SectionSettingsForm, { type SectionSettings } from "./SectionSettingsForm";
+import EditorBlocksManager from "./EditorBlocksManager";
 
 export type EditorSection = {
   id: string;
@@ -51,12 +52,6 @@ export type EditorDef = {
   deletable?: boolean;
   fields: SectionFieldDef[];
   defaultContent: Record<string, unknown>;
-};
-
-const BLOCK_EDITOR_LINKS: Record<string, { href: string; label: string }> = {
-  hero: { href: "/admin/homepage", label: "Open hero editor" },
-  banner: { href: "/admin/banner", label: "Open banner editor" },
-  "featured-products": { href: "/admin/featured-products", label: "Open featured products editor" },
 };
 
 const FONT = { fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" };
@@ -431,22 +426,7 @@ export default function AdminEditorClient({
                     </div>
                   </>
                 ) : (
-                  <>
-                    <p className="mb-4 text-xs leading-relaxed text-[#616161]">
-                      {selectedDef.description} This section is edited in its dedicated editor, which supports blocks, styling, and animations.
-                    </p>
-                    <a
-                      href={BLOCK_EDITOR_LINKS[selectedDef.key]?.href ?? "/admin"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={SECONDARY_BTN + " w-full justify-center"}
-                    >
-                      {BLOCK_EDITOR_LINKS[selectedDef.key]?.label ?? "Open editor"}
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                      </svg>
-                    </a>
-                  </>
+                  <EditorBlocksManager sectionKey={selectedDef.key} onSaved={refreshPreview} />
                 )}
               </div>
             </>

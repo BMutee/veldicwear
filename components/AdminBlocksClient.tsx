@@ -10,8 +10,8 @@ import BlockRenderer from "@/components/blocks/BlockRenderer";
 import { BreakpointField, ColorField, INPUT_CLS, LABEL_CLS, AnimationField } from "./AdminSectionShared";
 import { FeaturedProductsContentEditor, FeaturedStyleEditor } from "./FeaturedProductsBlockEditors";
 
-type BlockRow = { id: string; type: BlockType; order: number; content: BlockContent; styles: BlockStyles | HeroBlockStyles | FeaturedBlockStyles };
-const labels: Record<BlockType, string> = { HERO: "Hero", RICH_TEXT: "Rich text", IMAGE: "Image", BUTTON: "Button", IMAGE_TEXT: "Image + text", GALLERY: "Gallery", FEATURED_PRODUCTS: "Featured Products" };
+export type BlockRow = { id: string; type: BlockType; order: number; content: BlockContent; styles: BlockStyles | HeroBlockStyles | FeaturedBlockStyles };
+export const labels: Record<BlockType, string> = { HERO: "Hero", RICH_TEXT: "Rich text", IMAGE: "Image", BUTTON: "Button", IMAGE_TEXT: "Image + text", GALLERY: "Gallery", FEATURED_PRODUCTS: "Featured Products" };
 
 export default function AdminBlocksClient({ slug, sectionKey }: { slug?: string; sectionKey?: string }) {
   // A block is owned by exactly one of: a CMS page (slug) or a SiteSection (sectionKey).
@@ -85,7 +85,7 @@ function SortableBlock({ block, selected, deletable, onSelect, onDelete }: { blo
   return <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={`flex items-center gap-2 rounded-lg border p-3 ${selected ? "border-moss bg-moss/5" : "border-stone/20 bg-white"}`}><button type="button" {...attributes} {...listeners} aria-label={`Drag ${labels[block.type]}`} className="cursor-grab touch-none text-stone active:cursor-grabbing">&#8942;&#8942;</button><button type="button" onClick={onSelect} className="min-w-0 flex-1 cursor-pointer text-left"><span className="block truncate text-sm font-medium">{labels[block.type]}</span><span className="block text-xs text-stone">Order {block.order}</span></button>{deletable && <button type="button" onClick={onDelete} aria-label={`Delete ${labels[block.type]}`} className="cursor-pointer text-clay hover:text-ink">&times;</button>}</div>;
 }
 
-function ContentEditor({ block, onChange, banner = false }: { block: BlockRow; onChange: (content: BlockContent) => void; banner?: boolean }) {
+export function ContentEditor({ block, onChange, banner = false }: { block: BlockRow; onChange: (content: BlockContent) => void; banner?: boolean }) {
   const content = block.content as Record<string, unknown>;
   if (block.type === "HERO") return <HeroContentEditor content={content as HeroBlockContent} onChange={onChange} banner={banner} />;
   if (block.type === "FEATURED_PRODUCTS") return <FeaturedProductsContentEditor content={content as FeaturedBlockContent} onChange={onChange} />;
@@ -116,7 +116,7 @@ function HeroContentEditor({ content, onChange, banner = false }: { content: Her
   </div>;
 }
 
-function StyleEditor({ block, onChange, banner = false }: { block: BlockRow; onChange: (styles: BlockStyles | HeroBlockStyles | FeaturedBlockStyles) => void; banner?: boolean }) {
+export function StyleEditor({ block, onChange, banner = false }: { block: BlockRow; onChange: (styles: BlockStyles | HeroBlockStyles | FeaturedBlockStyles) => void; banner?: boolean }) {
   if (block.type === "HERO") return <HeroStyleEditor styles={block.styles as HeroBlockStyles} onChange={onChange} banner={banner} />;
   if (block.type === "FEATURED_PRODUCTS") return <FeaturedStyleEditor styles={block.styles as FeaturedBlockStyles} onChange={onChange} />;
   const s = block.styles as BlockStyles;
