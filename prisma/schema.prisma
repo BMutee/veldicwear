@@ -243,6 +243,9 @@ model SiteSection {
   label     String?
   content   String?
   published Boolean  @default(false)
+  // Theme-editor ordering (Shopify JSON-template logic): lower renders first.
+  // Sections are managed by /admin/editor — the homepage renders in this order.
+  position  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

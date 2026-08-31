@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/prisma";
 import Hero from "@/components/Hero";
 import Banner from "@/components/Banner";
 import Categories from "@/components/Categories";
@@ -8,22 +7,54 @@ import BrandStory from "@/components/BrandStory";
 import Newsletter from "@/components/Newsletter";
 import SocialFeed from "@/components/SocialFeed";
 import { parseStoredBlock, type FeaturedBlockContent, type FeaturedBlockStyles, type HeroBlockContent, type HeroBlockStyles } from "@/lib/block-section";
+import { prisma } from "@/lib/prisma";
+import { getHomeSections } from "@/lib/home-sections";
+import { verifyPreviewToken } from "@/lib/preview-token";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+// ─── Homepage = ordered sections (Shopify JSON-template logic) ───────────────
+// The render order and visibility live in the database (SiteSection.position
+// and SiteSection.published), managed by /admin/editor. This file only maps
+// section keys to components. With a valid preview token (?preview=1&t=…,
+// minted by the admin editor) draft/hidden sections render too — that is how
+// the editor's live preview shows sections before they go live.
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const preview =
+    params.preview === "1" && verifyPreviewToken(typeof params.t === "string" ? params.t : null);
+
+  const { sections } = await getHomeSections();
+  const visible = preview ? sections : sections.filter((section) => section.published);
+  const renders = (key: string) => visible.some((section) => section.key === key);
+
+  // Block-backed sections (hero, banner, featured-products) read their content
+  // from Block rows. Fetch only for sections actually being rendered.
   let heroBlock: { type: string; content: unknown; styles: unknown } | null = null;
   let bannerBlock: { type: string; content: unknown; styles: unknown } | null = null;
   let featuredBlock: { type: string; content: unknown; styles: unknown } | null = null;
-  try {
-    [heroBlock, bannerBlock, featuredBlock] = await Promise.all([
-      prisma.block.findFirst({ where: { sectionKey: "hero", type: "HERO" }, orderBy: { order: "asc" } }),
-      prisma.block.findFirst({ where: { sectionKey: "banner", type: "HERO" }, orderBy: { order: "asc" } }),
-      prisma.block.findFirst({ where: { sectionKey: "featured-products", type: "FEATURED_PRODUCTS" }, orderBy: { order: "asc" } }),
-    ]);
-  } catch {
-    // If the database is unreachable, render the page with default content
-    // rather than crashing the entire site.
+  if (renders("hero") || renders("banner") || renders("featured-products")) {
+    try {
+      [heroBlock, bannerBlock, featuredBlock] = await Promise.all([
+        renders("hero")
+          ? prisma.block.findFirst({ where: { sectionKey: "hero", type: "HERO" }, orderBy: { order: "asc" } })
+          : Promise.resolve(null),
+        renders("banner")
+          ? prisma.block.findFirst({ where: { sectionKey: "banner", type: "HERO" }, orderBy: { order: "asc" } })
+          : Promise.resolve(null),
+        renders("featured-products")
+          ? prisma.block.findFirst({ where: { sectionKey: "featured-products", type: "FEATURED_PRODUCTS" }, orderBy: { order: "asc" } })
+          : Promise.resolve(null),
+      ]);
+    } catch {
+      // If the database is unreachable, render the page with default content
+      // rather than crashing the entire site.
+    }
   }
 
   const hero = heroBlock ? parseStoredBlock("HERO", heroBlock.content, heroBlock.styles) : null;
@@ -38,14 +69,47 @@ export default async function Home() {
 
   return (
     <>
-      <Hero content={hero?.content as HeroBlockContent | undefined} styles={hero?.styles as HeroBlockStyles | undefined} />
-      <Banner content={banner?.content as HeroBlockContent | undefined} styles={banner?.styles as HeroBlockStyles | undefined} />
-      <Categories />
-      <FeaturedProducts content={featured?.content as FeaturedBlockContent | undefined} styles={featured?.styles as FeaturedBlockStyles | undefined} />
-      <Lookbook />
-      <BrandStory />
-      <Newsletter />
-      <SocialFeed />
+      {visible.map((section) => {
+        switch (section.key) {
+          case "hero":
+            return (
+              <Hero
+                key={section.id}
+                content={hero?.content as HeroBlockContent | undefined}
+                styles={hero?.styles as HeroBlockStyles | undefined}
+              />
+            );
+          case "banner":
+            return (
+              <Banner
+                key={section.id}
+                content={banner?.content as HeroBlockContent | undefined}
+                styles={banner?.styles as HeroBlockStyles | undefined}
+              />
+            );
+          case "categories-header":
+            return <Categories key={section.id} />;
+          case "featured-products":
+            return (
+              <FeaturedProducts
+                key={section.id}
+                content={featured?.content as FeaturedBlockContent | undefined}
+                styles={featured?.styles as FeaturedBlockStyles | undefined}
+              />
+            );
+          case "lookbook":
+            return <Lookbook key={section.id} />;
+          case "brand-story":
+            return <BrandStory key={section.id} />;
+          case "newsletter":
+            return <Newsletter key={section.id} />;
+          case "social-feed":
+            return <SocialFeed key={section.id} />;
+          default:
+            return null;
+        }
+      })}
     </>
   );
 }
+
