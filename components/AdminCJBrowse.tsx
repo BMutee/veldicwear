@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 type CJCategory = {
@@ -177,7 +177,7 @@ export default function AdminCJBrowse() {
           Browse CJ Products
         </h1>
         <p className="text-stone mt-1 font-body text-sm">
-          Search CJ's catalog, import products, then set pricing and featured status.
+          Search CJ&apos;s catalog, import products, then set pricing and featured status.
         </p>
       </div>
 

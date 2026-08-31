@@ -189,7 +189,6 @@ export async function cjFulfillOrder(orderId: string): Promise<void> {
     }
 
     // Track which items were sent to CJ vs skipped (non-CJ items need manual handling)
-    const cjItemNames = cjItems.map((i) => i.pid).join(",");
     const nonCjItemNames = order.items
       .filter((item: { name: string; product: { id: string } }) => !isCjProductId(item.product.id))
       .map((item: { name: string }) => item.name)

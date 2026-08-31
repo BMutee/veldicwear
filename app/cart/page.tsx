@@ -19,7 +19,7 @@ function Icon({ name, className = "h-5 w-5" }: { name: "minus" | "plus" | "trash
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>(() => getCart());
-  const [syncing, setSyncing] = useState(false);
+  const [, setSyncing] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
 

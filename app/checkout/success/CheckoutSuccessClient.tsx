@@ -111,7 +111,6 @@ export default function CheckoutSuccessClient() {
   }
 
   const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = Math.max(0, order.total - subtotal);
   const total = order.total;
   const orderDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",

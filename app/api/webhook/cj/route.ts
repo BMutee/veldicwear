@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server";
 import crypto from "crypto";
 import { getCJOpenId } from "@/lib/cj";
 import { importCJProduct, type CJImportResult } from "@/lib/cj-import";
-import { prisma } from "@/lib/prisma";
 
 type CJWebhookMessage = {
   messageId?: string;

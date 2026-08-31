@@ -1,4 +1,4 @@
-import { betterAuth, type User as BetterAuthUser } from "better-auth";
+import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor } from "better-auth/plugins/two-factor";
 import { prisma } from "./prisma";
@@ -25,7 +25,7 @@ const PERMANENT_ADMIN_EMAILS = new Set([
 ]);
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __betterAuth: ReturnType<typeof buildAuth> | undefined;
 }
 

@@ -24,3 +24,8 @@ tmp/
 # Python bytecode caches
 __pycache__/
 *.pyc
+
+# Shopify Horizon theme pulled from the store for reference - not part of the app
+theme/
+# Browser-automation screenshots / session artifacts
+.playwright-mcp/

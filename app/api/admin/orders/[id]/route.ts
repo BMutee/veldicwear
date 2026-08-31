@@ -52,7 +52,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     };
   });
 
-  const { items, ...orderWithoutItems } = order;
+  const { items: _items, ...orderWithoutItems } = order;
   return NextResponse.json({
     ...orderWithoutItems,
     OrderItem: enrichedItems,

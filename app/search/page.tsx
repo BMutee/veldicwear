@@ -128,7 +128,7 @@ function SearchPageInner() {
                 No results found
               </p>
               <p className="mt-3 max-w-md font-sans text-sm leading-6 text-stone">
-                We couldn't find anything for &ldquo;{initialQuery}&rdquo;. Try a different search term or browse our collections.
+                We couldn&apos;t find anything for &ldquo;{initialQuery}&rdquo;. Try a different search term or browse our collections.
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <Link

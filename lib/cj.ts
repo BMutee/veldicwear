@@ -1,4 +1,4 @@
-import type { CJPointsInfo, CJResponse } from "@/lib/cj-types";
+import type { CJResponse } from "@/lib/cj-types";
 
 const CJ_API_BASE_URL = "https://developers.cjdropshipping.com/api2.0/v1";
 
@@ -37,14 +37,6 @@ function isRefreshTokenValid(token: CJAccessTokenData | null) {
 
   const expiry = Date.parse(token.refreshTokenExpiryDate);
   return !Number.isNaN(expiry) && expiry > Date.now() + 60_000;
-}
-
-function isRateLimitResponse(response: Response, body: CJResponse<unknown> | null) {
-  const message = String(body?.message ?? response.statusText ?? "").toLowerCase();
-  return (
-    response.status === 429 ||
-    /rate limit|too many requests|one ip limit 3 users|limit/.test(message)
-  );
 }
 
 function isRetriableRateLimitResponse(response: Response, body: CJResponse<unknown> | null) {

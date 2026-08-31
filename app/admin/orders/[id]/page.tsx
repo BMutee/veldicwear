@@ -599,7 +599,7 @@ export default function AdminOrderDetailPage() {
           </div>
 
           <p className="text-xs text-stone font-body">
-            Changing status to "Shipped" will send a shipping notification email to the customer with tracking info if provided.
+            Changing status to &quot;Shipped&quot; will send a shipping notification email to the customer with tracking info if provided.
           </p>
 
           <div className="flex items-center gap-3 pt-2">

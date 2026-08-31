@@ -11,7 +11,7 @@ import { syncProductVariantsByPid } from "@/lib/cj-import";
  * SHARED syncVariants() implementation from lib/cj-import.ts (the same code
  * path used by importCJProduct) so the two paths can never drift apart.
  */
-export async function POST(request: Request) {
+export async function POST() {
   const { error } = await requireAdminApi();
   if (error) return error;
 

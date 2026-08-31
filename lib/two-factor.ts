@@ -7,7 +7,6 @@ export interface TwoFactorResult {
 }
 
 const OTP_TTL_MINUTES = 5;
-const MAX_ATTEMPTS = 5;
 
 export async function requestTwoFactorCode(userId: string, email: string): Promise<TwoFactorResult> {
   try {
@@ -49,7 +48,7 @@ export async function requestTwoFactorCode(userId: string, email: string): Promi
     });
 
     return { success: true };
-  } catch (error) {
+  } catch {
     return { success: false, error: "Failed to send verification code. Please try again." };
   }
 }

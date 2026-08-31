@@ -395,7 +395,7 @@ function SectionsTab() {
       {showForm && (
         <form onSubmit={async (e) => {
           e.preventDefault(); setSaving(true); setErrors([]); setSuccess(null);
-          let contentToSave = form.content;
+          const contentToSave = form.content;
           try { JSON.parse(contentToSave); } catch { setErrors(["Content must be valid JSON."]); setSaving(false); return; }
           const method = editing ? "PUT" : "POST";
           const body = editing ? { id: editing.id, key: form.key, label: form.label, content: contentToSave, published: form.published } : { key: form.key, label: form.label, content: contentToSave, published: form.published };

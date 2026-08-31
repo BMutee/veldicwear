@@ -39,7 +39,6 @@ export default async function AdminDashboardPage() {
   let totalCost30 = 0;
   let totalProfit30 = 0;
   let revenueWithoutCost30 = 0;
-  let itemsWithCostCount = 0;
   let itemsWithoutCostCount = 0;
 
   for (const order of ordersLast30Days) {
@@ -53,7 +52,6 @@ export default async function AdminDashboardPage() {
       if (costPrice != null && costPrice > 0) {
         totalRevenue30 += itemRevenue;
         totalCost30 += costPrice * item.quantity;
-        itemsWithCostCount++;
       } else {
         revenueWithoutCost30 += itemRevenue;
         itemsWithoutCostCount++;

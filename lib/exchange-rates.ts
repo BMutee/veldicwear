@@ -7,8 +7,6 @@ import {
   SUPPORTED_CONVERSION_CURRENCIES,
   STALE_RATE_THRESHOLD_MS,
   type SupportedCurrency,
-  convertPrice,
-  roundConvertedPrice,
 } from "@/lib/currency-convert";
 
 export {

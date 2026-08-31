@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin-guard-api";
 import { sendEmail } from "@/lib/email";
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     const admin = await requireAdminApi();
     if (admin.error) return admin.error;

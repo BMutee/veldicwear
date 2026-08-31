@@ -74,7 +74,6 @@ export default function CurrencyPicker({
     router.refresh();
   };
 
-  const nonUsd = currency !== "USD";
   const info = CURRENCY_INFO[currency];
 
   return (
