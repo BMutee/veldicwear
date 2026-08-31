@@ -31,9 +31,14 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { SectionFieldDef } from "@/lib/section-registry";
+import type { NavbarContent } from "@/lib/navbar-section";
+import type { FooterContent } from "@/lib/footer-section";
 import SectionSettingsForm, { type SectionSettings } from "./SectionSettingsForm";
 import EditorBlocksManager from "./EditorBlocksManager";
 import { flushAllBlocks } from "./block-flusher";
+import AdminNavbarEditor from "./AdminNavbarEditor";
+import AdminFooterEditor from "./AdminFooterEditor";
+import AdminCmsClient from "./AdminCmsClient";
 
 export type EditorSection = {
   id: string;
@@ -62,17 +67,38 @@ const SECONDARY_BTN = `flex h-8 cursor-pointer items-center rounded-md border bo
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
+type GlobalPanel = "navbar" | "footer" | "cms";
+
+const GLOBAL_ROWS: { id: GlobalPanel; name: string; desc: string }[] = [
+  { id: "navbar", name: "Navbar", desc: "Header navigation & styling" },
+  { id: "footer", name: "Footer", desc: "Footer links, brand, payments" },
+  { id: "cms", name: "Sections", desc: "Pages, FAQs, announcements & settings" },
+];
+
+const GLOBAL_LABEL: Record<GlobalPanel, string> = {
+  navbar: "Navbar",
+  footer: "Footer",
+  cms: "Sections",
+};
+
 export default function AdminEditorClient({
   initialSections,
   defs,
   previewToken,
+  navbar,
+  footer,
+  storeName,
 }: {
   initialSections: EditorSection[];
   defs: EditorDef[];
   previewToken: string;
+  navbar?: { content: NavbarContent; savedAt: string | null; defaults: NavbarContent };
+  footer?: { content: FooterContent; savedAt: string | null; defaults: FooterContent };
+  storeName?: string;
 }) {
   const [sections, setSections] = useState<EditorSection[]>(initialSections);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeGlobal, setActiveGlobal] = useState<GlobalPanel | null>(null);
   const [view, setView] = useState<"tree" | "settings" | "add">("tree");
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -128,6 +154,7 @@ export default function AdminEditorClient({
       const id = typeof event.data.id === "string" ? event.data.id : "";
       if (id && sections.some((s) => s.id === id)) {
         setSelectedId(id);
+        setActiveGlobal(null);
         setView("settings");
       }
     };
@@ -340,11 +367,38 @@ export default function AdminEditorClient({
       </header>
       {/* Body — left rail + preview canvas */}
       <div className="flex min-h-0 flex-1">
-        <aside className="flex w-[340px] shrink-0 flex-col overflow-hidden border-r border-[#e3e3e3] bg-white">
+        <aside
+          className={`flex shrink-0 flex-col overflow-hidden border-r border-[#e3e3e3] bg-white transition-[width] duration-200 ${
+            activeGlobal !== null && view === "settings" ? "w-[560px]" : "w-[340px]"
+          }`}
+        >
           {view === "tree" && (
             <>
               <div className="flex h-12 shrink-0 items-center px-4">
                 <h2 className="text-[13px] font-semibold">Theme sections</h2>
+              </div>
+              <div className="border-b border-[#e3e3e3] px-2 pb-2 pt-1">
+                <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[#8a8a8a]">Global</p>
+                <div className="space-y-0.5">
+                  {GLOBAL_ROWS.map((row) => {
+                    const isSelected = activeGlobal === row.id;
+                    return (
+                      <button
+                        key={row.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveGlobal(row.id);
+                          setSelectedId(null);
+                          setView("settings");
+                        }}
+                        className={`block w-full cursor-pointer rounded-lg px-3 py-2 text-left transition hover:bg-[#f7f7f7] ${FOCUS} ${isSelected ? "bg-[#eef2f6]" : ""}`}
+                      >
+                        <span className="block truncate text-[13px] font-medium text-[#303030]">{row.name}</span>
+                        <span className="block truncate text-xs text-[#616161]">{row.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => void reorder(e)}>
@@ -358,6 +412,7 @@ export default function AdminEditorClient({
                           selected={selectedId === s.id}
                           onSelect={() => {
                             setSelectedId(s.id);
+                            setActiveGlobal(null);
                             setView("settings");
                           }}
                           onToggle={() => void togglePublished(s)}
@@ -384,7 +439,7 @@ export default function AdminEditorClient({
               </div>
             </>
           )}
-          {view === "settings" && selected && selectedDef && (
+          {view === "settings" && (activeGlobal !== null || (selected && selectedDef)) && (
             <>
               <div className="flex h-12 shrink-0 items-center gap-1 border-b border-[#e3e3e3] px-2">
                 <button type="button" onClick={() => setView("tree")} aria-label="Back to sections" className={ICON_BTN}>
@@ -392,15 +447,17 @@ export default function AdminEditorClient({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                   </svg>
                 </button>
-                <h2 className="min-w-0 flex-1 truncate text-[13px] font-semibold">{selectedDef.name}</h2>
-                {selectedDef.kind === "json" && (
+                <h2 className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+                  {activeGlobal !== null ? GLOBAL_LABEL[activeGlobal] : selectedDef?.name ?? ""}
+                </h2>
+                {activeGlobal === null && selectedDef?.kind === "json" && (
                   <button type="button" onClick={resetDefaults} aria-label="Reset to defaults" title="Reset to defaults" className={ICON_BTN}>
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                     </svg>
                   </button>
                 )}
-                {selectedDef.deletable && (
+                {activeGlobal === null && selectedDef?.deletable && (
                   <button type="button" onClick={() => void removeSection()} aria-label="Remove section" title="Remove from homepage" className={ICON_BTN}>
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -409,28 +466,54 @@ export default function AdminEditorClient({
                 )}
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-                {selectedDef.kind === "json" ? (
-                  <>
-                    {selectedDef.description && <p className="mb-4 text-xs leading-relaxed text-[#616161]">{selectedDef.description}</p>}
-                    <SectionSettingsForm
-                      fields={selectedDef.fields}
-                      content={currentContent(selected)}
-                      onChange={(next) => setDraftContent(selected.id, next)}
+                {activeGlobal === "navbar" ? (
+                  navbar ? (
+                    <AdminNavbarEditor
+                      initialContent={navbar.content}
+                      initialSavedAt={navbar.savedAt}
+                      defaults={navbar.defaults}
+                      storeName={storeName ?? "Veldic Wear"}
                     />
-                    <div className="mt-6 rounded-md bg-[#f1f1f1] px-3 py-2.5">
-                      <p className="text-xs text-[#616161]">
-                        {drafts[selected.id] !== undefined ? "You have unsaved changes." : "Changes here appear on the live homepage after saving."}
-                      </p>
-                      {drafts[selected.id] !== undefined && (
-                        <button type="button" onClick={() => void save()} className={`mt-2 cursor-pointer text-xs font-medium text-[#005bd3] hover:underline ${FOCUS}`}>
-                          Save changes
-                        </button>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <EditorBlocksManager sectionKey={selectedDef.key} onSaved={refreshPreview} />
-                )}
+                  ) : (
+                    <p className="text-sm text-[#616161]">Navbar settings unavailable.</p>
+                  )
+                ) : activeGlobal === "footer" ? (
+                  footer ? (
+                    <AdminFooterEditor
+                      initialContent={footer.content}
+                      initialSavedAt={footer.savedAt}
+                      defaults={footer.defaults}
+                      storeName={storeName ?? "Veldic Wear"}
+                    />
+                  ) : (
+                    <p className="text-sm text-[#616161]">Footer settings unavailable.</p>
+                  )
+                ) : activeGlobal === "cms" ? (
+                  <AdminCmsClient />
+                ) : selected && selectedDef ? (
+                  selectedDef.kind === "json" ? (
+                    <>
+                      {selectedDef.description && <p className="mb-4 text-xs leading-relaxed text-[#616161]">{selectedDef.description}</p>}
+                      <SectionSettingsForm
+                        fields={selectedDef.fields}
+                        content={currentContent(selected)}
+                        onChange={(next) => setDraftContent(selected.id, next)}
+                      />
+                      <div className="mt-6 rounded-md bg-[#f1f1f1] px-3 py-2.5">
+                        <p className="text-xs text-[#616161]">
+                          {drafts[selected.id] !== undefined ? "You have unsaved changes." : "Changes here appear on the live homepage after saving."}
+                        </p>
+                        {drafts[selected.id] !== undefined && (
+                          <button type="button" onClick={() => void save()} className={`mt-2 cursor-pointer text-xs font-medium text-[#005bd3] hover:underline ${FOCUS}`}>
+                            Save changes
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <EditorBlocksManager sectionKey={selectedDef.key} onSaved={refreshPreview} />
+                  )
+                ) : null}
               </div>
             </>
           )}
