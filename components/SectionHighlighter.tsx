@@ -40,9 +40,23 @@ export default function SectionHighlighter() {
         window.location.origin
       );
     };
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "veldic-editor-highlight") return;
+      document.querySelectorAll("[data-veldic-section].veldic-selected").forEach((el) => el.classList.remove("veldic-selected"));
+      const id = typeof event.data.id === "string" ? event.data.id : "";
+      const target = id ? (document.querySelector(`[data-veldic-section-id="${id}"]`) as HTMLElement | null) : null;
+      if (target) {
+        target.classList.add("veldic-selected");
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+    window.addEventListener("message", onMessage);
     document.addEventListener("click", onClick, true);
 
     return () => {
+      window.removeEventListener("message", onMessage);
       document.removeEventListener("click", onClick, true);
       style.remove();
     };
