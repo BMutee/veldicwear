@@ -132,7 +132,7 @@ export default async function AdminDashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <QuickActionCard href="/admin/products" label="Manage Products" desc="Add, edit, or remove products" />
           <QuickActionCard href="/admin/cj" label="CJ Import" desc="Import products from CJ Dropshipping" />
-          <QuickActionCard href="/admin/homepage" label="Homepage Content" desc="Edit hero, banner, and sections" />
+          <QuickActionCard href="/admin/editor" label="Theme Editor" desc="Edit hero, banner, and all homepage sections" />
         </div>
       </div>
 

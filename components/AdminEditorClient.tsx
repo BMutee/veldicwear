@@ -33,6 +33,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { SectionFieldDef } from "@/lib/section-registry";
 import SectionSettingsForm, { type SectionSettings } from "./SectionSettingsForm";
 import EditorBlocksManager from "./EditorBlocksManager";
+import { flushAllBlocks } from "./block-flusher";
 
 export type EditorSection = {
   id: string;
@@ -214,11 +215,13 @@ export default function AdminEditorClient({
     refreshPreview();
   };
 
-  // Top-bar Save: persists every pending content draft, then refreshes.
+  // Top-bar Save: flushes every inline block's pending autosave, then persists
+  // any pending JSON-section content draft, then refreshes the preview.
   const save = async () => {
-    if (!dirty || saveState === "saving") return;
+    if (saveState === "saving") return;
     setSaveState("saving");
     try {
+      await flushAllBlocks();
       for (const [id, content] of Object.entries(drafts)) {
         const response = await fetch("/api/admin/sections", {
           method: "PUT",
@@ -323,7 +326,7 @@ export default function AdminEditorClient({
           <button
             type="button"
             onClick={() => void save()}
-            disabled={!dirty || saveState === "saving"}
+            disabled={saveState === "saving"}
             aria-live="polite"
             className={`flex h-8 cursor-pointer items-center rounded-md px-3.5 text-[13px] font-medium text-white transition ${FOCUS} ${
               saveState === "error"

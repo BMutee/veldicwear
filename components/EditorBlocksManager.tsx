@@ -30,6 +30,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { labels, ContentEditor, StyleEditor, type BlockRow } from "./AdminBlocksClient";
 import type { BlockType } from "@/lib/block-section";
+import { registerBlockFlusher } from "./block-flusher";
 
 const FONT = { fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" };
 const FOCUS = "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#005bd3]/50";
@@ -60,6 +61,7 @@ export default function EditorBlocksManager({ sectionKey, onSaved }: { sectionKe
   const [picker, setPicker] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<Omit<BlockRow, "order"> | null>(null);
+  const flushRef = useRef<() => Promise<void>>(async () => {});
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -92,6 +94,9 @@ export default function EditorBlocksManager({ sectionKey, onSaved }: { sectionKe
     if (saveTimer.current) clearTimeout(saveTimer.current);
   }, []);
 
+  // Let the theme editor's top-bar Save flush this block's pending autosave.
+  useEffect(() => registerBlockFlusher(sectionKey, () => flushRef.current()), [sectionKey]);
+
   const scheduleSave = (row: BlockRow) => {
     pending.current = { id: row.id, type: row.type, content: row.content, styles: row.styles };
     setStatus("saving");
@@ -112,6 +117,8 @@ export default function EditorBlocksManager({ sectionKey, onSaved }: { sectionKe
       setStatus("error");
     }
   };
+
+  flushRef.current = flushSave;
 
   const updateSelected = (patch: Partial<BlockRow>) => {
     const row = blocks.find((b) => b.id === selectedId);
