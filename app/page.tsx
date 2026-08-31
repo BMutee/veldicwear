@@ -10,6 +10,14 @@ import { parseStoredBlock, type FeaturedBlockContent, type FeaturedBlockStyles, 
 import { prisma } from "@/lib/prisma";
 import { getHomeSections } from "@/lib/home-sections";
 import { verifyPreviewToken } from "@/lib/preview-token";
+import { SECTION_REGISTRY } from "@/lib/section-registry";
+import SectionHighlighter from "@/components/SectionHighlighter";
+import { Fragment } from "react";
+
+// Editor preview wrappers label each section with its registry display name.
+const SECTION_NAMES: Record<string, string> = Object.fromEntries(
+  SECTION_REGISTRY.map((section) => [section.key, section.name])
+);
 
 export const dynamic = "force-dynamic";
 
@@ -67,48 +75,61 @@ export default async function Home({
   // but is no longer read here.
   const featured = featuredBlock ? parseStoredBlock("FEATURED_PRODUCTS", featuredBlock.content, featuredBlock.styles) : null;
 
+  const renderSection = (section: (typeof visible)[number]) => {
+    switch (section.key) {
+      case "hero":
+        return (
+          <Hero
+            content={hero?.content as HeroBlockContent | undefined}
+            styles={hero?.styles as HeroBlockStyles | undefined}
+          />
+        );
+      case "banner":
+        return (
+          <Banner
+            content={banner?.content as HeroBlockContent | undefined}
+            styles={banner?.styles as HeroBlockStyles | undefined}
+          />
+        );
+      case "categories-header":
+        return <Categories />;
+      case "featured-products":
+        return (
+          <FeaturedProducts
+            content={featured?.content as FeaturedBlockContent | undefined}
+            styles={featured?.styles as FeaturedBlockStyles | undefined}
+          />
+        );
+      case "lookbook":
+        return <Lookbook />;
+      case "brand-story":
+        return <BrandStory />;
+      case "newsletter":
+        return <Newsletter />;
+      case "social-feed":
+        return <SocialFeed />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
-      {visible.map((section) => {
-        switch (section.key) {
-          case "hero":
-            return (
-              <Hero
-                key={section.id}
-                content={hero?.content as HeroBlockContent | undefined}
-                styles={hero?.styles as HeroBlockStyles | undefined}
-              />
-            );
-          case "banner":
-            return (
-              <Banner
-                key={section.id}
-                content={banner?.content as HeroBlockContent | undefined}
-                styles={banner?.styles as HeroBlockStyles | undefined}
-              />
-            );
-          case "categories-header":
-            return <Categories key={section.id} />;
-          case "featured-products":
-            return (
-              <FeaturedProducts
-                key={section.id}
-                content={featured?.content as FeaturedBlockContent | undefined}
-                styles={featured?.styles as FeaturedBlockStyles | undefined}
-              />
-            );
-          case "lookbook":
-            return <Lookbook key={section.id} />;
-          case "brand-story":
-            return <BrandStory key={section.id} />;
-          case "newsletter":
-            return <Newsletter key={section.id} />;
-          case "social-feed":
-            return <SocialFeed key={section.id} />;
-          default:
-            return null;
-        }
-      })}
+      {visible.map((section) =>
+        preview ? (
+          <div
+            key={section.id}
+            data-veldic-section=""
+            data-veldic-section-id={section.id}
+            data-veldic-label={SECTION_NAMES[section.key] ?? section.key}
+          >
+            {renderSection(section)}
+          </div>
+        ) : (
+          <Fragment key={section.id}>{renderSection(section)}</Fragment>
+        )
+      )}
+      {preview && <SectionHighlighter />}
     </>
   );
 }
