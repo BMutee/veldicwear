@@ -1,6 +1,6 @@
 import { requireAdmin } from "@/lib/admin-guard";
-import { prisma } from "../../../lib/prisma";
-import AdminProductsClient from "../../../components/AdminProductsClient";
+import { prisma } from "@/lib/prisma";
+import AdminProductsClient from "@/components/AdminProductsClient";
 
 type ProductVariant = {
   id: string;

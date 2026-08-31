@@ -35,6 +35,7 @@ export default async function AdminEditorPage() {
     name: section.name,
     description: section.description,
     kind: section.kind,
+    deletable: section.deletable,
     fields: section.fields,
     defaultContent: section.defaultContent,
   }));

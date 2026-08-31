@@ -7,8 +7,64 @@
 // SectionFieldDef[] (lib/section-registry.ts) and reports changes upward; the
 // theme editor debounces them into an autosave PUT.
 
-import { ColorField, INPUT_CLS, LABEL_CLS } from "./AdminSectionShared";
 import type { SectionFieldDef } from "@/lib/section-registry";
+
+// ─── Polaris-styled primitives (local to the theme editor) ───────────────────
+// The Shopify theme editor uses its own neutral design system, not the brand
+// palette, so the settings panel ships its own input/label/color primitives
+// instead of reusing the brand-styled ones from AdminSectionShared.
+const INPUT_CLS =
+  "w-full rounded-lg border border-[#c9cccf] bg-white px-3 py-2 text-sm text-[#303030] shadow-[0_1px_0_0_rgba(0,0,0,0.05)] outline-none transition placeholder:text-[#8a8a8a] focus:border-[#005bd3] focus:ring-2 focus:ring-[#005bd3]/25";
+const LABEL_CLS = "block space-y-1.5 text-sm font-medium text-[#303030]";
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const normalizedForPicker = /^#[0-9a-fA-F]{3}$/.test(value)
+    ? "#" + value[1] + value[1] + value[2] + value[2] + value[3] + value[3]
+    : value;
+  const pickerValue = /^#[0-9a-fA-F]{6}$/.test(normalizedForPicker) ? normalizedForPicker : "#000000";
+
+  return (
+    <div className={LABEL_CLS}>
+      <span>{label}</span>
+      <div className="flex items-center gap-2">
+        <label className="relative h-9 w-12 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-[#c9cccf] transition focus-within:ring-2 focus-within:ring-[#005bd3]/40">
+          <input
+            type="color"
+            value={pickerValue}
+            onChange={(e) => {
+              if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
+                onChange(e.target.value.toUpperCase());
+              }
+            }}
+            aria-label={`${label} color picker`}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+          <span
+            aria-hidden="true"
+            className="block h-full w-full"
+            style={{ backgroundColor: pickerValue }}
+          />
+        </label>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value.trim().toUpperCase())}
+          placeholder="#FFFFFF"
+          spellCheck={false}
+          className={INPUT_CLS + " font-mono"}
+        />
+      </div>
+    </div>
+  );
+}
 
 export type SectionSettings = Record<string, unknown>;
 
