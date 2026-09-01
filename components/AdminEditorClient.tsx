@@ -35,7 +35,7 @@ import type { NavbarContent } from "@/lib/navbar-section";
 import type { FooterContent } from "@/lib/footer-section";
 import SectionSettingsForm, { type SectionSettings } from "./SectionSettingsForm";
 import EditorBlocksManager from "./EditorBlocksManager";
-import { flushAllBlocks } from "./block-flusher";
+import { flushAllBlocks, flushAllPanels } from "./block-flusher";
 import AdminNavbarEditor from "./AdminNavbarEditor";
 import AdminFooterEditor from "./AdminFooterEditor";
 import AdminCmsClient from "./AdminCmsClient";
@@ -242,13 +242,15 @@ export default function AdminEditorClient({
     refreshPreview();
   };
 
-  // Top-bar Save: flushes every inline block's pending autosave, then persists
-  // any pending JSON-section content draft, then refreshes the preview.
+  // Top-bar Save: flushes every inline block's pending autosave AND every
+  // global panel's (Navbar/Footer) pending save, then persists any pending
+  // JSON-section content draft, then refreshes the preview.
   const save = async () => {
     if (saveState === "saving") return;
     setSaveState("saving");
     try {
       await flushAllBlocks();
+      await flushAllPanels();
       for (const [id, content] of Object.entries(drafts)) {
         const response = await fetch("/api/admin/sections", {
           method: "PUT",
@@ -473,6 +475,8 @@ export default function AdminEditorClient({
                       initialSavedAt={navbar.savedAt}
                       defaults={navbar.defaults}
                       storeName={storeName ?? "Veldic Wear"}
+                      embedded
+                      onSaved={refreshPreview}
                     />
                   ) : (
                     <p className="text-sm text-[#616161]">Navbar settings unavailable.</p>
@@ -484,12 +488,14 @@ export default function AdminEditorClient({
                       initialSavedAt={footer.savedAt}
                       defaults={footer.defaults}
                       storeName={storeName ?? "Veldic Wear"}
+                      embedded
+                      onSaved={refreshPreview}
                     />
                   ) : (
                     <p className="text-sm text-[#616161]">Footer settings unavailable.</p>
                   )
                 ) : activeGlobal === "cms" ? (
-                  <AdminCmsClient />
+                  <AdminCmsClient embedded />
                 ) : selected && selectedDef ? (
                   selectedDef.kind === "json" ? (
                     <>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { FooterContent, FooterStyles } from "@/lib/footer-section";
@@ -12,6 +12,16 @@ import {
   PaddingFields,
   AnimationField,
 } from "./AdminSectionShared";
+import {
+  ThemeColorField,
+  ThemePaddingFields,
+  ThemeAnimationField,
+  ttabCls,
+  T_INPUT_CLS,
+  T_LABEL_CLS,
+  T_LEGEND_CLS,
+} from "./theme-editor-ui";
+import { registerPanelFlusher } from "./block-flusher";
 import Reveal from "./motion/Reveal";
 
 type Props = {
@@ -20,6 +30,11 @@ type Props = {
   defaults: FooterContent;
   /** Store name for the live preview — brand identity now lives in StoreSettings. */
   storeName: string;
+  /** Embedded in the theme editor — renders compact panel UI instead of the
+   *  standalone admin page chrome (no h1 header, editor-style tabs, theme
+   *  field styling). Registers a flusher so the top-bar Save persists edits. */
+  embedded?: boolean;
+  onSaved?: () => void;
 };
 
 type LinkKey = "shopLinks" | "supportLinks" | "companyLinks";
@@ -29,6 +44,8 @@ export default function AdminFooterEditor({
   initialSavedAt,
   defaults,
   storeName,
+  embedded = false,
+  onSaved,
 }: Props) {
   const [tab, setTab] = useState<"content" | "style">("content");
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("desktop");
@@ -40,6 +57,45 @@ export default function AdminFooterEditor({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const router = useRouter();
+
+  // Latest content so a registered panel flusher always saves fresh values.
+  const formRef = useRef(form);
+  formRef.current = form;
+  const flushRef = useRef<() => Promise<boolean>>(async () => true);
+  useEffect(() => registerPanelFlusher("footer", () => flushRef.current()), []);
+
+  // Single path used by the panel's Save button AND the theme editor's
+  // top-bar Save (via the registered panel flusher). Throws on failure so
+  // flushAllPanels can report it.
+  const saveNow = async (): Promise<boolean> => {
+    setSaving(true);
+    setErrors([]);
+    setSuccessMsg(null);
+    try {
+      const response = await fetch("/api/admin/footer", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formRef.current),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setErrors(Array.isArray(data?.details) ? data.details : [data?.error || "Failed to save."]);
+        setSaving(false);
+        return false;
+      }
+      if (data?.content) setForm(data.content as FooterContent);
+      setSuccessMsg("Footer saved.");
+      setDirty(false);
+      setSaving(false);
+      onSaved?.();
+      router.refresh();
+      return true;
+    } catch {
+      setErrors(["Network error. Please try again."]);
+      setSaving(false);
+      return false;
+    }
+  };
 
   const updateBrand = (patch: Partial<Pick<FooterContent, "brandDescription">>) => {
     setForm((prev) => ({ ...prev, ...patch }));
@@ -75,35 +131,16 @@ export default function AdminFooterEditor({
     setDirty(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setErrors([]);
-    setSuccessMsg(null);
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     try {
-      const res = await fetch("/api/admin/footer", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrors(
-          Array.isArray(data?.details) ? data.details : [data?.error || "Failed to save."]
-        );
-        setSaving(false);
-        return;
-      }
-      if (data?.content) setForm(data.content as FooterContent);
-      setSuccessMsg("Footer saved.");
-      setDirty(false);
-      setSaving(false);
+      await saveNow();
       router.refresh();
     } catch {
-      setErrors(["Network error. Please try again."]);
-      setSaving(false);
+      /* saveNow already surfaced the error */
     }
   };
+  flushRef.current = saveNow;
 
   const handleReset = () => {
     setForm(defaults);
@@ -111,6 +148,94 @@ export default function AdminFooterEditor({
     setErrors([]);
     setSuccessMsg(null);
   };
+
+  if (embedded) {
+    // Theme-editor panel: no page header (the panel provides one), editor-style
+    // tabs, Polaris field styling, single-column form + compact preview.
+    const resetBtn =
+      "inline-flex h-7 cursor-pointer items-center rounded-md border border-[#c9cccf] bg-white px-2.5 text-xs font-medium text-[#303030] transition hover:bg-[#f7f7f7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#005bd3]/50";
+    const saveBtn =
+      "inline-flex h-7 cursor-pointer items-center rounded-md bg-[#303030] px-3 text-xs font-medium text-white transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[#005bd3]/50 disabled:cursor-not-allowed disabled:opacity-45";
+    return (
+      <div className="space-y-4">
+        {successMsg && (
+          <div role="status" className="rounded-md border border-[#c6e3d1] bg-[#eef7f0] px-3 py-2 text-xs text-[#1a7f37]">
+            {successMsg}
+          </div>
+        )}
+        {errors.length > 0 && (
+          <div role="alert" className="rounded-md border border-[#f4c7c3] bg-[#fdeeee] px-3 py-2 space-y-1">
+            {errors.map((m, i) => (
+              <p key={i} className="text-xs text-[#b3261e]">
+                {m}
+              </p>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-1 border-b border-[#e3e3e3] pb-px" role="tablist" aria-label="Footer editor">
+          <button type="button" role="tab" aria-selected={tab === "content"} onClick={() => setTab("content")} className={ttabCls(tab === "content")}>
+            Content
+          </button>
+          <button type="button" role="tab" aria-selected={tab === "style"} onClick={() => setTab("style")} className={ttabCls(tab === "style")}>
+            Style
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4" aria-label="Footer editor form">
+          {tab === "content" ? (
+            <ContentTab embedded form={form} updateBrand={updateBrand} updateLink={updateLink} addLink={addLink} removeLink={removeLink} updatePayments={updatePayments} />
+          ) : (
+            <StyleTab embedded styles={form.styles} updateStyle={updateStyle} />
+          )}
+          <div className="flex items-center justify-between gap-3 border-t border-[#e3e3e3] pt-3">
+            <button type="button" onClick={handleReset} className={resetBtn}>
+              Reset to defaults
+            </button>
+            <span className="text-xs text-[#8a8a8a]">{dirty ? "Unsaved changes" : "All changes saved"}</span>
+            <button type="submit" disabled={saving} className={saveBtn}>
+              {saving ? "Saving…" : dirty ? "Save changes" : "Saved"}
+            </button>
+          </div>
+        </form>
+
+        <aside className="overflow-hidden rounded-md border border-[#e3e3e3]" aria-label="Footer live preview">
+          <div className="flex items-center justify-between gap-3 border-b border-[#e3e3e3] px-3 py-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-[#616161]">Live preview</span>
+            <div className="flex gap-0.5 rounded-md bg-[#f1f1f1] p-0.5" role="group" aria-label="Preview breakpoint">
+              {(["mobile", "desktop"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setPreviewMode(mode)}
+                  aria-pressed={previewMode === mode}
+                  className={"cursor-pointer rounded px-2 py-0.5 text-[11px] font-medium transition " + (previewMode === mode ? "bg-white text-[#303030] shadow-sm" : "text-[#616161] hover:text-[#303030]")}
+                >
+                  {mode === "mobile" ? "Mobile" : "Desktop"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="p-3">
+            <div key={"footer-preview-" + animReplay}>
+              <FooterPreview form={form} storeName={storeName} mode={previewMode} />
+            </div>
+            {form.styles.animation.type !== "NONE" && (
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setAnimReplay((k) => k + 1)}
+                  className="cursor-pointer rounded px-2 py-1 text-[11px] text-[#616161] transition hover:text-[#303030] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#005bd3]/50"
+                >
+                  Replay animation
+                </button>
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+    );
+  }
 
   const lastSaved = initialSavedAt
     ? new Date(initialSavedAt).toLocaleString()
@@ -247,33 +372,44 @@ function LinkGroup({
   onAdd,
   onRemove,
   onChange,
+  embedded = false,
 }: {
   title: string;
   links: { label: string; href: string }[];
   onAdd: () => void;
   onRemove: (i: number) => void;
   onChange: (i: number, field: "label" | "href", value: string) => void;
+  embedded?: boolean;
 }) {
+  const legend = embedded ? T_LEGEND_CLS : "text-sm font-semibold text-ink font-display uppercase tracking-wide";
+  const label = embedded ? T_LABEL_CLS : LABEL_CLS;
+  const input = embedded ? T_INPUT_CLS : INPUT_CLS;
+  const removeBtn = embedded
+    ? "inline-flex h-7 cursor-pointer items-center rounded-md border border-[#f4c7c3] px-2.5 text-xs font-medium text-[#b3261e] transition hover:bg-[#fdeeee] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#005bd3]/50"
+    : "cursor-pointer rounded-lg border border-clay/20 px-3 py-2 text-xs font-medium text-clay hover:bg-clay/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay/40 transition font-body";
+  const addBtn = embedded
+    ? "inline-flex h-7 cursor-pointer items-center rounded-md border border-[#c9cccf] bg-white px-2.5 text-xs font-medium text-[#303030] transition hover:bg-[#f7f7f7] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#005bd3]/50"
+    : "cursor-pointer rounded-lg border border-stone/20 px-3 py-1.5 text-xs font-medium text-stone hover:text-ink hover:bg-stone/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-moss/40 transition font-body";
   return (
     <fieldset className="space-y-3">
-      <legend className="text-sm font-semibold text-ink font-display uppercase tracking-wide">
+      <legend className={legend}>
         {title}
       </legend>
       {links.map((l, i) => (
         <div key={i} className="grid items-end gap-2 sm:grid-cols-[1fr_1fr_auto]">
-          <label className={LABEL_CLS}>
+          <label className={label}>
             Label
-            <input value={l.label} onChange={(e) => onChange(i, "label", e.target.value)} className={INPUT_CLS} />
+            <input value={l.label} onChange={(e) => onChange(i, "label", e.target.value)} className={input} />
           </label>
-          <label className={LABEL_CLS}>
+          <label className={label}>
             URL
-            <input value={l.href} onChange={(e) => onChange(i, "href", e.target.value)} className={INPUT_CLS + " font-mono"} />
+            <input value={l.href} onChange={(e) => onChange(i, "href", e.target.value)} className={input + " font-mono"} />
           </label>
           <button
             type="button"
             onClick={() => onRemove(i)}
             aria-label={`Remove ${title} link`}
-            className="cursor-pointer rounded-lg border border-clay/20 px-3 py-2 text-xs font-medium text-clay hover:bg-clay/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay/40 transition font-body"
+            className={removeBtn}
           >
             Remove
           </button>
@@ -282,7 +418,7 @@ function LinkGroup({
       <button
         type="button"
         onClick={onAdd}
-        className="cursor-pointer rounded-lg border border-stone/20 px-3 py-1.5 text-xs font-medium text-stone hover:text-ink hover:bg-stone/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-moss/40 transition font-body"
+        className={addBtn}
       >
         + Add link
       </button>
@@ -291,6 +427,7 @@ function LinkGroup({
 }
 
 function ContentTab({
+  embedded = false,
   form,
   updateBrand,
   updateLink,
@@ -298,6 +435,7 @@ function ContentTab({
   removeLink,
   updatePayments,
 }: {
+  embedded?: boolean;
   form: FooterContent;
   updateBrand: (patch: Partial<Pick<FooterContent, "brandDescription">>) => void;
   updateLink: (key: LinkKey, i: number, field: "label" | "href", value: string) => void;
@@ -305,26 +443,30 @@ function ContentTab({
   removeLink: (key: LinkKey, i: number) => void;
   updatePayments: (value: string) => void;
 }) {
+  const legend = embedded ? T_LEGEND_CLS : "text-sm font-semibold text-ink font-display uppercase tracking-wide";
+  const label = embedded ? T_LABEL_CLS : LABEL_CLS;
+  const input = embedded ? T_INPUT_CLS : INPUT_CLS;
   return (
     <div className="space-y-6">
       <fieldset className="space-y-3">
-        <legend className="text-sm font-semibold text-ink font-display uppercase tracking-wide">
+        <legend className={legend}>
           Brand description
         </legend>
-        <label className={LABEL_CLS}>
+        <label className={label}>
           Description
           <textarea
             value={form.brandDescription}
             onChange={(e) => updateBrand({ brandDescription: e.target.value })}
             rows={3}
-            className={INPUT_CLS}
+            className={input}
           />
         </label>
       </fieldset>
 
-      <hr className="border-stone/20" />
+      <hr className={embedded ? "border-[#e3e3e3]" : "border-stone/20"} />
 
       <LinkGroup
+        embedded={embedded}
         title="Shop links"
         links={form.shopLinks}
         onAdd={() => addLink("shopLinks")}
@@ -332,6 +474,7 @@ function ContentTab({
         onChange={(i, f, v) => updateLink("shopLinks", i, f, v)}
       />
       <LinkGroup
+        embedded={embedded}
         title="Support links"
         links={form.supportLinks}
         onAdd={() => addLink("supportLinks")}
@@ -339,6 +482,7 @@ function ContentTab({
         onChange={(i, f, v) => updateLink("supportLinks", i, f, v)}
       />
       <LinkGroup
+        embedded={embedded}
         title="Company links"
         links={form.companyLinks}
         onAdd={() => addLink("companyLinks")}
@@ -347,16 +491,16 @@ function ContentTab({
       />
 
       <fieldset className="space-y-3">
-        <legend className="text-sm font-semibold text-ink font-display uppercase tracking-wide">
+        <legend className={legend}>
           Payment methods
         </legend>
-        <label className={LABEL_CLS}>
+        <label className={label}>
           Comma-separated
           <input
             value={form.paymentMethods.join(", ")}
             onChange={(e) => updatePayments(e.target.value)}
             placeholder="Visa, MC, Amex, PayPal, Apple Pay"
-            className={INPUT_CLS}
+            className={input}
           />
         </label>
       </fieldset>
@@ -366,49 +510,64 @@ function ContentTab({
 
 
 function StyleTab({
+  embedded = false,
   styles,
   updateStyle,
 }: {
+  embedded?: boolean;
   styles: FooterStyles;
   updateStyle: (patch: Partial<FooterStyles>) => void;
 }) {
+  const legend = embedded ? T_LEGEND_CLS : "text-sm font-semibold text-ink font-display uppercase tracking-wide";
+  const Color = embedded ? ThemeColorField : ColorField;
+  const Animation = embedded ? ThemeAnimationField : AnimationField;
+  const hrCls = embedded ? "border-[#e3e3e3]" : "border-stone/20";
   return (
     <div className="space-y-6">
       <fieldset className="space-y-4">
-        <legend className="text-sm font-semibold text-ink font-display uppercase tracking-wide">
+        <legend className={legend}>
           Spacing
         </legend>
-        <PaddingFields
-          padding={styles}
-          onChange={(key, breakpoint, value) =>
-            updateStyle({ [key]: { ...styles[key], [breakpoint]: value } })
-          }
-          minTop={40}
-          minBottom={40}
-        />
+        {embedded ? (
+          <ThemePaddingFields
+            padding={styles}
+            onChange={(next) => updateStyle(next)}
+            minTop={40}
+            minBottom={40}
+          />
+        ) : (
+          <PaddingFields
+            padding={styles}
+            onChange={(key, breakpoint, value) =>
+              updateStyle({ [key]: { ...styles[key], [breakpoint]: value } })
+            }
+            minTop={40}
+            minBottom={40}
+          />
+        )}
       </fieldset>
 
-      <hr className="border-stone/20" />
+      <hr className={hrCls} />
 
       <fieldset className="space-y-4">
-        <legend className="text-sm font-semibold text-ink font-display uppercase tracking-wide">
+        <legend className={legend}>
           Color
         </legend>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <ColorField label="Background" value={styles.backgroundColor} onChange={(v) => updateStyle({ backgroundColor: v })} />
-          <ColorField label="Text" value={styles.textColor} onChange={(v) => updateStyle({ textColor: v })} />
-          <ColorField label="Link" value={styles.linkColor} onChange={(v) => updateStyle({ linkColor: v })} />
-          <ColorField label="Link hover" value={styles.linkHoverColor} onChange={(v) => updateStyle({ linkHoverColor: v })} />
+        <div className={embedded ? "grid gap-4" : "grid gap-4 sm:grid-cols-2"}>
+          <Color label="Background" value={styles.backgroundColor} onChange={(v) => updateStyle({ backgroundColor: v })} />
+          <Color label="Text" value={styles.textColor} onChange={(v) => updateStyle({ textColor: v })} />
+          <Color label="Link" value={styles.linkColor} onChange={(v) => updateStyle({ linkColor: v })} />
+          <Color label="Link hover" value={styles.linkHoverColor} onChange={(v) => updateStyle({ linkHoverColor: v })} />
         </div>
       </fieldset>
 
-      <hr className="border-stone/20" />
+      <hr className={hrCls} />
 
       <fieldset className="space-y-4">
-        <legend className="text-sm font-semibold text-ink font-display uppercase tracking-wide">
+        <legend className={legend}>
           Animation
         </legend>
-        <AnimationField
+        <Animation
           value={styles.animation}
           onChange={(animation) => updateStyle({ animation })}
         />

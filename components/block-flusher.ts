@@ -22,3 +22,24 @@ export async function flushAllBlocks(): Promise<void> {
     throw new Error("One or more blocks failed to save.");
   }
 }
+
+// ─── Global panels (Navbar / Footer) ─────────────────────────────────────────
+// The same concept drives the embedded global editors: register a flusher that
+// persists the panel's latest content, and the theme editor's top-bar Save
+// flushes everything at once.
+
+const panelFlushers = new Map<string, Flusher>();
+
+export function registerPanelFlusher(key: string, flusher: Flusher): () => void {
+  panelFlushers.set(key, flusher);
+  return () => {
+    if (panelFlushers.get(key) === flusher) panelFlushers.delete(key);
+  };
+}
+
+export async function flushAllPanels(): Promise<void> {
+  const results = await Promise.allSettled([...panelFlushers.values()].map((fn) => fn()));
+  if (results.some((result) => result.status === "rejected")) {
+    throw new Error("One or more panels failed to save.");
+  }
+}

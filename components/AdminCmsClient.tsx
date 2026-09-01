@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { ttabCls } from "./theme-editor-ui";
 
 function PagesTab() {
   const [pages, setPages] = useState<any[]>([]);
@@ -453,7 +454,7 @@ function SectionsTab() {
 }
 
 // ─── Main ────────────────────────────
-export default function AdminCmsClient() {
+export default function AdminCmsClient({ embedded = false }: { embedded?: boolean }) {
   const [tab, setTab] = useState("pages");
   const tabs = [
     { id: "pages", label: "Pages" },
@@ -463,10 +464,69 @@ export default function AdminCmsClient() {
     { id: "settings", label: "Settings" },
   ];
 
+  if (embedded) {
+    // Theme-editor panel: no page header (the panel provides one), editor-style
+    // tabs, and a scoped Polaris restyle for the inner forms' inputs/labels/
+    // submit buttons. Saves are immediate per action, so no flusher needed.
+    return (
+      <div className="cms-embedded space-y-4">
+        <style>{`
+          .cms-embedded input:not([type="checkbox"]):not([type="radio"]),
+          .cms-embedded textarea,
+          .cms-embedded select {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #c9cccf;
+            background: #ffffff;
+            padding: 6px 12px;
+            font-size: 13px;
+            line-height: 1.45;
+            color: #303030;
+            outline: none;
+          }
+          .cms-embedded input:not([type="checkbox"]):not([type="radio"]):focus,
+          .cms-embedded textarea:focus,
+          .cms-embedded select:focus {
+            border-color: #005bd3;
+            box-shadow: 0 0 0 1px #005bd3;
+          }
+          .cms-embedded label { font-size: 12px; font-weight: 500; color: #616161; }
+          .cms-embedded button[type="submit"] {
+            border-radius: 8px;
+            background: #303030;
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 13px;
+            padding: 6px 14px;
+            border: none;
+            cursor: pointer;
+          }
+          .cms-embedded button[type="submit"]:hover { background: #000000; }
+          .cms-embedded button[type="submit"]:disabled { opacity: 0.45; cursor: not-allowed; }
+          .cms-embedded h3 { font-size: 14px; font-weight: 600; color: #303030; }
+          .cms-embedded table { font-size: 13px; }
+        `}</style>
+        <div className="flex gap-1 border-b border-[#e3e3e3] pb-px" role="tablist" aria-label="Pages and content">
+          {tabs.map(t => (
+            <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
+              className={ttabCls(tab === t.id)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {tab === "pages" && <PagesTab />}
+        {tab === "sections" && <SectionsTab />}
+        {tab === "faq" && <FaqTab />}
+        {tab === "announcements" && <AnnouncementsTab />}
+        {tab === "settings" && <SettingsTab />}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold font-display tracking-tight text-ink">Pages & Content</h1>
+        <h1 className="text-3xl font-bold font-display tracking-tight text-ink">Pages &amp; Content</h1>
         <p className="text-stone mt-1 font-body text-sm">Manage site pages, FAQs, announcements, store settings, and homepage sections.</p>
       </div>
       <div className="flex gap-1 border-b border-stone/20 pb-px">
