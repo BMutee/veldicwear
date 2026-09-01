@@ -29,3 +29,8 @@ __pycache__/
 theme/
 # Browser-automation screenshots / session artifacts
 .playwright-mcp/
+
+# AI assistant / skills tooling artifacts
+.agents/
+.continue/
+skills-lock.json
