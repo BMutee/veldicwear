@@ -50,15 +50,18 @@ const item = {
   show: { opacity: 1, scale: 1 },
 };
 
-export default function SocialFeed() {
-  const [content, setContent] = useState<SocialFeedContent | null>(null);
+export default function SocialFeed({ initialContent }: { initialContent?: SocialFeedContent | null }) {
+  const [content, setContent] = useState<SocialFeedContent | null>(initialContent ?? null);
 
   useEffect(() => {
+    // Theme document supplies content (app/page.tsx) — legacy fetch is a
+    // fallback for prop-less callers only.
+    if (initialContent) return;
     fetch("/api/sections/social-feed")
       .then((r) => r.json())
       .then((data) => setContent(data))
       .catch(() => {});
-  }, []);
+  }, [initialContent]);
 
   const data = content || fallback;
   const posts = data.posts || fallback.posts || [];

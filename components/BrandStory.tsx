@@ -32,15 +32,18 @@ const fallback: BrandStoryContent = {
   ctaLink: "/about"
 };
 
-export default function BrandStory() {
-  const [content, setContent] = useState<BrandStoryContent | null>(null);
+export default function BrandStory({ initialContent }: { initialContent?: BrandStoryContent | null }) {
+  const [content, setContent] = useState<BrandStoryContent | null>(initialContent ?? null);
 
   useEffect(() => {
+    // Theme document supplies content (app/page.tsx) — legacy fetch is a
+    // fallback for prop-less callers only.
+    if (initialContent) return;
     fetch("/api/sections/brand-story")
       .then((r) => r.json())
       .then((data) => setContent(data))
       .catch(() => {});
-  }, []);
+  }, [initialContent]);
 
   const data = content || fallback;
 

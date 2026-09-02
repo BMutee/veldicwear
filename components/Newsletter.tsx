@@ -25,17 +25,20 @@ const fallback: NewsletterContent = {
   disclaimer: "No spam. Unsubscribe anytime."
 };
 
-export default function Newsletter() {
-  const [content, setContent] = useState<NewsletterContent | null>(null);
+export default function Newsletter({ initialContent }: { initialContent?: NewsletterContent | null }) {
+  const [content, setContent] = useState<NewsletterContent | null>(initialContent ?? null);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
   useEffect(() => {
+    // Theme document supplies content (app/page.tsx) — legacy fetch is a
+    // fallback for prop-less callers only.
+    if (initialContent) return;
     fetch("/api/sections/newsletter")
       .then((r) => r.json())
       .then((data) => setContent(data))
       .catch(() => {});
-  }, []);
+  }, [initialContent]);
 
   const data = content || fallback;
 

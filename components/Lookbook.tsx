@@ -48,15 +48,18 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-export default function Lookbook() {
-  const [content, setContent] = useState<LookbookContent | null>(null);
+export default function Lookbook({ initialContent }: { initialContent?: LookbookContent | null }) {
+  const [content, setContent] = useState<LookbookContent | null>(initialContent ?? null);
 
   useEffect(() => {
+    // Theme document supplies content (app/page.tsx) — legacy fetch is a
+    // fallback for prop-less callers only.
+    if (initialContent) return;
     fetch("/api/sections/lookbook")
       .then((r) => r.json())
       .then((data) => setContent(data))
       .catch(() => {});
-  }, []);
+  }, [initialContent]);
 
   const data = content || fallback;
   const looks = data.looks || fallback.looks || [];

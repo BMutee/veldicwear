@@ -1,4 +1,4 @@
-﻿node_modules/
+node_modules/
 .env
 .env.local
 .DS_Store
@@ -27,6 +27,10 @@ __pycache__/
 
 # Shopify Horizon theme pulled from the store for reference - not part of the app
 theme/
+# ...but the new Horizon-style theme ENGINE ships with the app under lib/theme
+# and app/api/admin/theme - re-include those so the section editor is committed.
+!lib/theme/
+!app/api/admin/theme/
 # Browser-automation screenshots / session artifacts
 .playwright-mcp/
 

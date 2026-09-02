@@ -1,95 +1,49 @@
 import { requireAdmin } from "@/lib/admin-guard";
-import { prisma } from "@/lib/prisma";
-import { SECTION_REGISTRY } from "@/lib/section-registry";
-import { createPreviewToken } from "@/lib/preview-token";
-import AdminEditorClient, { type EditorSection } from "@/components/AdminEditorClient";
-import { NAVBAR_DEFAULT_CONTENT, parseNavbarContent } from "@/lib/navbar-section";
-import { FOOTER_DEFAULT_CONTENT, parseFooterContent } from "@/lib/footer-section";
+import { getTemplateDocument } from "@/lib/theme/document";
+import { themeSettingsIds } from "@/lib/theme/settings-schema";
 import { getStoreSettings } from "@/lib/settings";
-import Script from "next/script";
+import { createPreviewToken } from "@/lib/preview-token";
+import ThemeEditor from "@/components/theme-editor/ThemeEditor";
+import type { SettingValues } from "@/lib/theme/types";
 
 export const dynamic = "force-dynamic";
 
 // ─── Theme editor page ───────────────────────────────────────────────────────
-// Loads every registered homepage section plus the global (navbar/footer) and
-// store settings, then hands them to the editor client. The "Navbar", "Footer"
-// and "Sections" entries in the left tree edit these global pieces inline, so
-// the merchant never leaves the theme editor — same as Shopify's global
-// header/footer sections.
+// Loads the homepage template document (with one-time legacy migration on
+// first deploy), the global theme settings, and mints a short-lived preview
+// token for the design-mode iframe. Everything else — forms, structure tree,
+// autosave, live preview — is driven by the schema definitions.
 
 export default async function AdminEditorPage() {
   await requireAdmin();
 
-  const keys = SECTION_REGISTRY.map((section) => section.key);
-  const rows = await prisma.siteSection.findMany({
-    where: { key: { in: keys } },
-    select: { id: true, key: true, label: true, published: true, position: true, content: true },
-    orderBy: { position: "asc" },
-  });
-
-  const initialSections: EditorSection[] = rows.map((row) => ({
-    id: row.id,
-    key: row.key,
-    label: row.label,
-    published: row.published,
-    position: row.position,
-    content: parseContent(row.content),
-  }));
-
-  const defs = SECTION_REGISTRY.map((section) => ({
-    key: section.key,
-    name: section.name,
-    description: section.description,
-    kind: section.kind,
-    deletable: section.deletable,
-    fields: section.fields,
-    defaultContent: section.defaultContent,
-  }));
-
-  // Global sections (navbar/footer) — loaded for inline editing in the panel.
-  const [navbarSection, footerSection] = await Promise.all([
-    prisma.siteSection.findUnique({ where: { key: "navbar" } }),
-    prisma.siteSection.findUnique({ where: { key: "footer" } }),
+  const [{ doc, source }, storeSettings] = await Promise.all([
+    getTemplateDocument(),
+    getStoreSettings().catch(() => null),
   ]);
 
-  let storeName = "Veldic Wear";
-  try {
-    storeName = (await getStoreSettings()).storeName || storeName;
-  } catch {
-    /* keep fallback */
+  // Hand the editor only the settings the theme schema owns; the full
+  // StoreSettings object remains authoritative server-side.
+  const initialSettings: SettingValues = {};
+  if (storeSettings) {
+    const bag = storeSettings as unknown as Record<string, unknown>;
+    for (const id of themeSettingsIds()) {
+      if (bag[id] !== undefined && bag[id] !== null) initialSettings[id] = bag[id] as string;
+    }
   }
 
   return (
-    <>
-      <AdminEditorClient
-        initialSections={initialSections}
-        defs={defs}
-        previewToken={createPreviewToken()}
-        navbar={{
-          content: parseNavbarContent(navbarSection?.content),
-          savedAt: navbarSection?.updatedAt ? navbarSection.updatedAt.toISOString() : null,
-          defaults: NAVBAR_DEFAULT_CONTENT,
-        }}
-        footer={{
-          content: parseFooterContent(footerSection?.content),
-          savedAt: footerSection?.updatedAt ? footerSection.updatedAt.toISOString() : null,
-          defaults: FOOTER_DEFAULT_CONTENT,
-        }}
-        storeName={storeName}
-      />
-      {/* Cloudinary Upload Widget — the inline hero editor's image picker relies on it,
-          and this page sits outside the (dashboard) layout that normally loads it. */}
-      <Script src="https://upload-widget.cloudinary.com/global/all.js" strategy="afterInteractive" />
-    </>
+    <ThemeEditor
+      initialDoc={doc}
+      initialSettings={initialSettings}
+      previewToken={createPreviewToken()}
+      docSource={
+        source === "database"
+          ? "Stored template document"
+          : source === "migrated"
+            ? "Migrated from legacy sections (saved on first edit)"
+            : "Canonical default (database unavailable)"
+      }
+    />
   );
-}
-
-function parseContent(raw: string | null): Record<string, unknown> {
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw);
-    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) ? parsed : {};
-  } catch {
-    return {};
-  }
 }

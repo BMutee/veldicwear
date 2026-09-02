@@ -37,9 +37,9 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-export default function Categories() {
+export default function Categories({ content }: { content?: CategoriesHeaderContent | null }) {
   const [collections, setCollections] = useState<DBCollection[]>([]);
-  const [headerContent, setHeaderContent] = useState<CategoriesHeaderContent | null>(null);
+  const [headerContent, setHeaderContent] = useState<CategoriesHeaderContent | null>(content ?? null);
 
   useEffect(() => {
     fetch("/api/collections")
@@ -47,11 +47,14 @@ export default function Categories() {
       .then((data) => setCollections(data))
       .catch(() => {});
 
+    // Theme document supplies the header content (app/page.tsx) — the legacy
+    // /api/sections fetch is only a fallback for callers without props.
+    if (content) return;
     fetch("/api/sections/categories-header")
       .then((r) => r.json())
       .then((data) => setHeaderContent(data))
       .catch(() => {});
-  }, []);
+  }, [content]);
 
   const header = headerContent || fallbackHeader;
 

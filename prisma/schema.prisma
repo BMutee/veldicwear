@@ -326,6 +326,19 @@ model Homepage {
   @@map("Homepage")
 }
 
+// Theme template documents (Horizon-style JSON page templates: an ordered
+// map of section instances with settings + nested block instances). One row
+// per template type; the homepage is templateType "index".
+model TemplateDocument {
+  id           String   @id @default(cuid())
+  templateType String   @unique
+  document     Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("TemplateDocument")
+}
+
 model StoreSettings {
   id             String   @id @default("store")
   storeName      String   @default("VELDIC WEAR")
