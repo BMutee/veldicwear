@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Card, CardHeader } from "@/components/admin-ui/primitives";
+import { useToast } from "@/components/admin-ui/toast";
 
 export default function AdminCJProductSync() {
+  const { toast } = useToast();
   const [syncingVariants, setSyncingVariants] = useState(false);
   const [syncingStock, setSyncingStock] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
 
   const handleSyncStock = async () => {
     setSyncingStock(true);
-    setMessage(null);
 
     try {
       const response = await fetch("/api/admin/cj/stock-sync", {
@@ -24,11 +25,12 @@ export default function AdminCJProductSync() {
       }
 
       const s = result.summary;
-      setMessage(
+      toast(
+        "success",
         `Stock sync complete. ${s.total} product(s) checked, ${s.updated} updated, ${s.unchanged} unchanged, ${s.errors} errors. ${s.totalVariantsUpdated} variant(s) stock updated.`
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Stock sync failed.");
+      toast("error", error instanceof Error ? error.message : "Stock sync failed.");
     } finally {
       setSyncingStock(false);
     }
@@ -36,7 +38,6 @@ export default function AdminCJProductSync() {
 
   const handleSyncAllVariants = async () => {
     setSyncingVariants(true);
-    setMessage(null);
 
     try {
       const response = await fetch("/api/admin/cj/variants/sync", {
@@ -48,47 +49,28 @@ export default function AdminCJProductSync() {
         throw new Error(result.error || "Unable to sync CJ variants.");
       }
 
-      setMessage(
+      toast(
+        "success",
         `Synced variants for ${result.total} product(s). ${result.totalVariantsSynced} total variant(s) added/updated. ${result.failed} product(s) failed.`
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Sync failed.");
+      toast("error", error instanceof Error ? error.message : "Sync failed.");
     } finally {
       setSyncingVariants(false);
     }
   };
 
   return (
-    <div className="rounded-3xl border border-black/10 bg-slate-100 p-6">
-      <div className="flex flex-col gap-4">
-        <h2 className="text-xl font-semibold">CJ Product Sync</h2>
-
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleSyncAllVariants}
-              disabled={syncingVariants}
-              className="rounded-full bg-slate-700 px-6 py-3 font-semibold text-white transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {syncingVariants ? "Syncing..." : "Sync CJ Variants for All Products"}
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleSyncStock}
-              disabled={syncingStock}
-              className="rounded-full bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {syncingStock ? "Syncing..." : "Sync Stock Now"}
-            </button>
-          </div>
-
-          {message && <p className="text-sm text-black/70">{message}</p>}
-        </div>
+    <Card>
+      <CardHeader title="CJ Product Sync" />
+      <div className="flex flex-wrap items-center gap-3 px-5 py-4">
+        <Button type="button" onClick={handleSyncAllVariants} loading={syncingVariants}>
+          Sync CJ Variants for All Products
+        </Button>
+        <Button type="button" variant="secondary" onClick={handleSyncStock} loading={syncingStock}>
+          Sync Stock Now
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

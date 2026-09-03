@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ChangeEvent, ReactNode } from "react";
+import { Modal } from "./Modal";
 
 /* ══════════════════════════════════════════════════════════════
    Veldic Admin — UI primitives
@@ -80,16 +81,22 @@ export function LinkButton({
   size = "md",
   className = "",
   children,
+  target,
+  rel,
 }: {
   href: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
   className?: string;
   children: ReactNode;
+  target?: string;
+  rel?: string;
 }) {
   return (
     <Link
       href={href}
+      target={target}
+      rel={rel}
       className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
     >
       {children}
@@ -141,9 +148,9 @@ export function Input({
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
-  min?: number;
-  max?: number;
-  step?: number;
+  min?: number | string;
+  max?: number | string;
+  step?: number | string;
   className?: string;
   ariaLabel?: string;
 }) {
@@ -164,17 +171,23 @@ export function Input({
   );
 }
 
+export type SelectOption = { value: string; label: string };
+export type SelectGroup = { label: string; options: SelectOption[] };
+
 export function Select({
   value,
   onChange,
-  options,
+  options = [],
+  groups,
   disabled,
   className = "",
   ariaLabel,
 }: {
   value: string;
   onChange: (v: string) => void;
-  options: { value: string; label: string }[];
+  options?: SelectOption[];
+  /** Rendered as <optgroup> after the flat options. */
+  groups?: SelectGroup[];
   disabled?: boolean;
   className?: string;
   ariaLabel?: string;
@@ -191,6 +204,15 @@ export function Select({
         <option key={o.value} value={o.value}>
           {o.label}
         </option>
+      ))}
+      {groups?.map((group) => (
+        <optgroup key={group.label} label={group.label}>
+          {group.options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </optgroup>
       ))}
     </select>
   );
@@ -345,24 +367,144 @@ export function PageHeader({
   );
 }
 
-export function EmptyState({
+/** Consistent page shell for every admin route (matches the rebuilt dashboard). */
+export function PageContainer({
+  children,
+  wide = false,
+}: {
+  children: ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <div className={`mx-auto p-6 sm:p-8 ${wide ? "max-w-7xl" : "max-w-6xl"}`}>{children}</div>
+  );
+}
+
+export function SearchInput({
+  value,
+  onChange,
+  placeholder = "Search…",
+  className = "",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  return (
+    <div className={`relative ${className}`}>
+      <svg
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+        aria-hidden="true"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <Input
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        ariaLabel={placeholder}
+        className="pl-9"
+      />
+    </div>
+  );
+}
+
+/** Success / error / info banner — replaces the ad-hoc alert boxes. */
+export function AlertBanner({
+  kind,
+  children,
+  onDismiss,
+}: {
+  kind: "success" | "error" | "info";
+  children: ReactNode;
+  onDismiss?: () => void;
+}) {
+  const styles: Record<string, string> = {
+    success: "border-moss/30 bg-moss/5 text-moss",
+    error: "border-clay/30 bg-clay/10 text-red-700",
+    info: "border-stone/30 bg-ink/5 text-stone",
+  };
+  return (
+    <div
+      role={kind === "error" ? "alert" : "status"}
+      className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${styles[kind]}`}
+    >
+      <div>{children}</div>
+      {onDismiss && (
+        <button
+          type="button"
+          aria-label="Dismiss message"
+          onClick={onDismiss}
+          className="shrink-0 cursor-pointer rounded-md p-0.5 opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Underlined tab bar (CMS / CJ screens). */
+export function Tabs({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: { id: string; label: string }[];
+  active: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <div
+      className="mb-6 flex gap-1 overflow-x-auto border-b border-stone/20 pb-px"
+      role="tablist"
+      aria-label="Sections"
+    >
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          role="tab"
+          aria-selected={tab.id === active}
+          onClick={() => onChange(tab.id)}
+          className={`-mb-px cursor-pointer whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-moss/40 ${
+            tab.id === active
+              ? "border-moss text-ink"
+              : "border-transparent text-stone hover:text-ink"
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Simple modal frame with title + optional description (used by modaler builds). */
+export function ModalShell({
   title,
   description,
-  action,
-  icon,
+  children,
+  onClose,
+  wide = false,
 }: {
   title: string;
   description?: string;
-  action?: ReactNode;
-  icon?: ReactNode;
+  children: ReactNode;
+  onClose: () => void;
+  wide?: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-stone/30 bg-white px-6 py-12 text-center">
-      {icon && <div className="mb-1 text-stone/60">{icon}</div>}
-      <p className="font-display text-base font-semibold text-ink">{title}</p>
-      {description && <p className="max-w-sm text-sm text-stone">{description}</p>}
-      {action && <div className="mt-3">{action}</div>}
-    </div>
+    <Modal open onClose={onClose} title={title} description={description} wide={wide}>
+      {children}
+    </Modal>
   );
 }
 

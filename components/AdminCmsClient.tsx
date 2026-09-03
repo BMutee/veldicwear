@@ -1,259 +1,328 @@
-"use client";
+﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ttabCls } from "./theme-editor-ui";
+import {
+  Badge,
+  Button,
+  Card,
+  Field,
+  Input,
+  PageHeader,
+  Select,
+  Tabs,
+  Textarea,
+  Toggle,
+} from "@/components/admin-ui/primitives";
+import { Modal, ConfirmDialog } from "@/components/admin-ui/Modal";
+import { useToast } from "@/components/admin-ui/toast";
+import { DataTable, type Column } from "@/components/admin-ui/DataTable";
+
+export default function AdminCmsClient() {
+  const [tab, setTab] = useState("pages");
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Pages & Content"
+        description="Manage site pages, FAQs, announcements, store settings, and homepage sections."
+      />
+
+      <Tabs
+        tabs={[
+          { id: "pages", label: "Pages" },
+          { id: "sections", label: "Sections" },
+          { id: "faq", label: "FAQ" },
+          { id: "announcements", label: "Announcements" },
+          { id: "settings", label: "Settings" },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
+
+      {tab === "pages" && <PagesTab />}
+      {tab === "sections" && <SectionsTab />}
+      {tab === "faq" && <FaqTab />}
+      {tab === "announcements" && <AnnouncementsTab />}
+      {tab === "settings" && <SettingsTab />}
+    </div>
+  );
+}
+
+// __PAGES__
+type CmsPage = {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  ctaLabel: string | null;
+  ctaUrl: string | null;
+  seoTitle: string | null;
+  metaDescription: string | null;
+  published: boolean;
+  updatedAt: string;
+};
+
+const emptyPageForm = {
+  title: "",
+  slug: "",
+  content: "",
+  ctaLabel: "",
+  ctaUrl: "",
+  seoTitle: "",
+  metaDescription: "",
+  published: false,
+};
 
 function PagesTab() {
-  const [pages, setPages] = useState<any[]>([]);
-  const [editing, setEditing] = useState<any | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: "", slug: "", content: "", ctaLabel: "", ctaUrl: "", seoTitle: "", metaDescription: "", published: false });
-  const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { toast } = useToast();
   const router = useRouter();
-
-  useEffect(() => { fetch("/api/admin/cms/pages").then(r => r.json()).then(setPages).catch(() => {}); }, []);
-
-  return (
-    <div className="space-y-4">
-      {success && <div className="rounded-lg border border-moss/20 bg-moss/5 px-4 py-3 text-sm text-moss">{success}</div>}
-      {errors.length > 0 && <div className="rounded-lg border border-clay/20 bg-clay/5 px-4 py-3">{errors.map((m, i) => <p key={i} className="text-sm text-red-700">{m}</p>)}</div>}
-
-      <button type="button" onClick={() => { setShowForm(true); setEditing(null); setForm({ title: "", slug: "", content: "", ctaLabel: "", ctaUrl: "", seoTitle: "", metaDescription: "", published: false }); setErrors([]); setSuccess(null); }}
-        className="cursor-pointer rounded-lg bg-clay px-4 py-2 text-sm font-semibold text-white hover:bg-[#B57904] focus:outline-none focus:ring-2 focus:ring-[#CA8A04]/40">+ New Page</button>
-
-      {showForm && (
-        <form onSubmit={async (e) => {
-          e.preventDefault(); setSaving(true); setErrors([]); setSuccess(null);
-          const method = editing ? "PUT" : "POST";
-          const url = editing ? `/api/admin/cms/pages/${editing.slug}` : "/api/admin/cms/pages";
-          try {
-            const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-            const data = await res.json();
-            if (!res.ok) { setErrors(data.details || [data.error]); setSaving(false); return; }
-            setSuccess(editing ? "Page updated." : "Page created.");
-            setSaving(false); setShowForm(false); setEditing(null); setForm({ title: "", slug: "", content: "", ctaLabel: "", ctaUrl: "", seoTitle: "", metaDescription: "", published: false });
-            const list = await fetch("/api/admin/cms/pages").then(r => r.json()); setPages(list); router.refresh();
-          } catch { setErrors(["Network error."]); setSaving(false); }
-        }} className="rounded-xl border border-stone/20 bg-white p-6 shadow-sm space-y-4">
-          <h3 className="text-lg font-bold font-display text-ink">{editing ? "Edit Page" : "New Page"}</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm font-medium text-stone">Title <input required value={form.title} onChange={e => setForm({...form, title: e.target.value, slug: editing ? form.slug : e.target.value.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-            <label className="space-y-1 text-sm font-medium text-stone">Slug <input required value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 font-mono" /></label>
-          </div>
-          <label className="space-y-1 text-sm font-medium text-stone">Content (HTML) <textarea required rows={12} value={form.content} onChange={e => setForm({...form, content: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 font-mono resize-y" /></label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm font-medium text-stone">Button text (optional) <input value={form.ctaLabel} onChange={e => setForm({...form, ctaLabel: e.target.value})} placeholder="Shop new arrivals" className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-            <label className="space-y-1 text-sm font-medium text-stone">Button link (optional) <input value={form.ctaUrl} onChange={e => setForm({...form, ctaUrl: e.target.value})} placeholder="/shop or https://example.com" className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm font-medium text-stone">SEO Title <input value={form.seoTitle} onChange={e => setForm({...form, seoTitle: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-            <label className="space-y-1 text-sm font-medium text-stone">Meta Description <input value={form.metaDescription} onChange={e => setForm({...form, metaDescription: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-          </div>
-          <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.published} onChange={e => setForm({...form, published: e.target.checked})} className="h-4 w-4 rounded border-stone/20 text-clay focus:ring-[#CA8A04]/40 cursor-pointer" /><span className="text-sm font-medium text-stone">Published</span></label>
-          <div className="flex gap-3">
-            <button type="submit" disabled={saving} className="cursor-pointer rounded-lg bg-clay px-5 py-2 text-sm font-semibold text-white hover:bg-[#B57904] focus:outline-none focus:ring-2 focus:ring-[#CA8A04]/40 disabled:opacity-50">{saving ? "Saving..." : "Save"}</button>
-            <button type="button" onClick={() => { setShowForm(false); setEditing(null); }} className="cursor-pointer rounded-lg border border-stone/20 px-4 py-2 text-sm text-stone hover:bg-white">Cancel</button>
-          </div>
-        </form>
-      )}
-
-      <div className="overflow-hidden rounded-xl border border-stone/20 bg-white shadow-sm">
-        {pages.length === 0 ? <p className="px-6 py-8 text-sm text-stone text-center">No pages yet.</p> : (
-          <table className="w-full text-sm"><thead><tr className="border-b border-stone/20 bg-white">
-            <th className="text-left px-4 py-3 font-semibold text-stone text-xs uppercase tracking-wider">Title</th>
-            <th className="text-left px-4 py-3 font-semibold text-stone text-xs uppercase tracking-wider">Slug</th>
-            <th className="text-left px-4 py-3 font-semibold text-stone text-xs uppercase tracking-wider">Status</th>
-            <th className="text-left px-4 py-3 font-semibold text-stone text-xs uppercase tracking-wider">Updated</th>
-            <th className="text-right px-4 py-3 font-semibold text-stone text-xs uppercase tracking-wider">Actions</th>
-          </tr></thead><tbody className="divide-y divide-[#E2E8F0]">
-            {pages.map((p: any) => (
-              <tr key={p.id} className="hover:bg-white">
-                <td className="px-4 py-3 font-medium text-ink">{p.title}</td>
-                <td className="px-4 py-3 text-stone text-xs font-mono">/{p.slug}</td>
-                <td className="px-4 py-3"><span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${p.published ? "bg-moss/5 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>{p.published ? "Published" : "Draft"}</span></td>
-                <td className="px-4 py-3 text-xs text-stone">{new Date(p.updatedAt).toLocaleDateString()}</td>
-                <td className="px-4 py-3 text-right"><div className="flex justify-end gap-2">
-                  <button type="button" onClick={() => { setEditing(p); setShowForm(true); setForm({ title: p.title, slug: p.slug, content: p.content, ctaLabel: p.ctaLabel || "", ctaUrl: p.ctaUrl || "", seoTitle: p.seoTitle || "", metaDescription: p.metaDescription || "", published: p.published }); setErrors([]); setSuccess(null); }}
-                    className="cursor-pointer rounded-lg border border-stone/20 px-3 py-1 text-xs font-medium text-stone hover:bg-white">Edit</button>
-                  <a href={`/admin/pages/${p.slug}/blocks`} className="cursor-pointer rounded-lg border border-moss/20 px-3 py-1 text-xs font-medium text-moss hover:bg-moss/5">Blocks</a>
-                  <button type="button" onClick={async () => { if (!confirm("Delete this page?")) return; await fetch(`/api/admin/cms/pages/${p.slug}`, { method: "DELETE" }); setPages((prev: any[]) => prev.filter((x: any) => x.slug !== p.slug)); }}
-                    className="cursor-pointer rounded-lg border border-clay/20 px-3 py-1 text-xs font-medium text-clay hover:bg-clay/5">Delete</button>
-                </div></td>
-              </tr>
-            ))}
-          </tbody></table>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── FAQ ────────────────────────────────────────────
-function FaqTab() {
-  const [items, setItems] = useState<any[]>([]);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [pages, setPages] = useState<CmsPage[]>([]);
+  const [editing, setEditing] = useState<CmsPage | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ question: "", answer: "", published: true, sortOrder: 0 });
+  const [form, setForm] = useState(emptyPageForm);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
-  const router = useRouter();
-
-  useEffect(() => { fetch("/api/admin/cms/faq").then(r => r.json()).then(setItems).catch(() => {}); }, []);
-
-  return (
-    <div className="space-y-4">
-      {success && <div className="rounded-lg border border-moss/20 bg-moss/5 px-4 py-3 text-sm text-moss">{success}</div>}
-      <button type="button" onClick={() => { setShowForm(true); setEditing(null); setForm({ question: "", answer: "", published: true, sortOrder: 0 }); }}
-        className="cursor-pointer rounded-lg bg-clay px-4 py-2 text-sm font-semibold text-white hover:bg-[#B57904]">+ New FAQ</button>
-
-      {showForm && (
-        <form onSubmit={async (e) => {
-          e.preventDefault(); setSaving(true); setSuccess(null);
-          const method = editing ? "PUT" : "POST";
-          const body = editing ? { ...form, id: editing.id } : form;
-          try {
-            const res = await fetch("/api/admin/cms/faq", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-            if (!res.ok) return; setSuccess(editing ? "FAQ updated." : "FAQ created."); setSaving(false);
-            setShowForm(false); setEditing(null); setForm({ question: "", answer: "", published: true, sortOrder: 0 });
-            const list = await fetch("/api/admin/cms/faq").then(r => r.json()); setItems(list); router.refresh();
-          } catch { setSaving(false); }
-        }} className="rounded-xl border border-stone/20 bg-white p-6 shadow-sm space-y-4">
-          <h3 className="text-lg font-bold font-display text-ink">{editing ? "Edit FAQ" : "New FAQ"}</h3>
-          <label className="space-y-1 text-sm font-medium text-stone">Question <input required value={form.question} onChange={e => setForm({...form, question: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-          <label className="space-y-1 text-sm font-medium text-stone">Answer <textarea required rows={4} value={form.answer} onChange={e => setForm({...form, answer: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 resize-y" /></label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm font-medium text-stone">Sort Order <input type="number" value={form.sortOrder} onChange={e => setForm({...form, sortOrder: parseInt(e.target.value) || 0})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-            <label className="flex items-center gap-2 cursor-pointer pt-6"><input type="checkbox" checked={form.published} onChange={e => setForm({...form, published: e.target.checked})} className="h-4 w-4 rounded border-stone/20 text-clay focus:ring-[#CA8A04]/40 cursor-pointer" /><span className="text-sm font-medium text-stone">Published</span></label>
-          </div>
-          <div className="flex gap-3"><button type="submit" disabled={saving} className="cursor-pointer rounded-lg bg-clay px-5 py-2 text-sm font-semibold text-white hover:bg-[#B57904] disabled:opacity-50">{saving ? "Saving..." : "Save"}</button>
-          <button type="button" onClick={() => { setShowForm(false); setEditing(null); }} className="cursor-pointer rounded-lg border border-stone/20 px-4 py-2 text-sm text-stone hover:bg-white">Cancel</button></div>
-        </form>
-      )}
-
-      <div className="space-y-2">
-        {items.map((item: any) => (
-          <div key={item.id} className="rounded-lg border border-stone/20 bg-white p-4 flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <p className="font-medium text-ink text-sm">{item.question}</p>
-              <p className="text-xs text-stone mt-1 line-clamp-2">{item.answer}</p>
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-2 ${item.published ? "bg-moss/5 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>{item.published ? "Published" : "Draft"}</span>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <button type="button" onClick={() => { setEditing(item); setShowForm(true); setForm({ question: item.question, answer: item.answer, published: item.published, sortOrder: item.sortOrder }); }} className="cursor-pointer text-xs font-medium text-clay hover:underline">Edit</button>
-              <button type="button" onClick={async () => { if (!confirm("Delete this FAQ?")) return; await fetch("/api/admin/cms/faq", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: item.id }) }); setItems((p: any[]) => p.filter((x: any) => x.id !== item.id)); }} className="cursor-pointer text-xs font-medium text-clay hover:underline">Delete</button>
-            </div>
-          </div>
-        ))}
-        {items.length === 0 && <p className="text-sm text-stone py-4 text-center">No FAQs yet.</p>}
-      </div>
-    </div>
-  );
-}
-
-// ─── Announcements ────────────────────────────
-function AnnouncementsTab() {
-  const [items, setItems] = useState<any[]>([]);
-  const [editing, setEditing] = useState<any | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ message: "", link: "", style: "info", active: false, startDate: "", endDate: "" });
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
-  const router = useRouter();
-
-  useEffect(() => { fetch("/api/admin/cms/announcements").then(r => r.json()).then(setItems).catch(() => {}); }, []);
-
-  return (
-    <div className="space-y-4">
-      {success && <div className="rounded-lg border border-moss/20 bg-moss/5 px-4 py-3 text-sm text-moss">{success}</div>}
-      <button type="button" onClick={() => { setShowForm(true); setEditing(null); setForm({ message: "", link: "", style: "info", active: false, startDate: "", endDate: "" }); }}
-        className="cursor-pointer rounded-lg bg-clay px-4 py-2 text-sm font-semibold text-white hover:bg-[#B57904]">+ New Announcement</button>
-
-      {showForm && (
-        <form onSubmit={async (e) => {
-          e.preventDefault(); setSaving(true); setSuccess(null);
-          const method = editing ? "PUT" : "POST";
-          const body = editing ? { ...form, id: editing.id } : form;
-          try {
-            const res = await fetch("/api/admin/cms/announcements", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-            if (!res.ok) return; setSuccess(editing ? "Updated." : "Created."); setSaving(false);
-            setShowForm(false); setEditing(null); setForm({ message: "", link: "", style: "info", active: false, startDate: "", endDate: "" });
-            const list = await fetch("/api/admin/cms/announcements").then(r => r.json()); setItems(list); router.refresh();
-          } catch { setSaving(false); }
-        }} className="rounded-xl border border-stone/20 bg-white p-6 shadow-sm space-y-4">
-          <h3 className="text-lg font-bold font-display text-ink">{editing ? "Edit Announcement" : "New Announcement"}</h3>
-          <label className="space-y-1 text-sm font-medium text-stone">Message <input required value={form.message} onChange={e => setForm({...form, message: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm font-medium text-stone">Link (optional) <input value={form.link} onChange={e => setForm({...form, link: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-            <label className="space-y-1 text-sm font-medium text-stone">Style <select value={form.style} onChange={e => setForm({...form, style: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10"><option value="info">Info</option><option value="warning">Warning</option><option value="promo">Promo</option></select></label>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm font-medium text-stone">Start Date <input type="datetime-local" value={form.startDate} onChange={e => setForm({...form, startDate: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-            <label className="space-y-1 text-sm font-medium text-stone">End Date <input type="datetime-local" value={form.endDate} onChange={e => setForm({...form, endDate: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-          </div>
-          <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.active} onChange={e => setForm({...form, active: e.target.checked})} className="h-4 w-4 rounded border-stone/20 text-clay focus:ring-[#CA8A04]/40 cursor-pointer" /><span className="text-sm font-medium text-stone">Active</span></label>
-          <div className="flex gap-3"><button type="submit" disabled={saving} className="cursor-pointer rounded-lg bg-clay px-5 py-2 text-sm font-semibold text-white hover:bg-[#B57904] disabled:opacity-50">{saving ? "Saving..." : "Save"}</button>
-          <button type="button" onClick={() => { setShowForm(false); setEditing(null); }} className="cursor-pointer rounded-lg border border-stone/20 px-4 py-2 text-sm text-stone hover:bg-white">Cancel</button></div>
-        </form>
-      )}
-
-      <div className="space-y-2">
-        {items.map((item: any) => (
-          <div key={item.id} className="rounded-lg border border-stone/20 bg-white p-4 flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <p className="font-medium text-ink text-sm">{item.message}</p>
-              <div className="flex gap-2 mt-1 flex-wrap text-xs text-stone">
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${item.active ? "bg-moss/5 text-green-700" : "bg-gray-50 text-gray-500"}`}>{item.active ? "Active" : "Inactive"}</span>
-                <span>Style: {item.style}</span>
-                {item.link && <span>Link: {item.link}</span>}
-              </div>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <button type="button" onClick={() => { setEditing(item); setShowForm(true); setForm({ message: item.message, link: item.link || "", style: item.style, active: item.active, startDate: item.startDate || "", endDate: item.endDate || "" }); }} className="cursor-pointer text-xs font-medium text-clay hover:underline">Edit</button>
-              <button type="button" onClick={async () => { if (!confirm("Delete?")) return; await fetch("/api/admin/cms/announcements", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: item.id }) }); setItems((p: any[]) => p.filter((x: any) => x.id !== item.id)); }} className="cursor-pointer text-xs font-medium text-clay hover:underline">Delete</button>
-            </div>
-          </div>
-        ))}
-        {items.length === 0 && <p className="text-sm text-stone py-4 text-center">No announcements yet.</p>}
-      </div>
-    </div>
-  );
-}
-
-// ─── Settings ────────────────────────────
-function SettingsTab() {
-  const [form, setForm] = useState<any>({ storeName: "", logo: "", email: "", phone: "", address: "", instagram: "", facebook: "", twitter: "", tiktok: "", youtube: "", copyrightText: "", footerNavLinks: "" });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CmsPage | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/settings").then(r => r.json()).then(data => { setForm(data); setLoading(false); }).catch(() => setLoading(false));
+    fetch("/api/admin/cms/pages")
+      .then((r) => r.json())
+      .then(setPages)
+      .catch(() => {});
   }, []);
 
-  if (loading) return <p className="text-sm text-stone">Loading...</p>;
+  const slugify = (value: string) =>
+    value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyPageForm);
+    setShowForm(true);
+  };
+
+  const openEdit = (page: CmsPage) => {
+    setEditing(page);
+    setForm({
+      title: page.title,
+      slug: page.slug,
+      content: page.content,
+      ctaLabel: page.ctaLabel || "",
+      ctaUrl: page.ctaUrl || "",
+      seoTitle: page.seoTitle || "",
+      metaDescription: page.metaDescription || "",
+      published: page.published,
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    const method = editing ? "PUT" : "POST";
+    const url = editing ? `/api/admin/cms/pages/${editing.slug}` : "/api/admin/cms/pages";
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast("error", (data.details?.[0] as string) || data.error || "Failed to save page.");
+        setSaving(false);
+        return;
+      }
+      toast("success", editing ? "Page updated." : "Page created.");
+      setSaving(false);
+      setShowForm(false);
+      setEditing(null);
+      setForm(emptyPageForm);
+      const list = await fetch("/api/admin/cms/pages").then((r) => r.json());
+      setPages(list);
+      router.refresh();
+    } catch {
+      toast("error", "Network error.");
+      setSaving(false);
+    }
+  };
+
+  // __PAGES_PART2__
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/cms/pages/${deleteTarget.slug}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        toast("error", data.error || "Failed to delete page.");
+        setDeleteTarget(null);
+        return;
+      }
+      setPages((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      toast("success", "Page deleted.");
+      router.refresh();
+    } catch {
+      toast("error", "Network error.");
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const columns: Column<CmsPage>[] = [
+    {
+      key: "title",
+      header: "Title",
+      render: (p) => <span className="font-medium text-ink">{p.title}</span>,
+      sortValue: (p) => p.title,
+    },
+    {
+      key: "slug",
+      header: "Slug",
+      hideOnMobile: true,
+      render: (p) => <code className="text-xs text-stone">/{p.slug}</code>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (p) => <Badge tone={p.published ? "success" : "neutral"}>{p.published ? "Published" : "Draft"}</Badge>,
+    },
+    {
+      key: "updated",
+      header: "Updated",
+      hideOnMobile: true,
+      render: (p) => (
+        <span className="text-xs text-stone">
+          {new Date(p.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+        </span>
+      ),
+      sortValue: (p) => new Date(p.updatedAt).getTime(),
+    },
+    {
+      key: "actions",
+      header: "",
+      className: "text-right",
+      render: (p) => (
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="secondary" size="sm" onClick={() => openEdit(p)}>Edit</Button>
+          <Button variant="danger" size="sm" onClick={() => setDeleteTarget(p)}>Delete</Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <form onSubmit={async (e) => { e.preventDefault(); setSaving(true); setSuccess(null); try { const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }); if (res.ok) setSuccess("Settings saved."); setSaving(false); } catch { setSaving(false); } }}
-      className="rounded-xl border border-stone/20 bg-white p-6 shadow-sm space-y-4">
-      {success && <div className="rounded-lg border border-moss/20 bg-moss/5 px-4 py-3 text-sm text-moss">{success}</div>}
-      <h3 className="text-lg font-bold font-display text-ink">Store Settings</h3>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {[["storeName","Store Name"],["logo","Logo URL"],["email","Email"],["phone","Phone"],["address","Address"],["instagram","Instagram URL"],["facebook","Facebook URL"],["twitter","Twitter/X URL"],["tiktok","TikTok URL"],["youtube","YouTube URL"]].map(([key, label]) => (
-          <label key={key} className="space-y-1 text-sm font-medium text-stone">{label} <input value={form[key] || ""} onChange={e => setForm({...form, [key]: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-        ))}
-      </div>
-      <label className="space-y-1 text-sm font-medium text-stone">Copyright Text <input value={form.copyrightText} onChange={e => setForm({...form, copyrightText: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" /></label>
-      <label className="space-y-1 text-sm font-medium text-stone">Footer Nav Links (JSON, e.g. &#91;&#123;&quot;label&quot;:&quot;Privacy&quot;,&quot;href&quot;:&quot;/privacy&quot;&#125;&#93;) <textarea value={form.footerNavLinks || ""} onChange={e => setForm({...form, footerNavLinks: e.target.value})} rows={3} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 font-mono" /></label>
-      <button type="submit" disabled={saving} className="cursor-pointer rounded-lg bg-clay px-5 py-2 text-sm font-semibold text-white hover:bg-[#B57904] disabled:opacity-50">{saving ? "Saving..." : "Save Settings"}</button>
-    </form>
+    <div className="space-y-4">
+      <DataTable
+        columns={columns}
+        rows={pages}
+        rowKey={(p) => p.id}
+        searchValue={(p) => `${p.title} ${p.slug}`}
+        searchPlaceholder="Search pagesâ€¦"
+        emptyState="No pages yet."
+        toolbar={<Button onClick={openCreate}>+ New Page</Button>}
+      />
+
+      {showForm && (
+        <Modal
+          open
+          onClose={() => setShowForm(false)}
+          title={editing ? "Edit Page" : "New Page"}
+          description="Custom HTML page rendered at /<slug>."
+          wide
+        >
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Title">
+                <Input
+                  value={form.title}
+                  onChange={(v) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      title: v,
+                      slug: editing ? prev.slug : slugify(v),
+                    }))
+                  }
+                  placeholder="e.g. About Us"
+                  required
+                />
+              </Field>
+              <Field label="Slug">
+                <Input value={form.slug} onChange={(v) => setForm((prev) => ({ ...prev, slug: v }))} required className="font-mono" />
+              </Field>
+            </div>
+
+            <Field label="Content (HTML)">
+              <Textarea
+                value={form.content}
+                onChange={(v) => setForm((prev) => ({ ...prev, content: v }))}
+                rows={12}
+                required
+                className="font-mono"
+              />
+            </Field>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Button text (optional)">
+                <Input value={form.ctaLabel} onChange={(v) => setForm((prev) => ({ ...prev, ctaLabel: v }))} placeholder="Shop new arrivals" />
+              </Field>
+              <Field label="Button link (optional)">
+                <Input value={form.ctaUrl} onChange={(v) => setForm((prev) => ({ ...prev, ctaUrl: v }))} placeholder="/shop or https://â€¦" />
+              </Field>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="SEO title">
+                <Input value={form.seoTitle} onChange={(v) => setForm((prev) => ({ ...prev, seoTitle: v }))} />
+              </Field>
+              <Field label="Meta description">
+                <Input value={form.metaDescription} onChange={(v) => setForm((prev) => ({ ...prev, metaDescription: v }))} />
+              </Field>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Toggle checked={form.published} onChange={(v) => setForm((prev) => ({ ...prev, published: v }))} />
+              <span className="text-sm font-medium text-stone">Published</span>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-stone/20 pt-4">
+              <Button variant="secondary" type="button" onClick={() => setShowForm(false)} disabled={saving}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={saving}>
+                {editing ? "Save changes" : "Create page"}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => void confirmDelete()}
+        title="Delete Page"
+        message={`Are you sure you want to delete "${deleteTarget?.title}"? This cannot be undone.`}
+        loading={deleting}
+      />
+    </div>
   );
 }
 
-// ─── Sections ────────────────────────────
-const SECTION_DEFAULTS: Record<string, { label: string; defaultContent: any }> = {
+// __SECTIONS__
+type SectionRow = {
+  id: string;
+  key: string;
+  label: string;
+  content: string;
+  published: boolean;
+};
+
+const SECTION_DEFAULTS: Record<string, { label: string; defaultContent: unknown }> = {
   "brand-story": {
     label: "Brand Story",
     defaultContent: {
@@ -261,23 +330,23 @@ const SECTION_DEFAULTS: Record<string, { label: string; defaultContent: any }> =
       headline: "BUILT FOR THE\nUNDERGROUND",
       headlineAccent: "UNDERGROUND",
       paragraphs: [
-        "Veldic Wear was born from the intersection of street culture, music, and raw self-expression. We don't follow trends — we set them.",
-        "Every piece is crafted with premium materials, meticulous attention to detail, and a deep respect for the culture that shaped us. From the block to the stage, our gear is made to move, to stand out, and to last.",
-        "This isn't just clothing. It's a statement. It's an identity. It's the uniform of those who dare to be different."
+        "Veldic Wear was born from the intersection of street culture, music, and raw self-expression. We don't follow trends â€” we set them.",
+        "Every piece is crafted with premium materials, meticulous attention to detail, and a deep respect for the culture that shaped us.",
+        "This isn't just clothing. It's a statement. It's an identity. It's the uniform of those who dare to be different.",
       ],
       stats: [
         { value: "2018", label: "Founded" },
         { value: "15+", label: "Drops" },
-        { value: "100%", label: "Authentic" }
+        { value: "100%", label: "Authentic" },
       ],
       ctaText: "Read Our Story",
       ctaLink: "/about",
       gradientFrom: "from-orange-400",
       gradientTo: "to-orange-600",
-      accentColor: "orange"
-    }
+      accentColor: "orange",
+    },
   },
-  "lookbook": {
+  lookbook: {
     label: "Lookbook",
     defaultContent: {
       badge: "Lookbook",
@@ -286,13 +355,13 @@ const SECTION_DEFAULTS: Record<string, { label: string; defaultContent: any }> =
       looks: [
         { title: "Urban Edge", description: "Oversized silhouettes meet sharp tailoring", gradient: "from-orange-500/20 via-black to-zinc-900", accent: "bg-orange-500" },
         { title: "Midnight Luxe", description: "Dark tones elevated with premium textures", gradient: "from-zinc-900 via-black to-zinc-800", accent: "bg-zinc-400" },
-        { title: "Street Minimal", description: "Clean lines, bold statements, zero compromise", gradient: "from-black via-zinc-900 to-orange-500/10", accent: "bg-orange-500" }
+        { title: "Street Minimal", description: "Clean lines, bold statements, zero compromise", gradient: "from-black via-zinc-900 to-orange-500/10", accent: "bg-orange-500" },
       ],
       ctaText: "View Full Lookbook",
-      ctaLink: "/collection"
-    }
+      ctaLink: "/collection",
+    },
   },
-  "newsletter": {
+  newsletter: {
     label: "Newsletter",
     defaultContent: {
       badge: "Stay Connected",
@@ -300,10 +369,10 @@ const SECTION_DEFAULTS: Record<string, { label: string; defaultContent: any }> =
       description: "Be the first to know about new collections, exclusive drops, and limited-edition releases.",
       placeholder: "Enter your email",
       buttonText: "Subscribe",
-      successMessage: "✓ You're in! Welcome to the Veldic community.",
+      successMessage: "âœ“ You're in! Welcome to the Veldic community.",
       errorMessage: "Please enter a valid email address.",
-      disclaimer: "No spam. Unsubscribe anytime. We respect your inbox."
-    }
+      disclaimer: "No spam. Unsubscribe anytime. We respect your inbox.",
+    },
   },
   "social-feed": {
     label: "Social Feed",
@@ -317,13 +386,13 @@ const SECTION_DEFAULTS: Record<string, { label: string; defaultContent: any }> =
         { id: 3, label: "STREET STYLE", gradient: "from-black to-orange-500/10" },
         { id: 4, label: "DROP 015", gradient: "from-zinc-900 to-black" },
         { id: 5, label: "COMMUNITY", gradient: "from-black to-zinc-800" },
-        { id: 6, label: "EXCLUSIVE", gradient: "from-orange-500/10 to-zinc-900" }
+        { id: 6, label: "EXCLUSIVE", gradient: "from-orange-500/10 to-zinc-900" },
       ],
       ctaLabel: "@veldicwear",
-      ctaLink: "https://instagram.com/veldicwear"
-    }
+      ctaLink: "https://instagram.com/veldicwear",
+    },
   },
-  "footer": {
+  footer: {
     label: "Footer",
     defaultContent: {
       brandDescription: "Performance-driven apparel engineered for the relentless. Train. Dominate. Repeat.",
@@ -331,43 +400,50 @@ const SECTION_DEFAULTS: Record<string, { label: string; defaultContent: any }> =
         { label: "All Products", href: "/shop" },
         { label: "Collections", href: "/collection" },
         { label: "New Arrivals", href: "/shop?category=new-arrivals" },
-        { label: "Limited Edition", href: "/shop?category=limited" }
+        { label: "Limited Edition", href: "/shop?category=limited" },
       ],
       supportLinks: [
         { label: "Contact", href: "/contact" },
         { label: "FAQ", href: "/faq" },
         { label: "Shipping & Returns", href: "/shipping" },
-        { label: "Size Guide", href: "/size-guide" }
+        { label: "Size Guide", href: "/size-guide" },
       ],
       companyLinks: [
         { label: "About Us", href: "/about" },
         { label: "Careers", href: "/careers" },
-        { label: "Press", href: "/press" }
+        { label: "Press", href: "/press" },
       ],
-      paymentMethods: ["Visa", "MC", "Amex", "PayPal", "Apple Pay"]
-    }
+      paymentMethods: ["Visa", "MC", "Amex", "PayPal", "Apple Pay"],
+    },
   },
   "categories-header": {
     label: "Categories Section Header",
     defaultContent: {
       badge: "Collections",
       headline: "SHOP BY COLLECTION",
-      description: "From statement outerwear to everyday essentials — find your look."
-    }
-  }
+      description: "From statement outerwear to everyday essentials â€” find your look.",
+    },
+  },
 };
 
+// __SECTIONS_PART2__
 function SectionsTab() {
-  const [sections, setSections] = useState<any[]>([]);
-  const [editing, setEditing] = useState<any | null>(null);
+  const { toast } = useToast();
+  const router = useRouter();
+  const [sections, setSections] = useState<SectionRow[]>([]);
+  const [editing, setEditing] = useState<SectionRow | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ key: "", label: "", content: "{}", published: true });
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [success, setSuccess] = useState<string | null>(null);
-  const router = useRouter();
+  const [deleteTarget, setDeleteTarget] = useState<SectionRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => { fetch("/api/admin/sections").then(r => r.json()).then(setSections).catch(() => {}); }, []);
+  useEffect(() => {
+    fetch("/api/admin/sections")
+      .then((r) => r.json())
+      .then(setSections)
+      .catch(() => {});
+  }, []);
 
   const selectDefault = (key: string) => {
     const def = SECTION_DEFAULTS[key];
@@ -376,172 +452,624 @@ function SectionsTab() {
     }
   };
 
+  const openCreate = (key = "", label = "") => {
+    setEditing(null);
+    if (key && label) selectDefault(key);
+    else setForm({ key: "", label: "", content: "{}", published: true });
+    setShowForm(true);
+  };
+
+  const openEdit = (row: SectionRow) => {
+    setEditing(row);
+    setForm({ key: row.key, label: row.label, content: row.content, published: row.published });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      JSON.parse(form.content);
+    } catch {
+      toast("error", "Content must be valid JSON.");
+      setSaving(false);
+      return;
+    }
+
+    const method = editing ? "PUT" : "POST";
+    const body = editing
+      ? { id: editing.id, key: form.key, label: form.label, content: form.content, published: form.published }
+      : { key: form.key, label: form.label, content: form.content, published: form.published };
+
+    try {
+      const res = await fetch("/api/admin/sections", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast("error", data.error || "Failed to save.");
+        setSaving(false);
+        return;
+      }
+      toast("success", editing ? "Section updated." : "Section created.");
+      setSaving(false);
+      setShowForm(false);
+      setEditing(null);
+      setForm({ key: "", label: "", content: "{}", published: true });
+      const list = await fetch("/api/admin/sections").then((r) => r.json());
+      setSections(list);
+      router.refresh();
+    } catch {
+      toast("error", "Network error.");
+      setSaving(false);
+    }
+  };
+
+  // __SECTIONS_PART3__
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await fetch(`/api/admin/sections/${deleteTarget.key}`, { method: "DELETE" });
+      setSections((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      toast("success", "Section deleted.");
+      router.refresh();
+    } catch {
+      setSections((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      toast("success", "Section deleted.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const columns: Column<SectionRow>[] = [
+    {
+      key: "key",
+      header: "Key",
+      render: (s) => <code className="text-xs text-stone">{s.key}</code>,
+    },
+    {
+      key: "label",
+      header: "Label",
+      render: (s) => <span className="font-medium text-ink">{s.label}</span>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (s) => <Badge tone={s.published ? "success" : "neutral"}>{s.published ? "Published" : "Hidden"}</Badge>,
+    },
+    {
+      key: "actions",
+      header: "",
+      className: "text-right",
+      render: (s) => (
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="secondary" size="sm" onClick={() => openEdit(s)}>Edit</Button>
+          <Button variant="danger" size="sm" onClick={() => setDeleteTarget(s)}>Delete</Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-4">
-      {success && <div className="rounded-lg border border-moss/20 bg-moss/5 px-4 py-3 text-sm text-moss">{success}</div>}
-      {errors.length > 0 && <div className="rounded-lg border border-clay/20 bg-clay/5 px-4 py-3">{errors.map((m, i) => <p key={i} className="text-sm text-red-700">{m}</p>)}</div>}
-
-      <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => { setShowForm(true); setEditing(null); setForm({ key: "", label: "", content: "{}", published: true }); setErrors([]); setSuccess(null); }}
-          className="cursor-pointer rounded-lg bg-clay px-4 py-2 text-sm font-semibold text-white hover:bg-[#B57904] focus:outline-none focus:ring-2 focus:ring-[#CA8A04]/40">+ New Section</button>
-        <span className="text-sm text-stone self-center ml-2">Quick-add:</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button onClick={() => openCreate()}>+ New Section</Button>
+        <span className="ml-1 self-center text-sm text-stone">Quick-add:</span>
         {Object.entries(SECTION_DEFAULTS).map(([key, def]) => (
-          <button key={key} type="button" onClick={() => { setShowForm(true); setEditing(null); selectDefault(key); setErrors([]); setSuccess(null); }}
-            className="cursor-pointer rounded-lg border border-stone/20 px-3 py-2 text-xs font-medium text-stone hover:bg-white">
+          <Button key={key} variant="secondary" size="sm" onClick={() => openCreate(key, def.label)}>
             + {def.label}
-          </button>
+          </Button>
         ))}
       </div>
 
+      <DataTable
+        columns={columns}
+        rows={sections}
+        rowKey={(s) => s.id}
+        searchValue={(s) => `${s.key} ${s.label}`}
+        searchPlaceholder="Search sectionsâ€¦"
+        emptyState="No sections yet. Use the quick-add buttons above to create default sections."
+      />
+
       {showForm && (
-        <form onSubmit={async (e) => {
-          e.preventDefault(); setSaving(true); setErrors([]); setSuccess(null);
-          const contentToSave = form.content;
-          try { JSON.parse(contentToSave); } catch { setErrors(["Content must be valid JSON."]); setSaving(false); return; }
-          const method = editing ? "PUT" : "POST";
-          const body = editing ? { id: editing.id, key: form.key, label: form.label, content: contentToSave, published: form.published } : { key: form.key, label: form.label, content: contentToSave, published: form.published };
-          try {
-            const res = await fetch("/api/admin/sections", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-            const data = await res.json();
-            if (!res.ok) { setErrors([data.error || "Failed to save."]); setSaving(false); return; }
-            setSuccess(editing ? "Section updated." : "Section created.");
-            setSaving(false); setShowForm(false); setEditing(null); setForm({ key: "", label: "", content: "{}", published: true });
-            const list = await fetch("/api/admin/sections").then(r => r.json()); setSections(list); router.refresh();
-          } catch { setErrors(["Network error."]); setSaving(false); }
-        }} className="rounded-xl border border-stone/20 bg-white p-6 shadow-sm space-y-4">
-          <h3 className="text-lg font-bold font-display text-ink">{editing ? "Edit Section" : "New Section"}</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1 text-sm font-medium text-stone">Key <input required value={form.key} onChange={e => setForm({...form, key: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 font-mono" placeholder="e.g. brand-story" /></label>
-            <label className="space-y-1 text-sm font-medium text-stone">Label <input required value={form.label} onChange={e => setForm({...form, label: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10" placeholder="e.g. Brand Story" /></label>
-          </div>
-          <label className="space-y-1 text-sm font-medium text-stone">Content (JSON) <textarea required rows={16} value={form.content} onChange={e => setForm({...form, content: e.target.value})} className="w-full rounded-lg border border-stone/20 px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 font-mono resize-y" /></label>
-          <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.published} onChange={e => setForm({...form, published: e.target.checked})} className="h-4 w-4 rounded border-stone/20 text-clay focus:ring-[#CA8A04]/40 cursor-pointer" /><span className="text-sm font-medium text-stone">Published</span></label>
-          <div className="flex gap-3">
-            <button type="submit" disabled={saving} className="cursor-pointer rounded-lg bg-clay px-5 py-2 text-sm font-semibold text-white hover:bg-[#B57904] focus:outline-none focus:ring-2 focus:ring-[#CA8A04]/40 disabled:opacity-50">{saving ? "Saving..." : "Save"}</button>
-            <button type="button" onClick={() => { setShowForm(false); setEditing(null); }} className="cursor-pointer rounded-lg border border-stone/20 px-4 py-2 text-sm text-stone hover:bg-white">Cancel</button>
-          </div>
-        </form>
+        <Modal
+          open
+          onClose={() => setShowForm(false)}
+          title={editing ? "Edit Section" : "New Section"}
+          description="Homepage section stored as a JSON content document."
+          wide
+        >
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Key">
+                <Input value={form.key} onChange={(v) => setForm((prev) => ({ ...prev, key: v }))} required className="font-mono" placeholder="e.g. brand-story" />
+              </Field>
+              <Field label="Label">
+                <Input value={form.label} onChange={(v) => setForm((prev) => ({ ...prev, label: v }))} required placeholder="e.g. Brand Story" />
+              </Field>
+            </div>
+
+            <Field label="Content (JSON)">
+              <Textarea
+                value={form.content}
+                onChange={(v) => setForm((prev) => ({ ...prev, content: v }))}
+                rows={16}
+                required
+                className="font-mono"
+              />
+            </Field>
+
+            <div className="flex items-center gap-2">
+              <Toggle checked={form.published} onChange={(v) => setForm((prev) => ({ ...prev, published: v }))} />
+              <span className="text-sm font-medium text-stone">Published</span>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-stone/20 pt-4">
+              <Button variant="secondary" type="button" onClick={() => setShowForm(false)} disabled={saving}>Cancel</Button>
+              <Button type="submit" loading={saving}>{editing ? "Save changes" : "Create section"}</Button>
+            </div>
+          </form>
+        </Modal>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-stone/20 bg-white shadow-sm">
-        {sections.length === 0 ? <p className="px-6 py-8 text-sm text-stone text-center">No sections yet. Use the quick-add buttons above to create default sections.</p> : (
-          <table className="w-full text-sm"><thead><tr className="border-b border-stone/20 bg-white">
-            <th className="text-left px-4 py-3 font-semibold text-stone text-xs uppercase tracking-wider">Key</th>
-            <th className="text-left px-4 py-3 font-semibold text-stone text-xs uppercase tracking-wider">Label</th>
-            <th className="text-left px-4 py-3 font-semibold text-stone text-xs uppercase tracking-wider">Status</th>
-            <th className="text-left px-4 py-3 font-semibold text-stone text-xs uppercase tracking-wider">Updated</th>
-            <th className="text-right px-4 py-3 font-semibold text-stone text-xs uppercase tracking-wider">Actions</th>
-          </tr></thead><tbody className="divide-y divide-[#E2E8F0]">
-            {sections.map((s: any) => (
-              <tr key={s.id} className="hover:bg-white">
-                <td className="px-4 py-3 font-medium text-ink font-mono text-xs">{s.key}</td>
-                <td className="px-4 py-3 text-stone">{s.label}</td>
-                <td className="px-4 py-3"><span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${s.published ? "bg-moss/5 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>{s.published ? "Published" : "Draft"}</span></td>
-                <td className="px-4 py-3 text-xs text-stone">{new Date(s.updatedAt).toLocaleDateString()}</td>
-                <td className="px-4 py-3 text-right"><div className="flex justify-end gap-2">
-                  <button type="button" onClick={() => { setEditing(s); setShowForm(true); setForm({ key: s.key, label: s.label, content: JSON.stringify(JSON.parse(s.content), null, 2), published: s.published }); setErrors([]); setSuccess(null); }}
-                    className="cursor-pointer rounded-lg border border-stone/20 px-3 py-1 text-xs font-medium text-stone hover:bg-white">Edit</button>
-                  <button type="button" onClick={async () => { if (!confirm("Delete this section?")) return; await fetch("/api/admin/sections", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: s.id }) }); setSections((prev: any[]) => prev.filter((x: any) => x.id !== s.id)); }}
-                    className="cursor-pointer rounded-lg border border-clay/20 px-3 py-1 text-xs font-medium text-clay hover:bg-clay/5">Delete</button>
-                </div></td>
-              </tr>
-            ))}
-          </tbody></table>
-        )}
-      </div>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => void confirmDelete()}
+        title="Delete Section"
+        message={`Are you sure you want to delete "${deleteTarget?.label}"?`}
+        loading={deleting}
+      />
     </div>
   );
 }
 
-// ─── Main ────────────────────────────
-export default function AdminCmsClient({ embedded = false }: { embedded?: boolean }) {
-  const [tab, setTab] = useState("pages");
-  const tabs = [
-    { id: "pages", label: "Pages" },
-    { id: "sections", label: "Sections" },
-    { id: "faq", label: "FAQ" },
-    { id: "announcements", label: "Announcements" },
-    { id: "settings", label: "Settings" },
-  ];
+// __FAQ__
+type FaqItem = {
+  id: string;
+  question: string;
+  answer: string;
+  published: boolean;
+  sortOrder: number;
+};
 
-  if (embedded) {
-    // Theme-editor panel: no page header (the panel provides one), editor-style
-    // tabs, and a scoped Polaris restyle for the inner forms' inputs/labels/
-    // submit buttons. Saves are immediate per action, so no flusher needed.
-    return (
-      <div className="cms-embedded space-y-4">
-        <style>{`
-          .cms-embedded input:not([type="checkbox"]):not([type="radio"]),
-          .cms-embedded textarea,
-          .cms-embedded select {
-            width: 100%;
-            border-radius: 8px;
-            border: 1px solid #c9cccf;
-            background: #ffffff;
-            padding: 6px 12px;
-            font-size: 13px;
-            line-height: 1.45;
-            color: #303030;
-            outline: none;
-          }
-          .cms-embedded input:not([type="checkbox"]):not([type="radio"]):focus,
-          .cms-embedded textarea:focus,
-          .cms-embedded select:focus {
-            border-color: #005bd3;
-            box-shadow: 0 0 0 1px #005bd3;
-          }
-          .cms-embedded label { font-size: 12px; font-weight: 500; color: #616161; }
-          .cms-embedded button[type="submit"] {
-            border-radius: 8px;
-            background: #303030;
-            color: #ffffff;
-            font-weight: 500;
-            font-size: 13px;
-            padding: 6px 14px;
-            border: none;
-            cursor: pointer;
-          }
-          .cms-embedded button[type="submit"]:hover { background: #000000; }
-          .cms-embedded button[type="submit"]:disabled { opacity: 0.45; cursor: not-allowed; }
-          .cms-embedded h3 { font-size: 14px; font-weight: 600; color: #303030; }
-          .cms-embedded table { font-size: 13px; }
-        `}</style>
-        <div className="flex gap-1 border-b border-[#e3e3e3] pb-px" role="tablist" aria-label="Pages and content">
-          {tabs.map(t => (
-            <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-              className={ttabCls(tab === t.id)}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-        {tab === "pages" && <PagesTab />}
-        {tab === "sections" && <SectionsTab />}
-        {tab === "faq" && <FaqTab />}
-        {tab === "announcements" && <AnnouncementsTab />}
-        {tab === "settings" && <SettingsTab />}
+const emptyFaqForm = { question: "", answer: "", published: true, sortOrder: 0 };
+
+function FaqTab() {
+  const { toast } = useToast();
+  const router = useRouter();
+  const [items, setItems] = useState<FaqItem[]>([]);
+  const [editing, setEditing] = useState<FaqItem | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyFaqForm);
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<FaqItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/cms/faq")
+      .then((r) => r.json())
+      .then(setItems)
+      .catch(() => {});
+  }, []);
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyFaqForm);
+    setShowForm(true);
+  };
+
+  const openEdit = (item: FaqItem) => {
+    setEditing(item);
+    setForm({ question: item.question, answer: item.answer, published: item.published, sortOrder: item.sortOrder });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const method = editing ? "PUT" : "POST";
+      const res = await fetch("/api/admin/cms/faq", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editing ? { id: editing.id, ...form } : form),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast("error", data.error || "Failed to save FAQ.");
+        setSaving(false);
+        return;
+      }
+      toast("success", editing ? "FAQ updated." : "FAQ created.");
+      setSaving(false);
+      setShowForm(false);
+      setEditing(null);
+      setForm(emptyFaqForm);
+      const list = await fetch("/api/admin/cms/faq").then((r) => r.json());
+      setItems(list);
+      router.refresh();
+    } catch {
+      toast("error", "Network error.");
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await fetch("/api/admin/cms/faq", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deleteTarget.id }),
+      });
+      setItems((prev) => prev.filter((x) => x.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      toast("success", "FAQ deleted.");
+      router.refresh();
+    } catch {
+      toast("error", "Network error.");
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // __FAQ_PART2__
+  return (
+    <div className="space-y-4">
+      <div>
+        <Button onClick={openCreate}>+ New FAQ</Button>
       </div>
-    );
-  }
+
+      {showForm && (
+        <Modal
+          open
+          onClose={() => setShowForm(false)}
+          title={editing ? "Edit FAQ" : "New FAQ"}
+        >
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <Field label="Question">
+              <Input value={form.question} onChange={(v) => setForm((prev) => ({ ...prev, question: v }))} required />
+            </Field>
+            <Field label="Answer">
+              <Textarea value={form.answer} onChange={(v) => setForm((prev) => ({ ...prev, answer: v }))} rows={4} required />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Sort order">
+                <Input
+                  type="number"
+                  value={form.sortOrder}
+                  onChange={(v) => setForm((prev) => ({ ...prev, sortOrder: parseInt(v) || 0 }))}
+                />
+              </Field>
+              <div className="flex items-end gap-2 pb-1">
+                <Toggle checked={form.published} onChange={(v) => setForm((prev) => ({ ...prev, published: v }))} />
+                <span className="text-sm font-medium text-stone">Published</span>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-stone/20 pt-4">
+              <Button variant="secondary" type="button" onClick={() => setShowForm(false)} disabled={saving}>Cancel</Button>
+              <Button type="submit" loading={saving}>{editing ? "Save changes" : "Create FAQ"}</Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      <div className="space-y-2">
+        {items.map((item) => (
+          <Card key={item.id} className="flex items-start justify-between gap-4 p-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-ink">{item.question}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-stone">{item.answer}</p>
+              <div className="mt-2 flex items-center gap-2">
+                <Badge tone={item.published ? "success" : "warning"}>{item.published ? "Published" : "Draft"}</Badge>
+                {item.sortOrder !== 0 && <span className="text-xs text-stone">Order: {item.sortOrder}</span>}
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button variant="secondary" size="sm" onClick={() => openEdit(item)}>Edit</Button>
+              <Button variant="danger" size="sm" onClick={() => setDeleteTarget(item)}>Delete</Button>
+            </div>
+          </Card>
+        ))}
+        {items.length === 0 && <p className="py-4 text-center text-sm text-stone">No FAQs yet.</p>}
+      </div>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => void confirmDelete()}
+        title="Delete FAQ"
+        message={`Delete "${deleteTarget?.question}"?`}
+        loading={deleting}
+      />
+    </div>
+  );
+}
+
+// __ANNOUNCEMENTS__
+type AnnouncementItem = {
+  id: string;
+  message: string;
+  link: string | null;
+  style: string;
+  active: boolean;
+  startDate: string | null;
+  endDate: string | null;
+};
+
+const emptyAnnouncementForm = { message: "", link: "", style: "info", active: false, startDate: "", endDate: "" };
+
+function AnnouncementsTab() {
+  const { toast } = useToast();
+  const router = useRouter();
+  const [items, setItems] = useState<AnnouncementItem[]>([]);
+  const [editing, setEditing] = useState<AnnouncementItem | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyAnnouncementForm);
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AnnouncementItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/cms/announcements")
+      .then((r) => r.json())
+      .then(setItems)
+      .catch(() => {});
+  }, []);
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyAnnouncementForm);
+    setShowForm(true);
+  };
+
+  const openEdit = (item: AnnouncementItem) => {
+    setEditing(item);
+    setForm({
+      message: item.message,
+      link: item.link || "",
+      style: item.style,
+      active: item.active,
+      startDate: item.startDate || "",
+      endDate: item.endDate || "",
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const method = editing ? "PUT" : "POST";
+      const res = await fetch("/api/admin/cms/announcements", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editing ? { id: editing.id, ...form } : form),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast("error", data.error || "Failed to save announcement.");
+        setSaving(false);
+        return;
+      }
+      toast("success", editing ? "Announcement updated." : "Announcement created.");
+      setSaving(false);
+      setShowForm(false);
+      setEditing(null);
+      setForm(emptyAnnouncementForm);
+      const list = await fetch("/api/admin/cms/announcements").then((r) => r.json());
+      setItems(list);
+      router.refresh();
+    } catch {
+      toast("error", "Network error.");
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await fetch("/api/admin/cms/announcements", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deleteTarget.id }),
+      });
+      setItems((prev) => prev.filter((x) => x.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      toast("success", "Announcement deleted.");
+      router.refresh();
+    } catch {
+      toast("error", "Network error.");
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // __ANNOUNCEMENTS_PART2__
+  return (
+    <div className="space-y-4">
+      <div>
+        <Button onClick={openCreate}>+ New Announcement</Button>
+      </div>
+
+      {showForm && (
+        <Modal
+          open
+          onClose={() => setShowForm(false)}
+          title={editing ? "Edit Announcement" : "New Announcement"}
+        >
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <Field label="Message">
+              <Input value={form.message} onChange={(v) => setForm((prev) => ({ ...prev, message: v }))} required placeholder="e.g. Free shipping over $75" />
+            </Field>
+            <Field label="Link (optional)">
+              <Input value={form.link} onChange={(v) => setForm((prev) => ({ ...prev, link: v }))} placeholder="/shop" />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Style">
+                <Select
+                  value={form.style}
+                  onChange={(v) => setForm((prev) => ({ ...prev, style: v }))}
+                  options={[
+                    { value: "info", label: "Info" },
+                    { value: "success", label: "Success" },
+                    { value: "warning", label: "Warning" },
+                    { value: "accent", label: "Accent" },
+                  ]}
+                />
+              </Field>
+              <div className="flex items-end gap-2 pb-1">
+                <Toggle checked={form.active} onChange={(v) => setForm((prev) => ({ ...prev, active: v }))} />
+                <span className="text-sm font-medium text-stone">Active</span>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Start date">
+                <Input type="date" value={form.startDate} onChange={(v) => setForm((prev) => ({ ...prev, startDate: v }))} />
+              </Field>
+              <Field label="End date">
+                <Input type="date" value={form.endDate} onChange={(v) => setForm((prev) => ({ ...prev, endDate: v }))} />
+              </Field>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-stone/20 pt-4">
+              <Button variant="secondary" type="button" onClick={() => setShowForm(false)} disabled={saving}>Cancel</Button>
+              <Button type="submit" loading={saving}>{editing ? "Save changes" : "Create announcement"}</Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      <div className="space-y-2">
+        {items.map((item) => (
+          <Card key={item.id} className="flex items-start justify-between gap-4 p-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-ink">{item.message}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-stone">
+                <Badge tone={item.active ? "success" : "neutral"}>{item.active ? "Active" : "Inactive"}</Badge>
+                <span>Style: {item.style}</span>
+                {item.link && <span>Link: {item.link}</span>}
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button variant="secondary" size="sm" onClick={() => openEdit(item)}>Edit</Button>
+              <Button variant="danger" size="sm" onClick={() => setDeleteTarget(item)}>Delete</Button>
+            </div>
+          </Card>
+        ))}
+        {items.length === 0 && <p className="py-4 text-center text-sm text-stone">No announcements yet.</p>}
+      </div>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => void confirmDelete()}
+        title="Delete Announcement"
+        message={`Delete "${deleteTarget?.message}"?`}
+        loading={deleting}
+      />
+    </div>
+  );
+}
+
+// __SETTINGS__
+const SETTINGS_FIELDS: { key: string; label: string }[] = [
+  { key: "storeName", label: "Store name" },
+  { key: "logo", label: "Logo URL" },
+  { key: "email", label: "Email" },
+  { key: "phone", label: "Phone" },
+  { key: "address", label: "Address" },
+  { key: "instagram", label: "Instagram URL" },
+  { key: "facebook", label: "Facebook URL" },
+  { key: "twitter", label: "Twitter / X URL" },
+  { key: "tiktok", label: "TikTok URL" },
+  { key: "youtube", label: "YouTube URL" },
+];
+
+function SettingsTab() {
+  const { toast } = useToast();
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then((r) => r.json())
+      .then((data) => setForm(data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) toast("success", "Settings saved.");
+      else toast("error", "Failed to save settings.");
+    } catch {
+      toast("error", "Network error.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <p className="py-6 text-center text-sm text-stone">Loadingâ€¦</p>;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold font-display tracking-tight text-ink">Pages &amp; Content</h1>
-        <p className="text-stone mt-1 font-body text-sm">Manage site pages, FAQs, announcements, store settings, and homepage sections.</p>
-      </div>
-      <div className="flex gap-1 border-b border-stone/20 pb-px">
-        {tabs.map(t => (
-          <button key={t.id} type="button" onClick={() => setTab(t.id)}
-            className={`cursor-pointer px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px focus:outline-none ${tab === t.id ? "border-clay text-ink" : "border-transparent text-stone hover:text-stone"}`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-      {tab === "pages" && <PagesTab />}
-      {tab === "sections" && <SectionsTab />}
-      {tab === "faq" && <FaqTab />}
-      {tab === "announcements" && <AnnouncementsTab />}
-      {tab === "settings" && <SettingsTab />}
-    </div>
+    <Card>
+      <form onSubmit={handleSubmit} className="space-y-5 p-5">
+        <h3 className="text-base font-semibold text-ink">Store settings</h3>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {SETTINGS_FIELDS.map(({ key, label }) => (
+            <Field key={key} label={label}>
+              <Input
+                value={form[key] || ""}
+                onChange={(v) => setForm((prev) => ({ ...prev, [key]: v }))}
+                placeholder={key.includes("URL") || key === "logo" ? "https://â€¦" : undefined}
+              />
+            </Field>
+          ))}
+        </div>
+
+        <Field label="Copyright text">
+          <Input
+            value={form.copyrightText || ""}
+            onChange={(v) => setForm((prev) => ({ ...prev, copyrightText: v }))}
+            placeholder="All rights reserved."
+          />
+        </Field>
+
+        <Field label="Footer nav links (JSON)" hint={`e.g. [{"label":"Privacy","href":"/privacy"}]`}>
+          <Textarea
+            value={form.footerNavLinks || ""}
+            onChange={(v) => setForm((prev) => ({ ...prev, footerNavLinks: v }))}
+            rows={3}
+            className="font-mono"
+          />
+        </Field>
+
+        <div className="flex justify-end border-t border-stone/20 pt-4">
+          <Button type="submit" loading={saving}>Save settings</Button>
+        </div>
+      </form>
+    </Card>
   );
 }

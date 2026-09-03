@@ -1,7 +1,18 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import {
+  Badge,
+  Button,
+  Card,
+  Field,
+  Input,
+  PageHeader,
+  Select,
+  Spinner,
+} from "@/components/admin-ui/primitives";
+import { useToast } from "@/components/admin-ui/toast";
 
 type CJCategory = {
   categoryFirstName: string;
@@ -40,6 +51,7 @@ type CJSearchResponse = {
 const PAGE_SIZE = 20;
 
 export default function AdminCJBrowse() {
+  const { toast } = useToast();
   const [categories, setCategories] = useState<CJCategory[]>([]);
   const [categoryId, setCategoryId] = useState("");
   const [keyword, setKeyword] = useState("");
@@ -52,7 +64,6 @@ export default function AdminCJBrowse() {
   const [error, setError] = useState<string | null>(null);
   const [importingPid, setImportingPid] = useState<string | null>(null);
   const [importedPids, setImportedPids] = useState<Set<string>>(new Set());
-  const [importMessages, setImportMessages] = useState<Record<string, string>>({});
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load categories once on mount
@@ -66,7 +77,7 @@ export default function AdminCJBrowse() {
       .catch(() => setCategories([]));
   }, []);
 
-  // Debounce keyword input — only fetch 400ms after the user stops typing
+  // Debounce keyword input â€” only fetch 400ms after the user stops typing
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(() => {
@@ -79,55 +90,57 @@ export default function AdminCJBrowse() {
 
   // Fetch products when debounced keyword, category, or page changes
   useEffect(() => {
-    const params = new URLSearchParams({
-      page: String(page),
-      size: String(PAGE_SIZE),
-    });
-    if (debouncedKeyword) params.set("keyword", debouncedKeyword);
-    if (categoryId) params.set("categoryId", categoryId);
+    // Async IIFE keeps setState() out of the effect's synchronous body.
+    void (async () => {
+      setLoading(true);
+      setError(null);
 
-    setLoading(true);
-    setError(null);
+      const params = new URLSearchParams({
+        page: String(page),
+        size: String(PAGE_SIZE),
+      });
+      if (debouncedKeyword) params.set("keyword", debouncedKeyword);
+      if (categoryId) params.set("categoryId", categoryId);
 
-    fetch(`/api/admin/cj/products?${params.toString()}`)
-      .then((res) => {
+      try {
+        const res = await fetch(`/api/admin/cj/products?${params.toString()}`);
         if (!res.ok) throw new Error("Failed to search CJ products");
-        return res.json();
-      })
-      .then((data: CJSearchResponse) => {
+        const data: CJSearchResponse = await res.json();
         const productList = data.content.flatMap((item) => item.productList ?? []);
         setProducts(productList);
         setTotalPages(data.totalPages ?? 0);
         setTotalRecords(data.totalRecords ?? 0);
-      })
-      .catch((err) => {
+      } catch (err) {
         setError(err instanceof Error ? err.message : "Search failed");
         setProducts([]);
         setTotalPages(0);
         setTotalRecords(0);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [debouncedKeyword, categoryId, page]);
 
-  // Reset to page 1 when search criteria change
-  useEffect(() => {
+  const handleKeywordChange = (value: string) => {
+    setKeyword(value);
     setPage(1);
-  }, [debouncedKeyword, categoryId]);
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryId(value);
+    setPage(1);
+  };
 
   const handleImport = async (product: CJProduct) => {
     // CJ product/listV2 returns the product identifier as `id` (UUID format).
     // The import route expects this as `pid`.
     const pid = product.id || "";
     if (!pid) {
-      setImportMessages((prev) => ({
-        ...prev,
-        [product.id || "unknown"]: "No product identifier found in CJ response",
-      }));
+      toast("error", "No product identifier found in CJ response");
       return;
     }
 
     setImportingPid(pid);
-    setImportMessages((prev) => ({ ...prev, [pid]: "" }));
 
     try {
       const response = await fetch("/api/admin/cj/import", {
@@ -138,101 +151,92 @@ export default function AdminCJBrowse() {
       const result = await response.json();
 
       if (!response.ok) {
-        setImportMessages((prev) => ({
-          ...prev,
-          [pid]: result.error || "Import failed",
-        }));
+        toast("error", result.error || "Import failed");
         return;
       }
 
       setImportedPids((prev) => new Set(prev).add(pid));
-      setImportMessages((prev) => ({
-        ...prev,
-        [pid]: result.existed ? "Already imported" : "Imported successfully",
-      }));
+      toast("success", result.existed ? "Product was already imported." : "Product imported to store.");
     } catch {
-      setImportMessages((prev) => ({
-        ...prev,
-        [pid]: "Network error during import",
-      }));
+      toast("error", "Network error during import");
     } finally {
       setImportingPid(null);
     }
   };
 
   const formatPrice = (price: number | string | undefined): string => {
-    if (price == null) return "—";
+    if (price == null) return "â€”";
     const num = typeof price === "number" ? price : Number(price);
-    if (Number.isNaN(num)) return "—";
+    if (Number.isNaN(num)) return "â€”";
     return `$${num.toFixed(2)}`;
   };
 
   const isImported = (pid: string) => importedPids.has(pid);
 
+  /** Nested CJ categories â†’ optgroups: "First â€” Second" with third-level ids. */
+  const categoryGroups = useMemo(
+    () =>
+      categories.map((first) => ({
+        label: first.categoryFirstName,
+        options: first.categoryFirstList.flatMap((second) =>
+          second.categorySecondList.map((third) => ({
+            value: third.categoryId,
+            label: `${second.categorySecondName} â€” ${third.categoryName}`,
+          }))
+        ),
+      })),
+    [categories]
+  );
+
+  // __PART2__
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold font-display tracking-tight text-ink">
-          Browse CJ Products
-        </h1>
-        <p className="text-stone mt-1 font-body text-sm">
-          Search CJ&apos;s catalog, import products, then set pricing and featured status.
-        </p>
-      </div>
+      <PageHeader
+        title="Browse CJ Products"
+        description="Search CJ's catalog and import products into your store."
+      />
 
       {/* Search controls */}
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_240px]">
-        <label className="space-y-1.5 text-sm font-medium text-stone font-body">
-          Keyword
-          <input
-            type="text"
+        <Field label="Keyword">
+          <Input
             value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            onChange={handleKeywordChange}
             placeholder="Search CJ products, e.g. hoodie"
-            className="w-full rounded-lg border border-stone/20 bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-stone outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 transition font-body"
           />
-        </label>
-        <label className="space-y-1.5 text-sm font-medium text-stone font-body">
-          Category
-          <select
+        </Field>
+        <Field label="Category">
+          <Select
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="w-full rounded-lg border border-stone/20 bg-white px-3.5 py-2.5 text-sm text-ink outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 transition font-body cursor-pointer"
-          >
-            <option value="">All Categories</option>
-            {categories.map((group) => (
-              <optgroup key={group.categoryFirstName} label={group.categoryFirstName}>
-                {group.categoryFirstList.map((second) => (
-                  <optgroup key={second.categorySecondName} label={`  ${second.categorySecondName}`}>
-                    {second.categorySecondList.map((cat) => (
-                      <option key={cat.categoryId} value={cat.categoryId}>
-                        {cat.categoryName}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </label>
+            onChange={handleCategoryChange}
+            ariaLabel="Category"
+            options={[{ value: "", label: "All Categories" }]}
+            groups={categoryGroups}
+          />
+        </Field>
       </div>
 
       {/* Status line */}
-      <div className="flex items-center justify-between text-sm font-body">
+      <div className="flex items-center justify-between text-sm">
         <p className="text-stone">
-          {loading ? "Searching..." : `${totalRecords} product(s) found`}
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <Spinner className="h-4 w-4" /> Searchingâ€¦
+            </span>
+          ) : (
+            `${totalRecords} product(s) found`
+          )}
         </p>
         {error && <p className="text-clay">{error}</p>}
       </div>
 
       {/* Product grid */}
       {products.length === 0 && !loading ? (
-        <div className="rounded-xl border border-stone/20 bg-white px-6 py-12 text-center">
-          <p className="text-sm text-stone font-body">
+        <Card className="px-6 py-12 text-center">
+          <p className="text-sm text-stone">
             {error ? "Search failed. Try again." : "No products found. Try a different keyword or category."}
           </p>
-        </div>
+        </Card>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product) => {
@@ -240,43 +244,35 @@ export default function AdminCJBrowse() {
             const pid = product.pid || product.productId || product.id || "";
             const imported = isImported(pid);
             const importing = importingPid === pid;
-            const message = importMessages[pid] ?? "";
             return (
-              <div
-                key={pid}
-                className="flex flex-col rounded-xl border border-stone/20 bg-white p-4 transition-shadow duration-200 hover:shadow-md"
-              >
+              <Card key={pid} className="flex flex-col p-4 transition-shadow duration-200 hover:shadow-md">
                 {/* Image */}
-                <div className="mb-4 h-40 overflow-hidden rounded-lg bg-white">
+                <div className="mb-4 h-40 overflow-hidden rounded-lg bg-bone">
                   {product.bigImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
+
                     <img
                       src={product.bigImage}
                       alt={product.nameEn ?? product.productName ?? "CJ product"}
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-stone/50 font-body">
+                    <div className="flex h-full items-center justify-center text-sm text-stone/50">
                       No image
                     </div>
                   )}
                 </div>
 
                 {/* Name */}
-                <h3 className="text-sm font-semibold text-ink font-body line-clamp-2">
+                <h3 className="line-clamp-2 text-sm font-semibold text-ink">
                   {product.nameEn || product.productName || "CJ Product"}
                 </h3>
 
                 {/* SKU + category */}
-                <p className="mt-1 text-xs text-stone font-body">
-                  SKU: {product.productSku ?? "N/A"}
-                </p>
-                <p className="mt-0.5 text-xs text-stone font-body">
-                  {product.categoryName ?? "Unknown category"}
-                </p>
+                <p className="mt-1 text-xs text-stone">SKU: {product.productSku ?? "N/A"}</p>
+                <p className="mt-0.5 text-xs text-stone">{product.categoryName ?? "Unknown category"}</p>
 
                 {/* Price */}
-                <p className="mt-2 text-lg font-semibold text-ink font-body">
+                <p className="mt-2 text-lg font-semibold text-ink">
                   {formatPrice(product.sellPrice ?? product.nowPrice)}
                 </p>
 
@@ -284,31 +280,26 @@ export default function AdminCJBrowse() {
                 <div className="mt-4 flex flex-col gap-2">
                   {imported ? (
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center rounded-full bg-moss/5 px-2.5 py-0.5 text-xs font-medium text-green-700 font-body">
-                        Imported
-                      </span>
+                      <Badge tone="success">Imported</Badge>
                       <Link
                         href={`/admin/products?edit=${pid}`}
-                        className="text-xs font-medium text-clay hover:text-[#B57904] transition-colors font-body cursor-pointer"
+                        className="cursor-pointer text-xs font-medium text-clay transition-colors hover:underline"
                       >
-                        Edit product →
+                        Edit product â†’
                       </Link>
                     </div>
                   ) : (
-                    <button
+                    <Button
                       type="button"
                       onClick={() => handleImport(product)}
-                      disabled={importing}
-                      className="cursor-pointer rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#44403C] focus:outline-none focus:ring-2 focus:ring-[#1C1917]/40 disabled:opacity-50"
+                      loading={importing}
+                      size="sm"
                     >
-                      {importing ? "Importing..." : "Import to Store"}
-                    </button>
-                  )}
-                  {message && !imported && (
-                    <p className="text-xs text-stone font-body">{message}</p>
+                      {importing ? "Importingâ€¦" : "Import to Store"}
+                    </Button>
                   )}
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -316,26 +307,26 @@ export default function AdminCJBrowse() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
-          <button
-            type="button"
+        <div className="flex items-center justify-center gap-3 pt-2">
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1 || loading}
-            className="cursor-pointer rounded-lg border border-stone/20 bg-white px-4 py-2 text-sm font-medium text-stone transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-ink/20 disabled:opacity-50"
           >
             Previous
-          </button>
-          <span className="text-sm text-stone font-body">
+          </Button>
+          <span className="text-sm text-stone">
             Page {page} of {totalPages}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages || loading}
-            className="cursor-pointer rounded-lg border border-stone/20 bg-white px-4 py-2 text-sm font-medium text-stone transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-ink/20 disabled:opacity-50"
           >
             Next
-          </button>
+          </Button>
         </div>
       )}
     </div>

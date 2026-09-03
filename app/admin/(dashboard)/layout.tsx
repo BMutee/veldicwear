@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin-guard";
 import AdminShell from "@/components/admin/AdminShell";
+import { ToastProvider } from "@/components/admin-ui/toast";
 import Script from "next/script";
 
 // Navigation is defined in components/admin/AdminShell.tsx (grouped nav).
@@ -13,7 +14,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <>
-      <AdminShell>{children}</AdminShell>
+      <AdminShell>
+        <ToastProvider>{children}</ToastProvider>
+      </AdminShell>
 
       {/* Cloudinary Upload Widget — loaded on admin pages for product image uploads */}
       <Script

@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/admin-guard";
 import { prisma } from "@/lib/prisma";
 import AdminProductsClient from "@/components/AdminProductsClient";
+import { PageContainer } from "@/components/admin-ui/primitives";
 
 type ProductVariant = {
   id: string;
@@ -62,10 +63,8 @@ export default async function AdminProductsPage({
   });
 
   return (
-    <main className="min-h-screen bg-white px-6 py-8 text-black">
-      <div className="mx-auto max-w-7xl">
-        <AdminProductsClient initialProducts={products} editProductId={edit} />
-      </div>
-    </main>
+    <PageContainer wide>
+      <AdminProductsClient initialProducts={products} editProductId={edit} />
+    </PageContainer>
   );
 }

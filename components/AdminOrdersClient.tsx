@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import {
+  Badge,
+  LinkButton,
+  PageHeader,
+  SearchInput,
+  Spinner,
+} from "@/components/admin-ui/primitives";
+import { DataTable, type Column } from "@/components/admin-ui/DataTable";
 
 type OrderSummary = {
   id: string;
@@ -19,20 +26,11 @@ type OrderSummary = {
 
 const STATUS_OPTIONS = ["all", "Ordered", "Processing", "Shipped", "Delivered", "Cancelled"];
 
-const STATUS_COLORS: Record<string, string> = {
-  Ordered: "bg-blue-50 text-blue-700",
-  Paid: "bg-moss/5 text-green-700",
-  Processing: "bg-yellow-50 text-yellow-700",
-  Shipped: "bg-indigo-50 text-indigo-700",
-  Delivered: "bg-green-100 text-moss",
-  Cancelled: "bg-clay/5 text-red-700",
-};
-
-const CJ_STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-50 text-yellow-700",
-  ready_to_pay: "bg-orange-50 text-orange-700",
-  sent: "bg-moss/5 text-green-700",
-  failed: "bg-clay/5 text-red-700",
+const CJ_STATUS_TONE: Record<string, "neutral" | "success" | "warning" | "danger"> = {
+  pending: "warning",
+  ready_to_pay: "warning",
+  sent: "success",
+  failed: "danger",
 };
 
 const CJ_STATUS_LABELS: Record<string, string> = {
@@ -55,143 +53,184 @@ export default function AdminOrdersClient() {
   }, [search]);
 
   useEffect(() => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (statusFilter !== "all") params.set("status", statusFilter);
-    if (debouncedSearch) params.set("search", debouncedSearch);
+    // Async IIFE keeps setState calls out of the effect's synchronous body
+    // (react-hooks/set-state-in-effect) while preserving reload-on-filter.
+    void (async () => {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (debouncedSearch) params.set("search", debouncedSearch);
 
-    fetch(`/api/admin/orders?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data) => setOrders(data))
-      .catch(() => setOrders([]))
-      .finally(() => setLoading(false));
+      try {
+        const res = await fetch(`/api/admin/orders?${params.toString()}`);
+        const data = await res.json();
+        setOrders(data);
+      } catch {
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [statusFilter, debouncedSearch]);
 
+  const columns: Column<OrderSummary>[] = [
+    {
+      key: "order",
+      header: "Order",
+      render: (order) => <span className="font-medium text-ink">#{order.orderNumber}</span>,
+      sortValue: (order) => order.orderNumber,
+    },
+    {
+      key: "customer",
+      header: "Customer",
+      render: (order) => (
+        <div>
+          <p className="font-medium text-ink">{order.firstName} {order.lastName}</p>
+          <p className="text-xs text-stone">{order.email}</p>
+        </div>
+      ),
+    },
+    {
+      key: "createdAt",
+      header: "Date",
+      hideOnMobile: true,
+      render: (order) => (
+        <span className="text-stone">
+          {new Date(order.createdAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </span>
+      ),
+      sortValue: (order) => new Date(order.createdAt).getTime(),
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (order) => <Badge tone={pillTone(order.status)}>{order.status}</Badge>,
+      sortValue: (order) => order.status,
+    },
+    {
+      key: "cj",
+      header: "CJ Fulfillment",
+      hideOnMobile: true,
+      render: (order) =>
+        order.cjFulfillmentStatus ? (
+          <Badge tone={CJ_STATUS_TONE[order.cjFulfillmentStatus] ?? "neutral"}>
+            {CJ_STATUS_LABELS[order.cjFulfillmentStatus] || order.cjFulfillmentStatus}
+          </Badge>
+        ) : (
+          <span className="text-stone">—</span>
+        ),
+    },
+    {
+      key: "total",
+      header: "Total",
+      className: "text-right",
+      headerClassName: "text-right",
+      render: (order) => <span className="font-medium text-ink">${order.total.toFixed(2)}</span>,
+      sortValue: (order) => order.total,
+    },
+    {
+      key: "items",
+      header: "Items",
+      className: "text-right",
+      headerClassName: "text-right",
+      hideOnMobile: true,
+      render: (order) => <span className="text-stone">{order._count.items}</span>,
+      sortValue: (order) => order._count.items,
+    },
+    {
+      key: "protection",
+      header: "Protection",
+      hideOnMobile: true,
+      render: (order) =>
+        order.hasShippingProtection ? (
+          <span className="text-xs font-medium text-moss">Yes</span>
+        ) : (
+          <span className="text-xs text-stone">No</span>
+        ),
+    },
+    {
+      key: "actions",
+      header: "",
+      className: "text-right",
+      render: (order) => (
+        <LinkButton href={`/admin/orders/${order.id}`} size="sm">
+          View
+        </LinkButton>
+      ),
+    },
+  ];
+
+  // __PART2__
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold font-display tracking-tight text-ink">Orders</h1>
-          <p className="text-stone mt-1 font-body text-sm">{orders.length} total</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Orders"
+        description={`${orders.length} total`}
+      />
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="relative max-w-xs flex-1">
-          <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search by email or order #..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-stone/20 bg-white py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-stone outline-none focus:border-ink focus:ring-2 focus:ring-ink/10 transition font-body"
-          />
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {STATUS_OPTIONS.map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`cursor-pointer rounded-lg px-3.5 py-2 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-ink/20 ${
-                statusFilter === s
-                  ? "bg-ink text-white"
-                  : "bg-white border border-stone/20 text-stone hover:bg-white"
-              }`}
-            >
-              {s === "all" ? "All" : s}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Orders table */}
-      <div className="overflow-hidden rounded-xl border border-stone/20 bg-white shadow-sm">
-        {loading ? (
-          <div className="px-6 py-12 text-center">
-            <p className="text-sm text-stone font-body">Loading orders...</p>
+      <DataTable
+        columns={columns}
+        rows={orders}
+        rowKey={(order) => order.id}
+        searchPlaceholder="Search by email or order #…"
+        emptyState={
+          loading ? (
+            <span className="inline-flex items-center gap-2 text-stone">
+              <Spinner className="h-4 w-4" /> Loading orders…
+            </span>
+          ) : (
+            "No orders found."
+          )
+        }
+        toolbar={
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search by email or order #…"
+              className="w-full max-w-xs"
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              {STATUS_OPTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStatusFilter(s)}
+                  aria-pressed={statusFilter === s}
+                  className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium capitalize transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/40 ${
+                    statusFilter === s
+                      ? "bg-ink text-bone"
+                      : "border border-stone/30 bg-white text-stone hover:text-ink"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
-        ) : orders.length === 0 ? (
-          <div className="px-6 py-12 text-center">
-            <p className="text-sm text-stone font-body">
-              {debouncedSearch || statusFilter !== "all" ? "No orders match your filters." : "No orders yet."}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-stone/20 bg-white">
-                  <th className="text-left px-4 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Order</th>
-                  <th className="text-left px-4 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Customer</th>
-                  <th className="text-left px-4 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Date</th>
-                  <th className="text-left px-4 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Status</th>
-                  <th className="text-left px-4 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">CJ Status</th>
-                  <th className="text-left px-4 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Total</th>
-                  <th className="text-left px-4 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Items</th>
-                  <th className="text-left px-4 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Protection</th>
-                  <th className="text-right px-4 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E2E8F0]">
-                {orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-white transition-colors">
-                    <td className="px-4 py-3 font-medium text-ink font-body">
-                      #{order.orderNumber}
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-ink font-body">{order.firstName} {order.lastName}</p>
-                      <p className="text-xs text-stone font-body">{order.email}</p>
-                    </td>
-                    <td className="px-4 py-3 text-stone font-body text-xs">
-                      {new Date(order.createdAt).toLocaleDateString("en-US", {
-                        month: "short", day: "numeric", year: "numeric",
-                      })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status] || "bg-gray-50 text-gray-700"}`}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {order.cjFulfillmentStatus ? (
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${CJ_STATUS_COLORS[order.cjFulfillmentStatus] || "bg-gray-50 text-gray-700"}`}>
-                          {CJ_STATUS_LABELS[order.cjFulfillmentStatus] || order.cjFulfillmentStatus}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-stone">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-ink font-body">
-                      ${order.total.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-stone font-body">
-                      {order._count.items}
-                    </td>
-                    <td className="px-4 py-3">
-                      {order.hasShippingProtection ? (
-                        <span className="text-xs text-moss font-medium">Yes</span>
-                      ) : (
-                        <span className="text-xs text-stone">No</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/admin/orders/${order.id}`}
-                        className="cursor-pointer inline-flex items-center rounded-lg border border-stone/20 bg-white px-3 py-1.5 text-xs font-medium text-stone transition hover:bg-white hover:border-clay focus:outline-none focus:ring-2 focus:ring-ink/20"
-                      >
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+        }
+      />
     </div>
   );
+}
+
+function pillTone(status: string): "neutral" | "success" | "warning" | "danger" | "accent" {
+  switch (status.toLowerCase()) {
+    case "ordered":
+    case "paid":
+      return "success";
+    case "processing":
+      return "warning";
+    case "shipped":
+    case "delivered":
+      return "success";
+    case "cancelled":
+      return "danger";
+    default:
+      return "neutral";
+  }
 }

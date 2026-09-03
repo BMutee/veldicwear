@@ -1,6 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import {
+  Button,
+  Card,
+  CardHeader,
+  Input,
+} from "@/components/admin-ui/primitives";
+import { useToast } from "@/components/admin-ui/toast";
 
 type WarehouseDetail = {
   id: string;
@@ -54,22 +61,17 @@ type CJGlobalWarehouse = {
   nameEn: string;
   valueEn: string;
   disabled: boolean;
-  zh: string;
-  en: string;
-  de: string;
-  fr: string;
-  th: string;
   id: string;
 };
 
 export default function AdminCJInventory() {
+  const { toast } = useToast();
   const [warehouseId, setWarehouseId] = useState("");
   const [warehouse, setWarehouse] = useState<WarehouseDetail | null>(null);
   const [inventoryKeyword, setInventoryKeyword] = useState("");
   const [inventoryResults, setInventoryResults] = useState<PrivateInventoryItem[]>([]);
   const [categories, setCategories] = useState<CJCategory[]>([]);
   const [globalWarehouses, setGlobalWarehouses] = useState<CJGlobalWarehouse[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
   const [loadingWarehouse, setLoadingWarehouse] = useState(false);
   const [loadingInventory, setLoadingInventory] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(false);
@@ -78,7 +80,6 @@ export default function AdminCJInventory() {
   const fetchWarehouse = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoadingWarehouse(true);
-    setMessage(null);
 
     try {
       const response = await fetch(`/api/admin/cj/warehouse?id=${encodeURIComponent(warehouseId)}`);
@@ -89,10 +90,10 @@ export default function AdminCJInventory() {
 
       const data = await response.json();
       setWarehouse(data.data ?? data);
-      setMessage("Warehouse loaded successfully.");
+      toast("success", "Warehouse loaded successfully.");
     } catch (error) {
       setWarehouse(null);
-      setMessage(error instanceof Error ? error.message : "Warehouse lookup failed.");
+      toast("error", error instanceof Error ? error.message : "Warehouse lookup failed.");
     } finally {
       setLoadingWarehouse(false);
     }
@@ -101,7 +102,6 @@ export default function AdminCJInventory() {
   const searchInventory = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoadingInventory(true);
-    setMessage(null);
 
     try {
       const response = await fetch("/api/admin/cj/private-inventory/spu", {
@@ -122,10 +122,10 @@ export default function AdminCJInventory() {
 
       const data = await response.json();
       setInventoryResults(data.data.content ?? []);
-      setMessage(`Found ${data.data.content.length} private inventory item(s).`);
+      toast("success", `Found ${data.data.content.length} private inventory item(s).`);
     } catch (error) {
       setInventoryResults([]);
-      setMessage(error instanceof Error ? error.message : "Private inventory search failed.");
+      toast("error", error instanceof Error ? error.message : "Private inventory search failed.");
     } finally {
       setLoadingInventory(false);
     }
@@ -133,7 +133,6 @@ export default function AdminCJInventory() {
 
   const fetchCategories = async () => {
     setLoadingCategories(true);
-    setMessage(null);
 
     try {
       const response = await fetch("/api/admin/cj/categories");
@@ -144,10 +143,10 @@ export default function AdminCJInventory() {
 
       const data = await response.json();
       setCategories(data ?? []);
-      setMessage(`Loaded ${data.length} category group(s).`);
+      toast("success", `Loaded ${data.length} category group(s).`);
     } catch (error) {
       setCategories([]);
-      setMessage(error instanceof Error ? error.message : "Category load failed.");
+      toast("error", error instanceof Error ? error.message : "Category load failed.");
     } finally {
       setLoadingCategories(false);
     }
@@ -155,7 +154,6 @@ export default function AdminCJInventory() {
 
   const fetchGlobalWarehouses = async () => {
     setLoadingGlobalWarehouses(true);
-    setMessage(null);
 
     try {
       const response = await fetch("/api/admin/cj/global-warehouses");
@@ -166,49 +164,46 @@ export default function AdminCJInventory() {
 
       const data = await response.json();
       setGlobalWarehouses(data ?? []);
-      setMessage(`Loaded ${data.length} global warehouse(s).`);
+      toast("success", `Loaded ${data.length} global warehouse(s).`);
     } catch (error) {
       setGlobalWarehouses([]);
-      setMessage(error instanceof Error ? error.message : "Global warehouses load failed.");
+      toast("error", error instanceof Error ? error.message : "Global warehouses load failed.");
     } finally {
       setLoadingGlobalWarehouses(false);
     }
   };
 
+  // __PART2__
   return (
-    <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold">CJ Warehouse &amp; Private Inventory</h2>
-
-      <div className="mt-6 grid gap-8 lg:grid-cols-2">
-        <section className="rounded-3xl border border-black/10 bg-slate-100 p-4">
-          <h3 className="text-lg font-semibold">Warehouse Info</h3>
-          <form onSubmit={fetchWarehouse} className="mt-4 flex flex-col gap-3">
-            <input
+    <Card>
+      <CardHeader title="CJ Warehouse & Private Inventory" />
+      <div className="grid gap-6 p-5 lg:grid-cols-2">
+        {/* Warehouse info */}
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-stone">Warehouse info</h3>
+          <form onSubmit={fetchWarehouse} className="flex items-end gap-2">
+            <Input
               value={warehouseId}
-              onChange={(event) => setWarehouseId(event.target.value)}
+              onChange={setWarehouseId}
               placeholder="Warehouse ID"
-              className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
+              ariaLabel="Warehouse ID"
             />
-            <button
-              type="submit"
-              disabled={loadingWarehouse || !warehouseId.trim()}
-              className="rounded-full bg-yellow-400 px-6 py-3 font-semibold text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loadingWarehouse ? "Loading…" : "Load Warehouse"}
-            </button>
+            <Button type="submit" variant="secondary" loading={loadingWarehouse} disabled={!warehouseId.trim()}>
+              Load
+            </Button>
           </form>
 
           {warehouse && (
-            <div className="mt-4 space-y-2 rounded-2xl bg-white p-4 text-sm text-black/80">
-              <p><strong>Name:</strong> {warehouse.name}</p>
-              <p><strong>Country:</strong> {warehouse.areaCountryCode}</p>
-              <p><strong>Location:</strong> {warehouse.city}, {warehouse.province}</p>
-              <p><strong>Address:</strong> {warehouse.address1}{warehouse.address2 ? `, ${warehouse.address2}` : ""}</p>
-              <p><strong>Phone:</strong> {warehouse.phone ?? "N/A"}</p>
-              <p><strong>Pickup:</strong> {warehouse.isSelfPickup === 1 ? "Yes" : "No"}</p>
+            <div className="space-y-1.5 rounded-lg border border-stone/20 bg-bone/60 p-4 text-sm text-stone">
+              <p><strong className="text-ink">Name:</strong> {warehouse.name}</p>
+              <p><strong className="text-ink">Country:</strong> {warehouse.areaCountryCode}</p>
+              <p><strong className="text-ink">Location:</strong> {warehouse.city}, {warehouse.province}</p>
+              <p><strong className="text-ink">Address:</strong> {warehouse.address1}{warehouse.address2 ? `, ${warehouse.address2}` : ""}</p>
+              <p><strong className="text-ink">Phone:</strong> {warehouse.phone ?? "N/A"}</p>
+              <p><strong className="text-ink">Pickup:</strong> {warehouse.isSelfPickup === 1 ? "Yes" : "No"}</p>
               <div>
-                <strong>Logistics Brands:</strong>
-                <ul className="list-disc pl-5">
+                <strong className="text-ink">Logistics brands:</strong>
+                <ul className="mt-1 list-disc pl-5">
                   {warehouse.logisticsBrandList.map((brand) => (
                     <li key={brand.id}>{brand.name}</li>
                   ))}
@@ -218,36 +213,35 @@ export default function AdminCJInventory() {
           )}
         </section>
 
-        <section className="rounded-3xl border border-black/10 bg-slate-100 p-4">
-          <h3 className="text-lg font-semibold">Private Inventory Search</h3>
-          <form onSubmit={searchInventory} className="mt-4 flex flex-col gap-3">
-            <input
+        {/* Private inventory search */}
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-stone">Private inventory search</h3>
+          <form onSubmit={searchInventory} className="flex items-end gap-2">
+            <Input
               value={inventoryKeyword}
-              onChange={(event) => setInventoryKeyword(event.target.value)}
-              placeholder="Search keyword, SKU, or SPU"
-              className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
+              onChange={setInventoryKeyword}
+              placeholder="Keyword, SKU, or SPU"
+              ariaLabel="Inventory keyword"
             />
-            <button
-              type="submit"
-              disabled={loadingInventory || !inventoryKeyword.trim()}
-              className="rounded-full bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loadingInventory ? "Searching…" : "Search Inventory"}
-            </button>
+            <Button type="submit" variant="secondary" loading={loadingInventory} disabled={!inventoryKeyword.trim()}>
+              Search
+            </Button>
           </form>
 
           {inventoryResults.length > 0 && (
-            <div className="mt-4 space-y-4">
+            <div className="space-y-3">
               {inventoryResults.map((item) => (
-                <div key={item.productId} className="rounded-2xl bg-white p-4 text-sm text-black/80">
-                  <p><strong>{item.productName}</strong></p>
+                <div key={item.productId} className="rounded-lg border border-stone/20 p-4 text-sm text-stone">
+                  <p className="font-semibold text-ink">{item.productName}</p>
                   <p>SPU: {item.spu}</p>
-                  <p>Total Warehouse Quantity: {item.totalWarehouseQuantity ?? 0}</p>
-                  <p>Price Range: ${item.minStockPrice?.toFixed(2) ?? "0.00"} - ${item.maxStockPrice?.toFixed(2) ?? "0.00"}</p>
+                  <p>Total warehouse quantity: {item.totalWarehouseQuantity ?? 0}</p>
+                  <p>
+                    Price range: ${item.minStockPrice?.toFixed(2) ?? "0.00"} – ${item.maxStockPrice?.toFixed(2) ?? "0.00"}
+                  </p>
                   {item.warehouseQuantityInfoList?.length ? (
                     <div className="mt-2">
-                      <strong>Warehouse breakdown:</strong>
-                      <ul className="list-disc pl-5">
+                      <strong className="text-ink">Warehouse breakdown:</strong>
+                      <ul className="mt-1 list-disc pl-5">
                         {item.warehouseQuantityInfoList.map((warehouseInfo) => (
                           <li key={warehouseInfo.countryCode}>
                             {warehouseInfo.countryCode}: {warehouseInfo.warehouseQuantity}
@@ -261,27 +255,21 @@ export default function AdminCJInventory() {
             </div>
           )}
         </section>
-      </div>
 
-      <div className="mt-10 grid gap-8 lg:grid-cols-2">
-        <section className="rounded-3xl border border-black/10 bg-slate-100 p-4">
-          <h3 className="text-lg font-semibold">CJ Product Categories</h3>
-          <button
-            type="button"
-            onClick={fetchCategories}
-            disabled={loadingCategories}
-            className="mt-4 rounded-full bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loadingCategories ? "Loading…" : "Load Categories"}
-          </button>
+        {/* Categories */}
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-stone">CJ product categories</h3>
+          <Button type="button" variant="secondary" onClick={fetchCategories} loading={loadingCategories}>
+            Load Categories
+          </Button>
 
           {categories.length > 0 && (
-            <div className="mt-4 space-y-4 rounded-2xl bg-white p-4 text-sm text-black/80">
+            <div className="max-h-72 space-y-3 overflow-y-auto rounded-lg border border-stone/20 p-4 text-sm text-stone">
               {categories.map((firstCategory) => (
                 <div key={firstCategory.categoryFirstName}>
-                  <p className="font-semibold">{firstCategory.categoryFirstName}</p>
+                  <p className="font-semibold text-ink">{firstCategory.categoryFirstName}</p>
                   {firstCategory.categoryFirstList.map((secondCategory) => (
-                    <div key={secondCategory.categorySecondName} className="mt-2 pl-4">
+                    <div key={secondCategory.categorySecondName} className="mt-1.5 pl-4">
                       <p className="font-medium">{secondCategory.categorySecondName}</p>
                       <ul className="list-disc pl-5">
                         {secondCategory.categorySecondList.map((thirdCategory) => (
@@ -298,26 +286,24 @@ export default function AdminCJInventory() {
           )}
         </section>
 
-        <section className="rounded-3xl border border-black/10 bg-slate-100 p-4">
-          <h3 className="text-lg font-semibold">Global Warehouses</h3>
-          <button
-            type="button"
-            onClick={fetchGlobalWarehouses}
-            disabled={loadingGlobalWarehouses}
-            className="mt-4 rounded-full bg-yellow-400 px-6 py-3 font-semibold text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loadingGlobalWarehouses ? "Loading…" : "Load Warehouses"}
-          </button>
+        {/* Global warehouses */}
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-stone">Global warehouses</h3>
+          <Button type="button" variant="secondary" onClick={fetchGlobalWarehouses} loading={loadingGlobalWarehouses}>
+            Load Warehouses
+          </Button>
 
           {globalWarehouses.length > 0 && (
-            <div className="mt-4 space-y-4 rounded-2xl bg-white p-4 text-sm text-black/80">
-              <ul className="space-y-3">
-                {globalWarehouses.map((warehouse) => (
-                  <li key={warehouse.id} className="rounded-2xl border border-black/10 p-3">
-                    <p className="font-semibold">{warehouse.nameEn} ({warehouse.countryCode})</p>
-                    <p>Area: {warehouse.areaEn}</p>
-                    <p>Warehouse ID: {warehouse.areaId}</p>
-                    <p>Disabled: {warehouse.disabled ? "Yes" : "No"}</p>
+            <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-stone/20 p-4 text-sm text-stone">
+              <ul className="space-y-2">
+                {globalWarehouses.map((warehouseItem) => (
+                  <li key={warehouseItem.id} className="rounded-lg border border-stone/15 p-3">
+                    <p className="font-semibold text-ink">
+                      {warehouseItem.nameEn} ({warehouseItem.countryCode})
+                    </p>
+                    <p>Area: {warehouseItem.areaEn}</p>
+                    <p>Warehouse ID: {warehouseItem.areaId}</p>
+                    <p>Disabled: {warehouseItem.disabled ? "Yes" : "No"}</p>
                   </li>
                 ))}
               </ul>
@@ -325,8 +311,6 @@ export default function AdminCJInventory() {
           )}
         </section>
       </div>
-
-      {message && <p className="mt-6 text-sm text-black/70">{message}</p>}
-    </div>
+    </Card>
   );
 }
