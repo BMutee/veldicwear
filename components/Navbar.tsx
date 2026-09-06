@@ -59,7 +59,7 @@ export default function Navbar({
 
   return (
     <>
-      <style>{`\n        .veldic-navbar-link { color: ${styles.linkColor}; }\n        .veldic-navbar-link:hover { color: ${styles.linkHoverColor}; }\n        .veldic-navbar-control { color: ${styles.textColor}; }\n        .veldic-navbar-control:hover { color: ${styles.linkHoverColor}; }\n        .veldic-navbar-row {\n          --navbar-height: ${styles.height.mobile}px;\n          --navbar-pad-x: ${styles.paddingX.mobile}px;\n        }\n        @media (min-width: 768px) {\n          .veldic-navbar-row {\n            --navbar-height: ${styles.height.desktop}px;\n            --navbar-pad-x: ${styles.paddingX.desktop}px;\n          }\n        }\n      `}</style>
+      <style>{`\n        .veldic-navbar-link { color: ${styles.linkColor}; }\n        .veldic-navbar-link:hover { color: ${styles.linkHoverColor}; }\n        .veldic-navbar-control { color: ${styles.textColor}; }\n        .veldic-navbar-control:hover { color: ${styles.linkHoverColor}; }\n        .veldic-navbar-row {\n          --navbar-height: ${styles.height.mobile}px;\n          --navbar-pad-x: ${styles.paddingX.mobile}px;\n          --logo-h: max(28px, calc(var(--navbar-height) - 8px));\n        }\n        @media (min-width: 768px) {\n          .veldic-navbar-row {\n            --navbar-height: ${styles.height.desktop}px;\n            --navbar-pad-x: ${styles.paddingX.desktop}px;\n          }\n        }\n      `}</style>
       <header
         className="veldic-navbar glass-edge sticky top-0 z-50 border-b border-white/60"
         style={{
@@ -88,7 +88,20 @@ export default function Navbar({
             className="font-display text-xl font-semibold tracking-tight text-ink"
             aria-label={storeName}
           >
-            <Image src={settings.logo} alt={storeName} width={180} height={32} unoptimized onError={() => setLogoFailed(true)} className="max-w-[180px] object-contain" style={{ width: "auto", height: "auto", maxHeight: "calc(var(--navbar-height) - 16px)" }} />
+            {/* Explicit height (not just a max) so the logo renders at a
+                consistent, prominent size regardless of the source file's
+                intrinsic dimensions — scales with the admin's navbar height. */}
+            <Image
+              src={settings.logo}
+              alt={storeName}
+              width={240}
+              height={56}
+              priority
+              unoptimized
+              onError={() => setLogoFailed(true)}
+              className="max-w-[160px] md:max-w-[240px] object-contain"
+              style={{ width: "auto", height: "var(--logo-h)" }}
+            />
           </Link>
         ) : (
           <Link
