@@ -110,3 +110,57 @@ export function contrastRatio(fg: string, bg: string): number {
   const lo = Math.min(l1, l2);
   return (hi + 0.05) / (lo + 0.05);
 }
+
+// =============================================================================
+// Legacy palette → V3 (Light-Modern / Glass) migration
+// -----------------------------------------------------------------------------
+// The v2 design system stored earthy hex values directly in section/block rows
+// (navbar, footer, hero, banner, featured-products). v3 retargets the palette
+// to a light blue-slate system WITHOUT renaming the tokens, so stored v2
+// values must be remapped at render time. These helpers are role-aware —
+// the same legacy hex means different things as a *surface* vs *text*
+// (e.g. ink #171512 was both the nav/footer background AND the hero text).
+// They only rewrite legacy palette values; any merchant-customized color is
+// left untouched.
+// =============================================================================
+
+export const V3_SURFACE = "#F3F7FC"; // --color-bone
+export const V3_TEXT = "#1B2737"; // --color-ink
+export const V3_ACCENT = "#2563EB"; // --color-moss
+export const V3_MUTED = "#5B6B85"; // --color-stone
+export const V3_WHITE = "#FFFFFF";
+
+const LEGACY_INK = new Set(["#171512", "#1c1917"]);
+const LEGACY_BONE = new Set(["#fafaf8", "#fafaf9", "#f3eee3"]);
+const LEGACY_MUTED = new Set(["#cdccca", "#a8a29e", "#8c8677", "#78716c", "#78716c"]);
+const LEGACY_AMBER = new Set(["#ca8a04", "#d97706"]);
+
+/** Surface role: legacy dark surfaces → light V3 surface. */
+export function migrateSurfaceColor(raw: string): string {
+  const v = raw.trim().toLowerCase();
+  if (LEGACY_INK.has(v) || LEGACY_BONE.has(v)) return V3_SURFACE;
+  return raw;
+}
+
+/** Text role: legacy ink/bone text → V3 slate-ink; legacy muted grays → slate. */
+export function migrateTextColor(raw: string): string {
+  const v = raw.trim().toLowerCase();
+  if (LEGACY_INK.has(v) || LEGACY_BONE.has(v)) return V3_TEXT;
+  if (LEGACY_MUTED.has(v)) return V3_MUTED;
+  return raw;
+}
+
+/** Link-hover role: legacy bone/ink/muted hover → V3 accent blue. */
+export function migrateLinkHoverColor(raw: string): string {
+  const v = raw.trim().toLowerCase();
+  if (LEGACY_INK.has(v) || LEGACY_BONE.has(v) || LEGACY_MUTED.has(v)) return V3_ACCENT;
+  return raw;
+}
+
+/** Accent/CTA role: legacy amber CTA → V3 blue; off-white CTA text → white. */
+export function migrateAccentColor(raw: string): string {
+  const v = raw.trim().toLowerCase();
+  if (LEGACY_AMBER.has(v)) return V3_ACCENT;
+  if (LEGACY_BONE.has(v)) return V3_WHITE;
+  return raw;
+}

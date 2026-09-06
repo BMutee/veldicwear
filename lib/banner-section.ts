@@ -65,9 +65,9 @@ export const bannerContentSchema = z.object({
 
 export type BannerContent = z.infer<typeof bannerContentSchema>;
 
-// Dark strip treatment — ink background (#171512) with bone text (#FAFAF8),
-// matching Footer's dark-section styling. CTA uses clay (#CA8A04) for
-// contrast on the dark background, consistent with accent rules.
+// V3 light strip treatment — bone surface (#F3F7FC) with slate-ink text
+// (#1B2737), matching Footer's light glass styling. CTA uses the V3 blue
+// (#2563EB) accent with white text, consistent with accent rules.
 //
 // Breakpoint defaults: desktop = the original single-value default;
 // mobile = the fluid() floor that value previously scaled down to
@@ -76,11 +76,11 @@ export const BANNER_DEFAULT_STYLES: BannerStyles = {
   paddingTop: { mobile: 24, desktop: 40 },
   paddingBottom: { mobile: 24, desktop: 40 },
   paddingX: { mobile: 16, desktop: 24 },
-  backgroundColor: "#171512", // --color-ink
-  textColor: "#FAFAF8", // --color-bone
+  backgroundColor: "#F3F7FC", // --color-bone
+  textColor: "#1B2737", // --color-ink
   headingFontSize: { mobile: 20, desktop: 28 }, // promo strip, not hero-scale
-  ctaBackgroundColor: "#CA8A04", // warm accent on dark bg
-  ctaTextColor: "#FAFAF8",
+  ctaBackgroundColor: "#2563EB", // --color-moss (accent blue)
+  ctaTextColor: "#FFFFFF",
 };
 
 export const BANNER_DEFAULT_CONTENT: BannerContent = {

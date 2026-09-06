@@ -144,7 +144,7 @@ export default function ProductGrid({ products }: { products: any[] }) {
                   className="absolute inset-0 flex cursor-pointer items-center justify-center bg-ink/0 transition-colors duration-200 group-hover:bg-ink/30"
                 >
                   <span
-                    className="translate-y-4 bg-ink px-6 py-2.5 font-sans text-xs font-medium text-white opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 border border-white hover:bg-moss hover:border-moss cursor-pointer"
+                    className="translate-y-4 border border-white/80 bg-white/85 px-6 py-2.5 font-sans text-xs font-medium text-ink shadow-glass backdrop-blur-md opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 hover:bg-moss hover:text-white hover:border-moss cursor-pointer"
                   >
                     Quick Add
                   </span>

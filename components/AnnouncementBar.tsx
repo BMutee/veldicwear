@@ -4,12 +4,13 @@ import Link from "next/link";
 import type { ActiveAnnouncement, AnnouncementStyle } from "@/lib/announcement";
 
 // Site-wide announcement strip rendered above the sticky navbar.
-// Style enum → on-token Tailwind classes. Flat, no gradients/glass.
+// V3: light frosted strip (glass) with blue promo; warning uses a soft
+// orange tint so the whole homepage stays light and modern.
 
 const STYLE_CLS: Record<AnnouncementStyle, string> = {
-  info: "bg-ink text-bone/90 border-b border-white/10",
-  warning: "bg-clay text-bone",
-  promo: "bg-clay text-bone",
+  info: "glass-strong border-b border-white/60 text-ink",
+  warning: "bg-clay/10 border-b border-white/60 text-clay",
+  promo: "bg-moss text-white border-b border-white/60",
 };
 
 export default function AnnouncementBar({

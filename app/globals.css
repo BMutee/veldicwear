@@ -6,29 +6,47 @@
 /* ===== FONTS ===== */
 /* (moved above Tailwind per CSS spec) */
 
-/* Veldic Wear — Design Tokens (v2: white/product-forward direction) */
+/* Veldic Wear — Design Tokens (v3: Light-Modern / Glass direction)
+   ----------------------------------------------------------------
+   v3 retargets the v2 earthy palette (ink/moss/bone) onto a light, airy,
+   blue-slate system and introduces a full glassmorphism surface layer.
+   Token NAMES are intentionally kept from v2 so every utility class
+   (bg-bone, text-moss, border-clay, …) restyles automatically — only the
+   values change. A legacy→v3 palette migration in the section parsers
+   remaps stored v2 hex values at render time. */
 
 :root {
-  /* Color */
-  --color-bone: #FAFAF8;       /* near-white page background */
-  --color-white: #FFFFFF;      /* pure white — cards, product tiles */
-  --color-ink: #171512;
-  --color-moss: #455A38;
-  --color-moss-hover: #37472C;
-  --color-clay: #B5602E;
-  --color-clay-bg: rgba(181, 96, 46, 0.12);
-  --color-stone: #8C8677;
-  --color-stone-border: rgba(23, 21, 18, 0.08); /* lightened for white bg */
-  --color-shadow: rgba(23, 21, 18, 0.06);
+  /* Color (light modern) */
+  --color-bone: #F3F7FC;       /* cool airy page background */
+  --color-white: #FFFFFF;      /* pure white — elevated surfaces */
+  --color-ink: #1B2737;        /* deep slate-ink — primary text */
+  --color-moss: #2563EB;       /* electric blue — primary accent */
+  --color-moss-hover: #1D4ED8; /* accent hover */
+  --color-clay: #C2410C;       /* modern orange — secondary accent (AA on light) */
+  --color-clay-bg: rgba(194, 65, 12, 0.12);
+  --color-stone: #5B6B85;      /* slate muted text — WCAG AA (4.98:1 on bone) */
+  --color-stone-border: rgba(27, 39, 55, 0.10);
+  --color-shadow: rgba(20, 45, 100, 0.10);
 
   /* Surface / text roles */
   --surface-page: var(--color-bone);
   --surface-card: var(--color-white);
-  --surface-nav: var(--color-ink);
+  --surface-nav: rgba(255, 255, 255, 0.72);
   --text-primary: var(--color-ink);
-  --text-inverse: var(--color-bone);
+  --text-inverse: #FFFFFF;
   --text-muted: var(--color-stone);
   --text-accent: var(--color-moss);
+
+  /* Glass system (glassmorphism) */
+  --glass-blur: 20px;
+  --glass-saturate: 1.6;
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-bg-strong: rgba(255, 255, 255, 0.80);
+  --glass-border: rgba(255, 255, 255, 0.70);
+  --glass-border-strong: rgba(255, 255, 255, 0.92);
+  --glass-edge: rgba(255, 255, 255, 0.55); /* top-edge light catch */
+  --shadow-glass: 0 8px 32px rgba(20, 45, 100, 0.10);
+  --shadow-glass-hover: 0 18px 48px rgba(20, 45, 100, 0.16);
 
   /* Typography */
   --font-display: "General Sans", "Space Grotesk", sans-serif;
@@ -51,12 +69,12 @@
   --grid-gap-desktop: 24px;
 
   --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
 
-  /* Depth — replaces bg-tint as the separation cue on white */
-  --shadow-card: 0 1px 3px var(--color-shadow);
-  --shadow-card-hover: 0 4px 12px var(--color-shadow);
+  /* Depth — glass shadows carry the separation on light surfaces */
+  --shadow-card: 0 4px 20px rgba(20, 45, 100, 0.08);
+  --shadow-card-hover: 0 12px 36px rgba(20, 45, 100, 0.14);
 
   /* Motion */
   --dur-fast: 150ms;
@@ -66,8 +84,16 @@
   --ease-snap: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Page surface — soft, fixed color-glow gradient (glass has something to
+   blur). Kept as background-image so the `bg-bone` class on <body> (which
+   only sets background-color) never fights it. */
 body {
-  background: var(--surface-page);
+  background-color: var(--surface-page);
+  background-image:
+    radial-gradient(1100px 680px at -8% -8%, rgba(68, 125, 255, 0.12), transparent 62%),
+    radial-gradient(820px 560px at 108% 6%, rgba(139, 92, 246, 0.10), transparent 60%),
+    radial-gradient(980px 660px at 50% 118%, rgba(56, 189, 248, 0.09), transparent 62%);
+  background-attachment: fixed;
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: var(--text-base);
@@ -97,21 +123,51 @@ h1, h2, h3, .font-display {
   font-family: var(--font-mono);
 }
 
-/* Card / product tile — depth via shadow + hairline border, not bg tint */
+/* Card / product tile — frosted glass surface: translucent white + backdrop
+   blur + hairline light border + soft glass shadow. Depth comes from the
+   blur + shadow, not from a background tint difference. */
 .card {
-  background: var(--surface-card);
-  border: 1px solid var(--color-stone-border);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-glass);
   transition: box-shadow var(--dur-fast) var(--ease-snap),
               border-color var(--dur-fast) var(--ease-snap),
               transform var(--dur-fast) var(--ease-snap);
 }
 
 .card:hover {
-  box-shadow: var(--shadow-card-hover);
+  box-shadow: var(--shadow-glass-hover);
   border-color: var(--color-moss);
-  transform: scale(1.02);
+  transform: translateY(-4px);
+}
+
+/* Glass utilities — frosted translucent panels */
+.glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+}
+.glass-strong {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-strong);
+}
+/* Floating glass navigation bar — translucent page color blurred over content.
+   color-mix lets an admin-chosen background color become the glass tint. */
+.glass-navbar {
+  background: color-mix(in srgb, var(--color-bone) 72%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--glass-border);
+}
+/* Top-edge light catch — the classic glassmorphism highlight line */
+.glass-edge {
+  box-shadow: inset 0 1px 0 var(--glass-edge);
 }
 
 /* Utility classes */
@@ -140,10 +196,8 @@ h1, h2, h3, .font-display {
 }
 
 /* Buttons — MASTER.md: outline by default (1px border, ink text); primary CTA
-   is moss fill + inverse text + radius-md, no shadow, max ONE moss-filled
-   button per view. Defined in @layer components so Tailwind utilities
-   (flex/inline-flex, w-full, mt-*, text-*) still win where components add
-   their own display/sizing classes. */
+   is accent fill + inverse text + radius-md. Max ONE accent-filled button per
+   view. Defined in @layer components so Tailwind utilities still win. */
 @layer components {
   .btn-primary,
   .btn-outline {
@@ -161,17 +215,21 @@ h1, h2, h3, .font-display {
     transition:
       background-color var(--dur-fast) var(--ease-snap),
       border-color var(--dur-fast) var(--ease-snap),
-      color var(--dur-fast) var(--ease-snap);
+      color var(--dur-fast) var(--ease-snap),
+      box-shadow var(--dur-fast) var(--ease-snap),
+      transform var(--dur-fast) var(--ease-snap);
   }
   .btn-primary {
     background: var(--color-moss);
     border: 1px solid var(--color-moss);
     color: var(--text-inverse);
-    box-shadow: none;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
   }
   .btn-primary:hover {
     background: var(--color-moss-hover);
     border-color: var(--color-moss-hover);
+    box-shadow: 0 12px 28px rgba(29, 78, 216, 0.30);
+    transform: translateY(-1px);
   }
   .btn-outline {
     background: transparent;
@@ -181,6 +239,7 @@ h1, h2, h3, .font-display {
   .btn-outline:hover {
     border-color: var(--color-moss);
     color: var(--color-moss);
+    background: rgba(37, 99, 235, 0.06);
   }
   .btn-primary:focus-visible,
   .btn-outline:focus-visible {
@@ -192,13 +251,14 @@ h1, h2, h3, .font-display {
 /* Footer links — dynamic color + hover via CSS custom properties set inline
    from SiteSection("footer").content.styles (linkColor / linkHoverColor).
    Inline styles can't express :hover, so a tiny class + CSS vars is the clean
-   way to keep link colors admin-editable. Defaults mirror the WCAG AA values. */
+   way to keep link colors admin-editable. Defaults mirror the V3 palette
+   (slate muted links → blue accent on hover). */
 .footer-link {
-  color: var(--footer-link, #A8A29E);
+  color: var(--footer-link, #5B6B85);
   transition: color var(--dur-fast) var(--ease-snap);
 }
 .footer-link:hover {
-  color: var(--footer-link-hover, var(--color-bone));
+  color: var(--footer-link-hover, var(--color-moss));
 }
 
 /* ===== Entrance animation presets (admin-configurable per section/block) =====
@@ -240,9 +300,8 @@ h1, h2, h3, .font-display {
   }
 }
 
-/* Form input borders — darker than card borders for WCAG 1.4.11
-   (3:1 non-text contrast). Uses ink-based rgba for sufficient contrast
-   on white backgrounds. */
+/* Form input borders — WCAG 1.4.11 (3:1 non-text contrast). Uses ink-based
+   rgba for sufficient contrast on light surfaces. */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -251,7 +310,7 @@ input[type="tel"],
 input[type="url"],
 textarea,
 select {
-  border-color: rgba(23, 21, 18, 0.25);
+  border-color: rgba(27, 39, 55, 0.25);
 }
 
 input[type="text"]:focus,
@@ -265,15 +324,21 @@ select:focus {
   border-color: var(--color-moss);
 }
 
-/* Tailwind v4 theme mapping — keep in sync with @theme block in your
-   actual globals.css if using Tailwind v4 inline theming */
+/* Tailwind v4 theme mapping — must stay in sync with the :root tokens above.
+   --color-moss-hover and the --shadow-* entries are REQUIRED here so the
+   bg-moss-hover / shadow-card / shadow-glass utilities generate. */
 @theme {
-  --color-bone: #FAFAF8;
+  --color-bone: #F3F7FC;
   --color-white: #FFFFFF;
-  --color-ink: #171512;
-  --color-moss: #455A38;
-  --color-clay: #B5602E;
-  --color-stone: #8C8677;
+  --color-ink: #1B2737;
+  --color-moss: #2563EB;
+  --color-moss-hover: #1D4ED8;
+  --color-clay: #C2410C;
+  --color-stone: #5B6B85;
+  --shadow-card: 0 4px 20px rgba(20, 45, 100, 0.08);
+  --shadow-card-hover: 0 12px 36px rgba(20, 45, 100, 0.14);
+  --shadow-glass: 0 8px 32px rgba(20, 45, 100, 0.10);
+  --shadow-glass-hover: 0 18px 48px rgba(20, 45, 100, 0.16);
 }
 /* Prose images (e.g. CJ size charts embedded in product descriptions) must never overflow their container. */
 .prose img {

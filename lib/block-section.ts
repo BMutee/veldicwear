@@ -3,6 +3,8 @@ import {
   animationSchema,
   BreakpointValue,
   hexColorSchema,
+  migrateSurfaceColor,
+  migrateTextColor,
   normalizeAnimation,
   normalizeBreakpoint,
 } from "./section-shared";
@@ -24,8 +26,8 @@ export const BLOCK_DEFAULT_STYLES: BlockStyles = {
   paddingTop: { mobile: 24, desktop: 48 },
   paddingBottom: { mobile: 24, desktop: 48 },
   paddingX: { mobile: 24, desktop: 64 },
-  backgroundColor: "#FAFAF8",
-  textColor: "#171512",
+  backgroundColor: "#F3F7FC", // --color-bone (V3 light surface)
+  textColor: "#1B2737", // --color-ink (V3 slate-ink)
   animation: { type: "NONE", scrollTrigger: true },
 };
 
@@ -74,14 +76,13 @@ function normalizeHeadingFontSize(raw: unknown): BreakpointValue {
   return def;
 }
 export const HERO_BLOCK_DEFAULT_STYLES: HeroBlockStyles = {
-  paddingTop: { mobile: 64, desktop: 96 }, paddingBottom: { mobile: 32, desktop: 48 }, paddingX: { mobile: 24, desktop: 64 }, headlineFontSize: { mobile: 40, desktop: 96 }, backgroundColor: "#FAFAF8", textColor: "#171512", animation: { type: "NONE", scrollTrigger: false },
+  paddingTop: { mobile: 64, desktop: 96 }, paddingBottom: { mobile: 32, desktop: 48 }, paddingX: { mobile: 24, desktop: 64 }, headlineFontSize: { mobile: 40, desktop: 96 }, backgroundColor: "#F3F7FC", textColor: "#1B2737", animation: { type: "NONE", scrollTrigger: false },
 };
 // Defaults for the banner variant (SiteSection "banner") of the HERO block.
-// Mirrors the previous banner defaults (ink strip, bone text, warm CTA);
-// `headingFontSize` is the banner's font-size key, `headlineFontSize` is left
-// unset so a reset banner row can't be confused with a hero row.
+// V3: the strip is a light glass surface with slate-ink text; the CTA accent
+// (ctaBackgroundColor) is the V3 blue — see Banner.tsx for the fallback CTA.
 export const BANNER_BLOCK_DEFAULT_STYLES: HeroBlockStyles = {
-  paddingTop: { mobile: 24, desktop: 40 }, paddingBottom: { mobile: 24, desktop: 40 }, paddingX: { mobile: 16, desktop: 24 }, headingFontSize: { mobile: 20, desktop: 28 }, backgroundColor: "#171512", textColor: "#FAFAF8", animation: { type: "NONE", scrollTrigger: true },
+  paddingTop: { mobile: 24, desktop: 40 }, paddingBottom: { mobile: 24, desktop: 40 }, paddingX: { mobile: 16, desktop: 24 }, headingFontSize: { mobile: 20, desktop: 28 }, backgroundColor: "#F3F7FC", textColor: "#1B2737", animation: { type: "NONE", scrollTrigger: true },
 };
 
 // --- FEATURED_PRODUCTS block type --------------------------------------------
@@ -102,8 +103,8 @@ export const FEATURED_BLOCK_DEFAULT_STYLES: FeaturedBlockStyles = {
   paddingTop: { mobile: 48, desktop: 96 },
   paddingBottom: { mobile: 48, desktop: 96 },
   paddingX: { mobile: 24, desktop: 24 },
-  backgroundColor: "#FAFAF8", // --color-bone
-  textColor: "#171512", // --color-ink
+  backgroundColor: "#F3F7FC", // --color-bone (V3 light surface)
+  textColor: "#1B2737", // --color-ink (V3 slate-ink)
   headingFontSize: { mobile: 32, desktop: 48 },
   animation: { type: "NONE", scrollTrigger: true },
 };
@@ -178,8 +179,8 @@ export function normalizeHeroBlockStyles(raw: unknown): HeroBlockStyles {
     paddingX: normalizeBreakpoint(value.paddingX, HERO_BLOCK_DEFAULT_STYLES.paddingX, 16, 200),
     headlineFontSize: normalizeBreakpoint(value.headlineFontSize, HERO_BLOCK_DEFAULT_STYLES.headlineFontSize!, 16, 200),
     headingFontSize: normalizeHeadingFontSize(value.headingFontSize),
-    backgroundColor: color("backgroundColor", HERO_BLOCK_DEFAULT_STYLES.backgroundColor),
-    textColor: color("textColor", HERO_BLOCK_DEFAULT_STYLES.textColor),
+    backgroundColor: migrateSurfaceColor(color("backgroundColor", HERO_BLOCK_DEFAULT_STYLES.backgroundColor)),
+    textColor: migrateTextColor(color("textColor", HERO_BLOCK_DEFAULT_STYLES.textColor)),
     animation: normalizeAnimation(value.animation),
   };
 }
@@ -191,8 +192,8 @@ export function normalizeBlockStyles(raw: unknown): BlockStyles {
     paddingTop: normalizeBreakpoint(value.paddingTop, BLOCK_DEFAULT_STYLES.paddingTop, 0, 400),
     paddingBottom: normalizeBreakpoint(value.paddingBottom, BLOCK_DEFAULT_STYLES.paddingBottom, 0, 400),
     paddingX: normalizeBreakpoint(value.paddingX, BLOCK_DEFAULT_STYLES.paddingX, 0, 200),
-    backgroundColor: color("backgroundColor", BLOCK_DEFAULT_STYLES.backgroundColor),
-    textColor: color("textColor", BLOCK_DEFAULT_STYLES.textColor),
+    backgroundColor: migrateSurfaceColor(color("backgroundColor", BLOCK_DEFAULT_STYLES.backgroundColor)),
+    textColor: migrateTextColor(color("textColor", BLOCK_DEFAULT_STYLES.textColor)),
     animation: normalizeAnimation(value.animation),
   };
 }
@@ -205,8 +206,8 @@ export function normalizeFeaturedBlockStyles(raw: unknown): FeaturedBlockStyles 
     paddingBottom: normalizeBreakpoint(value.paddingBottom, FEATURED_BLOCK_DEFAULT_STYLES.paddingBottom, 48, 400),
     paddingX: normalizeBreakpoint(value.paddingX, FEATURED_BLOCK_DEFAULT_STYLES.paddingX, 24, 200),
     headingFontSize: normalizeBreakpoint(value.headingFontSize, FEATURED_BLOCK_DEFAULT_STYLES.headingFontSize, 32, 160),
-    backgroundColor: color("backgroundColor", FEATURED_BLOCK_DEFAULT_STYLES.backgroundColor),
-    textColor: color("textColor", FEATURED_BLOCK_DEFAULT_STYLES.textColor),
+    backgroundColor: migrateSurfaceColor(color("backgroundColor", FEATURED_BLOCK_DEFAULT_STYLES.backgroundColor)),
+    textColor: migrateTextColor(color("textColor", FEATURED_BLOCK_DEFAULT_STYLES.textColor)),
     animation: normalizeAnimation(value.animation),
   };
 }

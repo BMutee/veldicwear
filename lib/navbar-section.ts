@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { animationSchema, breakpointSchema, hexColorSchema, normalizeAnimation, normalizeBreakpoint } from "./section-shared";
+import { animationSchema, breakpointSchema, hexColorSchema, normalizeAnimation, normalizeBreakpoint, migrateLinkHoverColor, migrateSurfaceColor, migrateTextColor } from "./section-shared";
 
 const navLinkSchema = z.object({
   label: z.string().trim().min(1, "Link label is required"),
@@ -27,14 +27,15 @@ export const navbarContentSchema = z.object({
 export type NavbarContent = z.infer<typeof navbarContentSchema>;
 
 // The old header used py-4 (64px total row height), px-6 on mobile and px-16
-// at md, ink background, and bone/80 links with bone hover.
+// at md, ink background, and bone/80 links with bone hover. V3 retargets the
+// stored legacy colors onto the Light-Modern palette (blue-slate + glass).
 export const NAVBAR_DEFAULT_STYLES: NavbarStyles = {
   height: { mobile: 64, desktop: 64 },
   paddingX: { mobile: 24, desktop: 64 },
-  backgroundColor: "#171512",
-  textColor: "#FAFAF8",
-  linkColor: "#CDCCCA",
-  linkHoverColor: "#FAFAF8",
+  backgroundColor: "#F3F7FC",
+  textColor: "#1B2737",
+  linkColor: "#5B6B85",
+  linkHoverColor: "#2563EB",
   animation: { type: "NONE", scrollTrigger: false },
 };
 
@@ -88,10 +89,10 @@ export function parseNavbarContent(raw: unknown): NavbarContent {
       ...NAVBAR_DEFAULT_STYLES,
       height: normalizeBreakpoint(rawStyles.height, NAVBAR_DEFAULT_STYLES.height, 48, 160),
       paddingX: normalizeBreakpoint(rawStyles.paddingX, NAVBAR_DEFAULT_STYLES.paddingX, 16, 200),
-      backgroundColor: color(rawStyles.backgroundColor, NAVBAR_DEFAULT_STYLES.backgroundColor),
-      textColor: color(rawStyles.textColor, NAVBAR_DEFAULT_STYLES.textColor),
-      linkColor: color(rawStyles.linkColor, NAVBAR_DEFAULT_STYLES.linkColor),
-      linkHoverColor: color(rawStyles.linkHoverColor, NAVBAR_DEFAULT_STYLES.linkHoverColor),
+      backgroundColor: migrateSurfaceColor(color(rawStyles.backgroundColor, NAVBAR_DEFAULT_STYLES.backgroundColor)),
+      textColor: migrateTextColor(color(rawStyles.textColor, NAVBAR_DEFAULT_STYLES.textColor)),
+      linkColor: migrateTextColor(color(rawStyles.linkColor, NAVBAR_DEFAULT_STYLES.linkColor)),
+      linkHoverColor: migrateLinkHoverColor(color(rawStyles.linkHoverColor, NAVBAR_DEFAULT_STYLES.linkHoverColor)),
       animation: normalizeAnimation(rawStyles.animation),
     },
   };

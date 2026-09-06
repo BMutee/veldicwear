@@ -42,13 +42,13 @@ export type FeaturedContent = z.infer<typeof featuredContentSchema>;
 
 // Defaults match FeaturedProducts.tsx's current hardcoded styling:
 //   section `px-6 py-24` (24 / 96 / 96), heading `text-4xl sm:text-5xl` (48px),
-//   `text-ink` (#171512) on the transparent bone page (#FAFAF8).
+//   `text-ink` (#1B2737) on the transparent bone page (#F3F7FC).
 export const FEATURED_DEFAULT_STYLES: FeaturedStyles = {
   paddingTop: { mobile: 48, desktop: 96 },
   paddingBottom: { mobile: 48, desktop: 96 },
   paddingX: { mobile: 24, desktop: 24 },
-  backgroundColor: "#FAFAF8", // --color-bone (matches transparent-on-bone page)
-  textColor: "#171512", // --color-ink
+  backgroundColor: "#F3F7FC", // --color-bone (matches transparent-on-bone page)
+  textColor: "#1B2737", // --color-ink
   headingFontSize: { mobile: 32, desktop: 48 }, // matches sm:text-5xl
 };
 

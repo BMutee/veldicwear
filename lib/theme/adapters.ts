@@ -17,6 +17,7 @@ import {
   HERO_BLOCK_HEADING_FONT_SIZE_DEFAULT,
 } from "@/lib/block-section";
 import type { BreakpointValue, SettingValues } from "./types";
+import { migrateAccentColor, migrateSurfaceColor, migrateTextColor } from "@/lib/section-shared";
 
 type HeroVariant = "hero" | "banner";
 
@@ -68,9 +69,11 @@ export function heroAdapter(
               label: str(settings, "ctaLabel"),
               url: str(settings, "ctaUrl") || "/shop",
               ...(str(settings, "ctaBackgroundColor")
-                ? { ctaBackgroundColor: str(settings, "ctaBackgroundColor") }
+                ? { ctaBackgroundColor: migrateAccentColor(str(settings, "ctaBackgroundColor")) }
                 : {}),
-              ...(str(settings, "ctaTextColor") ? { ctaTextColor: str(settings, "ctaTextColor") } : {}),
+              ...(str(settings, "ctaTextColor")
+                ? { ctaTextColor: migrateAccentColor(str(settings, "ctaTextColor")) }
+                : {}),
             }
           : undefined,
       }
@@ -82,8 +85,8 @@ export function heroAdapter(
       paddingBottom: bp(settings, "paddingBottom", BANNER_BLOCK_DEFAULT_STYLES.paddingBottom),
       paddingX: bp(settings, "paddingX", BANNER_BLOCK_DEFAULT_STYLES.paddingX),
       headingFontSize: bp(settings, "headingFontSize", BANNER_BLOCK_DEFAULT_STYLES.headingFontSize ?? HERO_BLOCK_HEADING_FONT_SIZE_DEFAULT),
-      backgroundColor: color(settings, "backgroundColor", BANNER_BLOCK_DEFAULT_STYLES.backgroundColor),
-      textColor: color(settings, "textColor", BANNER_BLOCK_DEFAULT_STYLES.textColor),
+      backgroundColor: migrateSurfaceColor(color(settings, "backgroundColor", BANNER_BLOCK_DEFAULT_STYLES.backgroundColor)),
+      textColor: migrateTextColor(color(settings, "textColor", BANNER_BLOCK_DEFAULT_STYLES.textColor)),
       animation: animationOf(settings, BANNER_BLOCK_DEFAULT_STYLES.animation),
     };
     return { content, styles };
@@ -94,8 +97,8 @@ export function heroAdapter(
     paddingBottom: bp(settings, "paddingBottom", HERO_BLOCK_DEFAULT_STYLES.paddingBottom),
     paddingX: bp(settings, "paddingX", HERO_BLOCK_DEFAULT_STYLES.paddingX),
     headlineFontSize: bp(settings, "headlineFontSize", HERO_BLOCK_DEFAULT_STYLES.headlineFontSize!),
-    backgroundColor: color(settings, "backgroundColor", HERO_BLOCK_DEFAULT_STYLES.backgroundColor),
-    textColor: color(settings, "textColor", HERO_BLOCK_DEFAULT_STYLES.textColor),
+    backgroundColor: migrateSurfaceColor(color(settings, "backgroundColor", HERO_BLOCK_DEFAULT_STYLES.backgroundColor)),
+    textColor: migrateTextColor(color(settings, "textColor", HERO_BLOCK_DEFAULT_STYLES.textColor)),
     animation: animationOf(settings, HERO_BLOCK_DEFAULT_STYLES.animation),
   };
   return { content, styles };
@@ -133,8 +136,8 @@ export function featuredAdapter(settings: SettingValues): {
     paddingBottom: bp(settings, "paddingBottom", FEATURED_BLOCK_DEFAULT_STYLES.paddingBottom),
     paddingX: bp(settings, "paddingX", FEATURED_BLOCK_DEFAULT_STYLES.paddingX),
     headingFontSize: bp(settings, "headingFontSize", FEATURED_BLOCK_DEFAULT_STYLES.headingFontSize),
-    backgroundColor: color(settings, "backgroundColor", FEATURED_BLOCK_DEFAULT_STYLES.backgroundColor),
-    textColor: color(settings, "textColor", FEATURED_BLOCK_DEFAULT_STYLES.textColor),
+    backgroundColor: migrateSurfaceColor(color(settings, "backgroundColor", FEATURED_BLOCK_DEFAULT_STYLES.backgroundColor)),
+    textColor: migrateTextColor(color(settings, "textColor", FEATURED_BLOCK_DEFAULT_STYLES.textColor)),
     animation: animationOf(settings, FEATURED_BLOCK_DEFAULT_STYLES.animation),
   };
   return { content, styles };

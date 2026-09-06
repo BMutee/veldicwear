@@ -203,7 +203,7 @@ export default function Hero({ content, styles: storedStyles }: HeroProps) {
             fill="none"
             stroke="var(--color-moss)"
             strokeWidth={reduceMotion ? 1 : 0.75}
-            strokeOpacity={0.24 + i * 0.05}
+            strokeOpacity={0.16 + i * 0.04}
             initial={{ pathLength: 0 }}
             animate={{ pathLength: reduceMotion ? 1 : undefined }}
             whileInView={{ pathLength: 1 }}

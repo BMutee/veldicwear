@@ -40,13 +40,13 @@ export default async function CollectionsIndexPage() {
   return (
     <main className="min-h-screen bg-white">
       {/* Header */}
-      <section className="bg-ink">
+      <section className="glass-edge bg-white/60 backdrop-blur-2xl">
         <div className="section-grounded py-20 sm:py-28">
           <div className="max-w-2xl">
-            <h1 className="font-display text-5xl font-semibold text-bone tracking-tight sm:text-6xl">
+            <h1 className="font-display text-5xl font-semibold text-ink tracking-tight sm:text-6xl">
               Collections
             </h1>
-            <p className="mt-4 max-w-lg font-sans text-lg text-bone/60">
+            <p className="mt-4 max-w-lg font-sans text-lg text-stone">
               Curated selections for every ground you cover.
             </p>
           </div>
@@ -75,7 +75,7 @@ export default async function CollectionsIndexPage() {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center">
-                      <span className="font-display text-2xl font-semibold text-bone/20 uppercase tracking-widest">
+                      <span className="font-display text-2xl font-semibold text-ink/20 uppercase tracking-widest">
                         {collection.name.slice(0, 2)}
                       </span>
                     </div>

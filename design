@@ -22,36 +22,46 @@ values in components — reference the variable.
 
 | Token              | Hex                      | Role                                                |
 | ------------------ | ------------------------ | ---------------------------------------------------- |
-| `--color-ink`       | `#171512`                | Primary text, nav background, footer                 |
-| `--color-bone`      | `#FAFAF8` (v2, was `#F3EEE3`) | Page-level surface only (Hero, body) — see note below |
-| `--color-white`     | `#FFFFFF`                | Card / product-tile surface — sits "above" the page   |
-| `--color-moss`      | `#455A38`                | Primary accent — CTAs, active nav state, links        |
-| `--color-clay`      | `#B5602E`                | Secondary accent — sale tags, highlights (sparingly)  |
-| `--color-stone`     | `#8C8677`                | Muted text, dividers, secondary labels                |
+| `--color-bone`      | `#F3F7FC` (v3, was `#FAFAF8`/`#171512`-dark surfaces) | Page-level surface (body, sections) — cool airy white |
+| `--color-white`     | `#FFFFFF`                | Elevated card / product-tile surfaces (blended into glass) |
+| `--color-ink`       | `#1B2737` (v3, was `#171512`) | Primary text — deep slate-ink                  |
+| `--color-moss`      | `#2563EB` (v3, was `#455A38`) | Primary accent — CTAs, active nav, links (electric blue) |
+| `--color-clay`      | `#C2410C` (v3, was `#B5602E`) | Secondary accent — sale tags, highlights (AA 4.9:1 on light) |
+| `--color-stone`     | `#5B6B85` (v3, was `#8C8677`) | Muted text, secondary labels (WCAG AA 4.98:1 on bone) |
 
-**v2 note (white/product-forward direction):** the page background moved
-from a warm bone tint to near-white, matching the product-photography-led
-pattern used by major sportswear retailers. This introduced a **two-white
-system**: `--color-bone` (`#FAFAF8`) is the page-level surface (Hero
-section, `<body>`) and `--color-white` (`#FFFFFF`) is the elevated
-surface for cards and product tiles. Depth between the two is carried by
-`--shadow-card` / `--shadow-card-hover` and a hairline `border-stone/10`,
-not by a background color difference alone — the two whites are close
-enough that shadow/border are doing the real separation work.
+> **Legacy palette migration (v2 → v3):** v2 stored earthy hex values
+> (`#171512` ink, `#FAFAF8` bone, `#CA8A04` amber, `#CDCCCA` link gray)
+> directly in section/block rows. The section parsers (`lib/section-shared.ts`
+> helpers `migrateSurfaceColor` / `migrateTextColor` / `migrateLinkHoverColor`
+> / `migrateAccentColor`) remap those exact legacy values to the V3 palette at
+> render time, role-aware — any merchant-customized color is left untouched.
+> `prisma/seed.ts` already seeds V3 values for fresh databases.
 
 **Rules:**
-- Moss is the one accent allowed on primary CTAs. Never put moss and clay
-  on the same CTA — clay is for badges/tags only, never buttons.
-- Ink is a warm near-black, not pure `#000`. Never substitute `#000000`.
+- Moss (blue) is the one accent allowed on primary CTAs. Never put moss and
+  clay on the same CTA — clay is for badges/tags only, never buttons.
+- Ink is a deep slate, not pure `#000`. Never substitute `#000000`.
 - Max one accent-filled button per view. Everything else is outline/ghost.
-- Page-level surfaces (Hero, `<body>`) use `--color-bone`. Card/tile
-  surfaces use `--color-white`. Don't use them interchangeably — that's
-  what preserves the "lifted" feeling of product tiles.
-- Form inputs (`input`, `textarea`, `select`) use a darker global border
-  (`rgba(23, 21, 18, 0.25)`, ink-based) rather than the lighter
-  `border-stone` tokens used on cards — inputs are interactive and need
-  stronger boundary contrast (WCAG 1.4.11) than static containers do.
-  Focus state uses `--color-moss`.
+- Page-level surfaces use `--color-bone`. Cards use the frosted glass surface
+  (`--glass-bg` felted over the body's color glow) — the two read together as
+  the classic light glassmorphism stack.
+- Form inputs use a darker ink-based border (`rgba(27, 39, 55, 0.25)`), WCAG
+  1.4.11. Focus state uses `--color-moss`.
+
+## Glass system
+
+v3 introduces a full glass layer (see the `--glass-*` tokens in
+`globals.css`):
+
+- **Page background:** `body` carries three fixed radial color glows
+  (blue / violet / sky) — glass surfaces have something to blur.
+- **Surfaces:** `rgba(255,255,255,0.62)` fill + `backdrop-filter:
+  blur(16–20px) saturate(1.6)` + a 1px white hairline border (`--glass-border`)
+  + soft blue-tinted glass shadows (`--shadow-glass`).
+- **Utilities:** `.glass` (regular), `.glass-strong` (denser fill), and
+  `.glass-edge` (inset top-edge light catch). The navbar uses an inline
+  `color-mix(... 72%, transparent)` of the admin's background color with
+  20px blur so an admin-chosen tint becomes the glass tint.
 
 ---
 
@@ -110,8 +120,8 @@ per component.
   headline fades/slides up 20px, then CTA. One orchestrated sequence.
 - Scroll reveals: product cards animate in via `whileInView`, `opacity`
   0→1 + `y` 20px→0, staggered via `staggerChildren: 0.08`.
-- Hover: cards scale to 1.02 + border color shifts to moss, 150ms,
-  `--ease-snap`. No box-shadow — keep it flat.
+- Hover: cards lift `translateY(-4px)` + border shifts to moss + glass
+  shadow deepens, 150ms, `--ease-snap`. No scale transforms.
 - Do not add motion to every element. The hero contour animation is the
   one "signature" moment; everything else should feel quiet by comparison.
 
@@ -120,14 +130,12 @@ per component.
 ## Components
 
 - **Buttons:** outline style by default (1px border, ink text). Primary
-  CTA only: moss fill, white text, `--radius-md`, no shadow.
-- **Cards (`.card` class):** white background, 1px `stone/10` border,
-  `--shadow-card`, `--radius-lg`, padding `24px`. Hover: border → moss,
-  `--shadow-card-hover`, scale 1.02.
-- **Nav:** ink background, bone/white text, moss underline on
-  active/hover link state. Nav stays ink even on white pages — a fully
-  white nav on a white page loses brand presence, so this is intentional
-  and shouldn't be "corrected" to match the page surface.
+  CTA only: moss fill, white text, `--radius-md`, soft blue glow shadow.
+- **Cards (`.card` class):** frosted glass — translucent white + 16px
+  backdrop blur + 1px white hairline border + `--shadow-glass`, padding
+  `24px`. Hover: border → moss, `--shadow-glass-hover`, `translateY(-4px)`.
+- **Nav:** floating glass bar — translucent page color + 20px backdrop
+  blur + ink text + moss underline on active/hover link state.
 - **Badges/tags:** clay background at 12% opacity, clay text, used only
   for sale/new/limited labels — never as a primary color anywhere else.
 
@@ -139,16 +147,13 @@ These are intentional, tracked deviations from the token system —
 documented so they read as decisions, not oversights, if a future
 contributor (or Cline session) stumbles on them.
 
-- **Auth pages** (`login`, `register`, `forgot-password`,
-  `reset-password`) use a separate hex-based styling system
-  (`border-[#1C1917]/20`, `bg-white`, `text-[#1C1917]`) rather than the
-  `--color-ink` / `--color-white` tokens. `#1C1917` and `#171512` are two
-  different near-black values from separate sources — visually close to
-  indistinguishable, but not drawing from the same source of truth. This
-  is a known gap, not a bug. **Next time auth pages are touched, migrate
-  them onto the token system** rather than patching the hex values in
-  place, so a future palette change doesn't silently miss these four
-  pages.
+- **Auth + account pages** (`login`, `register`, `forgot-password`,
+  `reset-password`, `account`, `wishlist`, `checkout`, `contact`) previously
+  used a separate hex system (`#1C1917`, `#FAFAF9`, `#CA8A04`). As part of
+  the v3 redesign those hexes were migrated to the V3 palette values
+  (`#1B2737` ink, `#F3F7FC` bone, `#2563EB` accent). They still write raw
+  hex rather than the CSS tokens — the next pass should convert them to
+  token utilities (`text-ink`, `bg-bone`, etc.) for a single source of truth.
 
 ---
 

@@ -54,8 +54,8 @@ export type HeroContent = z.infer<typeof heroContentSchema>;
 // --- Defaults -----------------------------------------------------------------
 //
 // Values chosen to exactly match Hero.tsx's current visual output:
-//   - background = bone token   (--color-bone: #FAFAF8)
-//   - text       = ink token    (--color-ink:  #171512)
+//   - background = bone token   (--color-bone: #F3F7FC)
+//   - text       = ink token    (--color-ink:  #1B2737)
 //   - padding X  = 64           (matches `--gutter-desktop: 64px`)
 //   - padding Y  = 96 top / 48 bottom (matches `pt-32 lg:pt-24` + `pb-16 lg:pb-12`)
 //   - headline font-size       (matches `text-5xl sm:text-7xl lg:text-8xl` at lg)
@@ -69,8 +69,8 @@ export const HERO_DEFAULT_STYLES: HeroStyles = {
   paddingTop: { mobile: 64, desktop: 96 },
   paddingBottom: { mobile: 32, desktop: 48 },
   paddingX: { mobile: 24, desktop: 64 },
-  backgroundColor: "#FAFAF8", // --color-bone
-  textColor: "#171512", // --color-ink
+  backgroundColor: "#F3F7FC", // --color-bone
+  textColor: "#1B2737", // --color-ink
   headlineFontSize: { mobile: 40, desktop: 96 }, // matches `lg:text-8xl` (6rem = 96px)
 };
 

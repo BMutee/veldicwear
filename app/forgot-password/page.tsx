@@ -55,51 +55,51 @@ export default function ForgotPasswordPage() {
   };
 
   const inputClass = (hasError: boolean) =>
-    `w-full border px-4 py-3 font-sans text-sm text-[#1C1917] outline-none transition-colors duration-200 bg-white placeholder:text-[#A8A29E] ${
+    `w-full border px-4 py-3 font-sans text-sm text-[#1B2737] outline-none transition-colors duration-200 bg-white placeholder:text-[#5B6B85] ${
       hasError
         ? "border-[#DC2626] focus:border-[#DC2626]"
-        : "border-[#1C1917]/20 focus:border-[#CA8A04]"
+        : "border-[#1B2737]/20 focus:border-[#2563EB]"
     }`;
 
   const labelClass =
-    "block font-display text-xs font-bold tracking-[0.15em] uppercase text-[#1C1917]";
+    "block font-display text-xs font-bold tracking-[0.15em] uppercase text-[#1B2737]";
 
   return (
-    <main className="min-h-screen bg-[#FAFAF9]">
+    <main className="min-h-screen bg-[#F3F7FC]">
       <div className="mx-auto max-w-lg px-4 py-16 sm:px-6 sm:py-24">
-        <div className="border border-[#1C1917]/10 bg-white p-8 sm:p-10">
+        <div className="border border-[#1B2737]/10 bg-white p-8 sm:p-10">
           <Link
             href="/"
-            className="inline-block font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]"
+            className="inline-block font-display text-2xl font-black uppercase tracking-tight text-[#1B2737]"
           >
             VELDIC
           </Link>
 
           {sent ? (
             <div className="mt-8">
-              <h1 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
+              <h1 className="font-display text-2xl font-black uppercase tracking-tight text-[#1B2737]">
                 Check Your Email
               </h1>
-              <p className="mt-3 font-sans text-sm leading-relaxed text-[#78716C]">
+              <p className="mt-3 font-sans text-sm leading-relaxed text-[#5B6B85]">
                 If an account with{" "}
-                <strong className="text-[#1C1917]">
+                <strong className="text-[#1B2737]">
                   {watch("email")}
                 </strong>{" "}
                 exists, you will receive a password reset link shortly.
               </p>
               <Link
                 href="/login"
-                className="mt-6 inline-block font-sans text-sm font-medium text-[#CA8A04] underline underline-offset-2 hover:text-[#1C1917] transition-colors duration-200"
+                className="mt-6 inline-block font-sans text-sm font-medium text-[#2563EB] underline underline-offset-2 hover:text-[#1B2737] transition-colors duration-200"
               >
                 Back to sign in
               </Link>
             </div>
           ) : (
             <>
-              <h1 className="mt-8 font-display text-3xl font-black uppercase tracking-tight text-[#1C1917] sm:text-4xl">
+              <h1 className="mt-8 font-display text-3xl font-black uppercase tracking-tight text-[#1B2737] sm:text-4xl">
                 Forgot Password
               </h1>
-              <p className="mt-2 font-sans text-sm text-[#78716C]">
+              <p className="mt-2 font-sans text-sm text-[#5B6B85]">
                 Enter your email and we&rsquo;ll send you a reset link.
               </p>
 
@@ -139,19 +139,19 @@ export default function ForgotPasswordPage() {
                   disabled={loading}
                   className={`w-full py-3.5 font-display text-sm font-bold tracking-[0.15em] uppercase transition-colors duration-200 cursor-pointer ${
                     loading
-                      ? "cursor-not-allowed bg-[#1C1917]/10 text-[#A8A29E]"
-                      : "bg-[#1C1917] text-[#FAFAF9] hover:bg-[#CA8A04] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#CA8A04]"
+                      ? "cursor-not-allowed bg-[#1B2737]/10 text-[#5B6B85]"
+                      : "bg-[#1B2737] text-[#F3F7FC] hover:bg-[#2563EB] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2563EB]"
                   }`}
                 >
                   {loading ? "Sending…" : "Send Reset Link"}
                 </button>
               </form>
 
-              <p className="mt-6 text-center font-sans text-sm text-[#78716C]">
+              <p className="mt-6 text-center font-sans text-sm text-[#5B6B85]">
                 Remember your password?{" "}
                 <Link
                   href="/login"
-                  className="font-semibold text-[#1C1917] underline decoration-[#CA8A04]/40 underline-offset-2 hover:decoration-[#CA8A04] transition-colors duration-200"
+                  className="font-semibold text-[#1B2737] underline decoration-[#2563EB]/40 underline-offset-2 hover:decoration-[#2563EB] transition-colors duration-200"
                 >
                   Sign in
                 </Link>

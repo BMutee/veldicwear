@@ -24,12 +24,12 @@ const fallback: SocialFeedContent = {
   headline: "Follow the journey",
   description: "Tag us in your fits for a chance to be featured.",
   posts: [
-    { id: 1, label: "@veldicwear", gradient: "from-moss/20 to-ink" },
-    { id: 2, label: "#VELDIC", gradient: "from-stone/30 to-ink" },
-    { id: 3, label: "TRAIL READY", gradient: "from-ink to-moss/10" },
-    { id: 4, label: "DROP 015", gradient: "from-stone/20 to-ink" },
-    { id: 5, label: "COMMUNITY", gradient: "from-ink to-stone/30" },
-    { id: 6, label: "EXCLUSIVE", gradient: "from-moss/10 to-stone/20" },
+    { id: 1, label: "@veldicwear", gradient: "from-moss/20 to-violet-100" },
+    { id: 2, label: "#VELDIC", gradient: "from-sky-100 to-moss/10" },
+    { id: 3, label: "TRAIL READY", gradient: "from-violet-200 to-sky-100" },
+    { id: 4, label: "DROP 015", gradient: "from-stone/15 to-white" },
+    { id: 5, label: "COMMUNITY", gradient: "from-moss/10 to-orange-100" },
+    { id: 6, label: "EXCLUSIVE", gradient: "from-orange-100 to-sky-100" },
   ],
   ctaLabel: "@veldicwear",
   ctaLink: "https://instagram.com/veldicwear"

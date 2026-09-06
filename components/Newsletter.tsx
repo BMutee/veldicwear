@@ -55,17 +55,22 @@ export default function Newsletter({ initialContent }: { initialContent?: Newsle
   };
 
   return (
-    <section className="relative overflow-hidden bg-ink px-6 py-24">
-      {/* Decorative moss glow */}
+    <section className="relative overflow-hidden glass-edge bg-white/60 px-6 py-24 backdrop-blur-2xl">
+      {/* Decorative color glows (blue / violet / peach) — the glass panel blurs them */}
       <motion.div
-        className="absolute -left-40 -top-40 h-[400px] w-[400px] rounded-full bg-moss/10 blur-3xl"
-        animate={{ scale: [1, 1.1, 1], opacity: [0.1, 0.15, 0.1] }}
+        className="absolute -left-40 -top-40 h-[400px] w-[400px] rounded-full bg-moss/15 blur-3xl"
+        animate={{ scale: [1, 1.1, 1], opacity: [0.2, 0.3, 0.2] }}
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute -bottom-40 -right-40 h-[400px] w-[400px] rounded-full bg-moss/10 blur-3xl"
-        animate={{ scale: [1, 1.15, 1], opacity: [0.1, 0.15, 0.1] }}
+        className="absolute -bottom-40 -right-40 h-[400px] w-[400px] rounded-full bg-violet-300/20 blur-3xl"
+        animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.3, 0.2] }}
         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-300/15 blur-3xl"
+        animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}
+        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
       />
 
       <motion.div
@@ -74,13 +79,13 @@ export default function Newsletter({ initialContent }: { initialContent?: Newsle
         viewport={{ once: true }}
         className="relative z-10 mx-auto max-w-2xl text-center"
       >
-        <span className="eyebrow inline-block text-bone/70">
+        <span className="eyebrow inline-block">
           {data.badge}
         </span>
-        <h2 className="mt-4 font-display text-4xl font-semibold text-bone md:text-5xl">
+        <h2 className="mt-4 font-display text-4xl font-semibold text-ink md:text-5xl">
           {data.headline}
         </h2>
-        <p className="mx-auto mt-4 max-w-md font-sans text-bone/60">
+        <p className="mx-auto mt-4 max-w-md font-sans text-stone">
           {data.description}
         </p>
 
@@ -97,13 +102,13 @@ export default function Newsletter({ initialContent }: { initialContent?: Newsle
                 setStatus("idle");
               }}
               placeholder={data.placeholder}
-              className="w-full border border-bone/20 bg-ink px-5 py-4 font-sans text-sm text-bone outline-none transition-colors placeholder:text-bone/40 focus:border-moss"
+              className="w-full border border-ink/15 bg-white/80 px-5 py-4 font-sans text-sm text-ink shadow-inner outline-none backdrop-blur transition-colors placeholder:text-stone/70 focus:border-moss"
               required
             />
           </div>
           <button
             type="submit"
-            className="bg-moss px-8 py-4 font-sans text-sm font-medium text-bone transition-colors duration-150 hover:bg-moss-hover cursor-pointer"
+            className="bg-moss px-8 py-4 font-sans text-sm font-medium text-white transition-colors duration-150 hover:bg-moss-hover cursor-pointer"
           >
             {data.buttonText}
           </button>
@@ -128,7 +133,7 @@ export default function Newsletter({ initialContent }: { initialContent?: Newsle
           </motion.p>
         )}
 
-        <p className="mt-6 text-xs text-bone/40">
+        <p className="mt-6 text-xs text-stone/70">
           {data.disclaimer}
         </p>
       </motion.div>

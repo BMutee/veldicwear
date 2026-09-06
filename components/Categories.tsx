@@ -109,31 +109,32 @@ export default function Categories({ content }: { content?: CategoriesHeaderCont
             <motion.div key={col.id} variants={item}>
               <Link
                 href={`/collection/${col.slug}`}
-                className="group relative flex h-72 flex-col justify-end overflow-hidden bg-ink transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                className="group relative flex h-72 flex-col justify-end overflow-hidden border border-white/70 bg-white/60 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 cursor-pointer"
               >
                 {/* Background image or fallback */}
                 {col.image && (
                   <img
                     src={col.image}
                     alt={col.name}
-                    className="absolute inset-0 h-full w-full object-cover opacity-40 transition-opacity duration-300 group-hover:opacity-60"
+                    className="absolute inset-0 h-full w-full object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-90"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-transparent" />
+                {/* Light frosted scrim so ink text stays readable over photos */}
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent" />
 
                 {/* Content */}
                 <div className="relative z-10 p-6">
                   <div className="mb-3 h-1 w-10 bg-moss transition-all duration-300 group-hover:w-16" />
-                  <h3 className="font-display text-2xl font-semibold text-bone">
+                  <h3 className="font-display text-2xl font-semibold text-ink">
                     {col.name}
                   </h3>
                   {col.description && (
-                    <p className="mt-1 text-sm text-bone/70 font-sans line-clamp-2">
+                    <p className="mt-1 text-sm text-ink/80 font-sans line-clamp-2">
                       {col.description}
                     </p>
                   )}
-                  <div className="mt-4 flex items-center gap-2 font-sans text-sm text-bone opacity-0 transition-all duration-300 group-hover:opacity-100 cursor-pointer">
+                  <div className="mt-4 flex items-center gap-2 font-sans text-sm font-medium text-moss opacity-0 transition-all duration-300 group-hover:opacity-100 cursor-pointer">
                     <span>Shop now</span>
                     <span className="text-lg transition-transform duration-300 group-hover:translate-x-1">
                       &rarr;

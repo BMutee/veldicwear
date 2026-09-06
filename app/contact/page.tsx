@@ -59,34 +59,34 @@ export default function ContactPage() {
   };
 
   const inputClass = (hasError: boolean) =>
-    `w-full border px-4 py-3 font-sans text-sm text-[#1C1917] outline-none transition-colors duration-200 bg-white placeholder:text-[#A8A29E] ${
+    `w-full border px-4 py-3 font-sans text-sm text-[#1B2737] outline-none transition-colors duration-200 bg-white placeholder:text-[#5B6B85] ${
       hasError
         ? "border-[#DC2626] focus:border-[#DC2626]"
-        : "border-[#1C1917]/20 focus:border-[#CA8A04]"
+        : "border-[#1B2737]/20 focus:border-[#2563EB]"
     }`;
 
-  const labelClass = "block font-display text-xs font-bold tracking-[0.15em] uppercase text-[#1C1917]";
+  const labelClass = "block font-display text-xs font-bold tracking-[0.15em] uppercase text-[#1B2737]";
 
   if (sent) {
     return (
-      <main className="min-h-screen bg-[#FAFAF9]">
+      <main className="min-h-screen bg-[#F3F7FC]">
         <div className="mx-auto max-w-lg px-4 py-16 sm:px-6 sm:py-24">
-          <div className="border border-[#1C1917]/10 bg-white p-8 text-center sm:p-10">
+          <div className="border border-[#1B2737]/10 bg-white p-8 text-center sm:p-10">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-green-600/20 bg-green-50">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-7 w-7 text-green-600">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
             </div>
-            <h1 className="mt-6 font-display text-3xl font-black uppercase tracking-tight text-[#1C1917]">
+            <h1 className="mt-6 font-display text-3xl font-black uppercase tracking-tight text-[#1B2737]">
               Message Sent
             </h1>
-            <p className="mt-3 font-sans text-sm leading-6 text-[#78716C]">
+            <p className="mt-3 font-sans text-sm leading-6 text-[#5B6B85]">
               Thank you for reaching out. We&rsquo;ll get back to you as soon as possible.
             </p>
             <Link
               href="/"
-              className="mt-8 inline-flex items-center gap-2 bg-[#1C1917] px-6 py-3 font-display text-sm font-bold uppercase tracking-[0.14em] text-[#FAFAF9] transition-colors duration-200 hover:bg-[#CA8A04] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#CA8A04] cursor-pointer"
+              className="mt-8 inline-flex items-center gap-2 bg-[#1B2737] px-6 py-3 font-display text-sm font-bold uppercase tracking-[0.14em] text-[#F3F7FC] transition-colors duration-200 hover:bg-[#2563EB] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2563EB] cursor-pointer"
             >
               Back to Home
             </Link>
@@ -97,13 +97,13 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FAFAF9]">
+    <main className="min-h-screen bg-[#F3F7FC]">
       <div className="mx-auto max-w-lg px-4 py-16 sm:px-6 sm:py-24">
-        <div className="border border-[#1C1917]/10 bg-white p-8 sm:p-10">
-          <h1 className="font-display text-3xl font-black uppercase tracking-tight text-[#1C1917] sm:text-4xl">
+        <div className="border border-[#1B2737]/10 bg-white p-8 sm:p-10">
+          <h1 className="font-display text-3xl font-black uppercase tracking-tight text-[#1B2737] sm:text-4xl">
             Contact Us
           </h1>
-          <p className="mt-2 font-sans text-sm text-[#78716C]">
+          <p className="mt-2 font-sans text-sm text-[#5B6B85]">
             Have a question, feedback, or need assistance? Send us a message and we&rsquo;ll respond promptly.
           </p>
 
@@ -183,8 +183,8 @@ export default function ContactPage() {
               disabled={loading}
               className={`w-full py-3.5 font-display text-sm font-bold tracking-[0.15em] uppercase transition-colors duration-200 cursor-pointer ${
                 loading
-                  ? "cursor-not-allowed bg-[#1C1917]/10 text-[#A8A29E]"
-                  : "bg-[#1C1917] text-[#FAFAF9] hover:bg-[#CA8A04] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#CA8A04]"
+                  ? "cursor-not-allowed bg-[#1B2737]/10 text-[#5B6B85]"
+                  : "bg-[#1B2737] text-[#F3F7FC] hover:bg-[#2563EB] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2563EB]"
               }`}
             >
               {loading ? "Sending…" : "Send Message"}

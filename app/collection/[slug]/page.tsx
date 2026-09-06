@@ -25,23 +25,23 @@ export default async function SingleCollectionPage({ params }: { params: Promise
   return (
     <main className="min-h-screen bg-white">
       {/* Hero section */}
-      <section className="relative bg-ink">
+      <section className="relative glass-edge bg-white/60 backdrop-blur-2xl">
         <div className="section-grounded py-20 sm:py-28">
           <div className="max-w-2xl">
             <Link
               href="/collection"
-              className="mb-6 inline-flex items-center gap-1.5 font-sans text-sm text-moss transition-colors duration-150 hover:text-bone"
+              className="mb-6 inline-flex items-center gap-1.5 font-sans text-sm text-moss transition-colors duration-150 hover:text-moss-hover"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
               All collections
             </Link>
-            <h1 className="font-display text-5xl font-semibold text-bone tracking-tight sm:text-6xl">
+            <h1 className="font-display text-5xl font-semibold text-ink tracking-tight sm:text-6xl">
               {collection.name}
             </h1>
             {collection.description && (
-              <p className="mt-4 max-w-lg font-sans text-lg text-bone/60">
+              <p className="mt-4 max-w-lg font-sans text-lg text-stone">
                 {collection.description}
               </p>
             )}

@@ -110,8 +110,8 @@ function HeroContentEditor({ content, onChange, banner = false }: { content: Her
       </div>
     </>}
     <div className="rounded-lg border border-stone/20 p-4"><label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-stone"><input type="checkbox" checked={Boolean(cta)} onChange={(e) => set(e.target.checked ? { cta: { label: "", url: "/shop" } } : { cta: undefined })} className="h-4 w-4 cursor-pointer accent-moss" />Show CTA button</label>{cta && <div className="mt-3 grid gap-4 sm:grid-cols-2"><label className={LABEL_CLS}>Button label<input value={cta.label ?? ""} onChange={(e) => set({ cta: { ...cta, label: e.target.value } })} className={INPUT_CLS} /></label><label className={LABEL_CLS}>Button URL<input value={cta.url ?? ""} onChange={(e) => set({ cta: { ...cta, url: e.target.value } })} className={INPUT_CLS} /></label>{banner && <>
-      <ColorField label="CTA background color" value={cta.ctaBackgroundColor ?? "#CA8A04"} onChange={(v) => set({ cta: { ...cta, ctaBackgroundColor: v } })} />
-      <ColorField label="CTA text color" value={cta.ctaTextColor ?? "#FAFAF8"} onChange={(v) => set({ cta: { ...cta, ctaTextColor: v } })} />
+      <ColorField label="CTA background color" value={cta.ctaBackgroundColor ?? "#2563EB"} onChange={(v) => set({ cta: { ...cta, ctaBackgroundColor: v } })} />
+      <ColorField label="CTA text color" value={cta.ctaTextColor ?? "#FFFFFF"} onChange={(v) => set({ cta: { ...cta, ctaTextColor: v } })} />
     </>}</div>}</div>
   </div>;
 }

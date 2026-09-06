@@ -44,16 +44,15 @@ export default function Banner({ content, styles: storedStyles }: BannerProps) {
 
   const heading = data?.heading ?? "Free Shipping on Every Order";
   const subtext = data?.subtext ?? "No minimums, no surprises — always free.";
-  // Fallback CTA mirrors the legacy default content (label/link + the two
-  // banner CTA colors), so a null/absent content object still renders the
-  // complete default banner — same as parseBannerContent(null) did before.
-  const cta = data?.cta ?? { label: "Shop Now", url: "/shop", ctaBackgroundColor: "#CA8A04", ctaTextColor: "#FAFAF8" };
+  // Fallback CTA mirrors the V3 defaults (blue accent fill, white text) so a
+  // null/absent content object still renders the complete default banner.
+  const cta = data?.cta ?? { label: "Shop Now", url: "/shop", ctaBackgroundColor: "#2563EB", ctaTextColor: "#FFFFFF" };
 
   const ctaStyle =
     cta && cta.label
       ? ({
-          backgroundColor: cta.ctaBackgroundColor ?? "#CA8A04",
-          color: cta.ctaTextColor ?? "#FAFAF8",
+          backgroundColor: cta.ctaBackgroundColor ?? "#2563EB",
+          color: cta.ctaTextColor ?? "#FFFFFF",
         } as React.CSSProperties)
       : null;
 
@@ -109,7 +108,7 @@ export default function Banner({ content, styles: storedStyles }: BannerProps) {
           {cta && cta.label && (
             <Link
               href={cta.url || "/shop"}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-4 py-2 font-display text-sm font-semibold cursor-pointer transition-opacity duration-150 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-4 py-2 font-display text-sm font-semibold cursor-pointer transition-all duration-150 hover:opacity-90 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-moss/50"
               style={ctaStyle ?? undefined}
             >
               {cta.label}

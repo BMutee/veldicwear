@@ -28,27 +28,42 @@ values in components — reference the variable.
 
 | Token           | Hex       | Role                                              |
 | --------------- | --------- | -------------------------------------------------- |
-| `--color-ink`    | `#171512` | Primary text, nav background, footer               |
-| `--color-bone`   | `#FAFAF8` | Page background (near-white)                        |
-| `--color-white`  | `#FFFFFF` | Card surfaces, product tiles, form inputs           |
-| `--color-moss`   | `#455A38` | Primary accent — CTAs, active nav state, links      |
-| `--color-clay`   | `#B5602E` | Secondary accent — sale tags, highlights (sparingly)|
-| `--color-stone`  | `#8C8677` | Muted text, dividers, secondary labels              |
+| `--color-bone`   | `#F3F7FC` | Page background (cool airy white)                  |
+| `--color-white`  | `#FFFFFF` | Elevated surfaces (blended into glass)              |
+| `--color-ink`    | `#1B2737` | Primary text — deep slate-ink                       |
+| `--color-moss`   | `#2563EB` | Primary accent — CTAs, active nav state, links (blue)|
+| `--color-clay`   | `#C2410C` | Secondary accent — sale tags, highlights (AA on light)|
+| `--color-stone`  | `#5B6B85` | Muted text, secondary labels (WCAG AA)              |
 
 **Rules:**
-- Moss is the one accent allowed on primary CTAs. Never put moss and clay
-  on the same CTA — clay is for badges/tags only, never buttons.
-- Ink is a warm near-black, not pure `#000`. Never substitute `#000000`.
+- Moss (blue) is the one accent allowed on primary CTAs. Never put moss and
+  clay on the same CTA — clay is for badges/tags only, never buttons.
+- Ink is a deep slate, not pure `#000`. Never substitute `#000000`.
 - Max one accent-filled button per view. Everything else is outline/ghost.
-- Page background is `--color-bone` (#FAFAF8, near-white). Card surfaces
-  use `--color-white` (#FFFFFF) with `--shadow-card` for depth separation.
+- Page background is `--color-bone` (#F3F7FC). Cards use the **frosted glass
+  surface** (translucent white + backdrop blur) over the body's color glow.
+
+### Legacy palette migration (v2 → v3)
+
+v2 stored earthy hex values directly in section/block rows. The render
+parsers remap the exact legacy palette (`#171512`, `#FAFAF8`, `#CA8A04`,
+`#CDCCCA`, `#A8A29E`) to the V3 values via `lib/section-shared.ts`
+(`migrateSurfaceColor` / `migrateTextColor` / `migrateLinkHoverColor` /
+`migrateAccentColor`). Merchant-customized colors are left untouched.
+
+### Glass system
+
+- `body` carries fixed radial color glows (blue / violet / sky).
+- `.glass` / `.glass-strong`: translucent white fill + `backdrop-filter:
+  blur(16–20px) saturate(1.6)` + 1px white hairline border +
+  `--shadow-glass`.
+- Navbar/footer: inline `color-mix(... , transparent)` of the stored
+  background color + 20–24px blur → admin-chosen tints become glass tints.
 
 ### Form input borders (WCAG 1.4.11)
 
-Form inputs (`input`, `textarea`, `select`) use a darker, ink-based border
-(`rgba(23, 21, 18, 0.25)`) set via a global CSS rule in `globals.css`.
-This overrides the lighter Tailwind `border-stone/20` class to meet the
-3:1 non-text contrast minimum. Focus state uses `--color-moss`.
+Form inputs use a darker ink-based border (`rgba(27, 39, 55, 0.25)`) set via
+a global CSS rule in `globals.css`. Focus state uses `--color-moss`.
 
 ---
 
@@ -117,12 +132,12 @@ per component.
 ## Components
 
 - **Buttons:** outline style by default (1px border, ink text). Primary
-  CTA only: moss fill, white text, `--radius-md`, no shadow.
-- **Cards:** white background (`--color-white`), 1px stone/8% border,
-  `--radius-lg`, `--shadow-card` for depth. Hover: border → moss,
-  shadow elevates, scale 1.02. Use the `.card` utility class.
-- **Nav:** ink background, bone text, moss underline on active/hover
-  link state.
+  CTA only: moss fill, white text, `--radius-md`, soft blue glow shadow.
+- **Cards:** frosted glass (`--glass-bg` + 16px blur + white hairline
+  border + `--shadow-glass`), `--radius-lg`. Hover: border → moss, shadow
+  deepens, `translateY(-4px)`. Use the `.card` utility class.
+- **Nav:** floating glass bar — translucent page color + 20px blur + ink
+  text, moss underline on active/hover link state.
 - **Badges/tags:** clay background at 12% opacity, clay text, used only
   for sale/new/limited labels — never as a primary color anywhere else.
 
@@ -142,26 +157,28 @@ per component.
 
 ## Known exceptions
 
-### Auth pages (login, register, forgot-password, reset-password)
+### Auth + account pages (login, register, forgot-password, reset-password,
+account, wishlist, checkout, contact)
 
-These pages use a **separate hex-based styling system** (e.g. `border-[#1C1917]/20`,
-`bg-white`, `text-[#1C1917]`) instead of the design token system (`border-stone/20`,
-`bg-white`, `text-ink`). The hex values are close but not identical:
-- Auth uses `#1C1917` vs token `--color-ink: #171512` (both near-black, ~0.3% difference)
+These pages previously used a separate hex system (`#1C1917`, `#FAFAF9`,
+`#CA8A04`). As part of the v3 redesign those hexes were migrated to the V3
+palette values (`#1B2737` ink, `#F3F7FC` bone, `#2563EB` accent). They still
+write raw hex rather than the CSS tokens.
 
-**Action item:** Migrate auth pages onto the token system next time that code
-is touched. Until then, a future rebrand or color tweak will silently miss
-these four pages.
+**Action item:** Convert these pages to token utilities (`text-ink`,
+`bg-bone`, `bg-moss`) for a single source of truth the next time they're
+touched.
 
 ---
 
 ## Anti-Patterns (Do NOT Use)
 
 - ❌ Hardcoded hex values in components — always reference CSS variables.
-- ❌ Black `#000000` — use ink `#171512` for near-black fills/text.
+- ❌ Black `#000000` — use ink `#1B2737` for near-black fills/text.
 - ❌ Moss + clay on the same CTA. Clay is for badges/tags only.
 - ❌ More than one accent-filled button per view.
-- ❌ Flat cards without shadow — use `--shadow-card` for depth on white.
+- ❌ Flat cards without glass depth — use `.card` (frosted glass + shadow).
+- ❌ Opaque dark sections (old `bg-ink` blocks) — the V3 look is light glass.
 - ❌ Repeating the contour-line motif outside the hero.
 - ❌ Gym-bro hype copy ("crush," "beast mode," "no excuses").
 - ❌ Title case / all-caps body copy (sentence case only).

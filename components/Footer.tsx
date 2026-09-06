@@ -101,10 +101,12 @@ export default function Footer({
     <>
       <style>{`\n        .veldic-footer {\n          --footer-pad-top: ${styles.paddingTop.mobile}px;\n          --footer-pad-bottom: ${styles.paddingBottom.mobile}px;\n          --footer-pad-x: ${styles.paddingX.mobile}px;\n        }\n        @media (min-width: 768px) {\n          .veldic-footer {\n            --footer-pad-top: ${styles.paddingTop.desktop}px;\n            --footer-pad-bottom: ${styles.paddingBottom.desktop}px;\n            --footer-pad-x: ${styles.paddingX.desktop}px;\n          }\n        }\n      `}</style>
       <footer
-        className="veldic-footer"
+        className="veldic-footer glass-edge"
         style={{
-          backgroundColor: styles.backgroundColor,
+          backgroundColor: `color-mix(in srgb, ${styles.backgroundColor} 88%, transparent)`,
           color: styles.textColor,
+          backdropFilter: "blur(24px) saturate(160%)",
+          WebkitBackdropFilter: "blur(24px) saturate(160%)",
           paddingTop: "var(--footer-pad-top)",
           paddingBottom: "var(--footer-pad-bottom)",
           paddingLeft: "var(--footer-pad-x)",
@@ -121,7 +123,7 @@ export default function Footer({
             <Link href="/" className="font-display text-lg font-semibold tracking-tight">
               {storeName}
             </Link>
-            <p className="mt-4 max-w-xs font-sans text-sm leading-relaxed opacity-60">
+            <p className="mt-4 max-w-xs font-sans text-sm leading-relaxed text-stone">
               {data.brandDescription}
             </p>
 
@@ -152,11 +154,11 @@ export default function Footer({
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="flex-1 border-b border-bone/20 bg-transparent px-0 py-2.5 font-sans text-sm outline-none transition-colors duration-150 placeholder:text-bone/50 focus:border-moss"
+                className="flex-1 border-b border-ink/20 bg-transparent px-0 py-2.5 font-sans text-sm outline-none transition-colors duration-150 placeholder:text-stone/60 focus:border-moss"
               />
               <button
                 type="submit"
-                className="bg-white px-5 py-2.5 font-sans text-xs font-medium text-ink transition-colors duration-150 hover:bg-white/90 cursor-pointer"
+                className="bg-moss px-5 py-2.5 font-sans text-xs font-medium text-white transition-colors duration-150 hover:bg-moss-hover cursor-pointer"
               >
                 {subscribed ? "Done!" : "Subscribe"}
               </button>
@@ -228,13 +230,13 @@ export default function Footer({
           </div>
         </div>
 
-        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-bone/10 pt-8 sm:flex-row">
-          <p className="font-sans text-xs opacity-40">
+        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-ink/10 pt-8 sm:flex-row">
+          <p className="font-sans text-xs text-stone/70">
             &copy; {new Date().getFullYear()} {storeName}. {copyrightText}
           </p>
 
           {data.paymentMethods && data.paymentMethods.length > 0 && (
-            <div className="flex items-center gap-3 opacity-40">
+            <div className="flex items-center gap-3 text-stone/70">
               {data.paymentMethods.map((method, i) => (
                 <span key={i} className="font-mono text-xs tracking-wide">{method}</span>
               ))}

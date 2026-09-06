@@ -61,8 +61,13 @@ export default function Navbar({
     <>
       <style>{`\n        .veldic-navbar-link { color: ${styles.linkColor}; }\n        .veldic-navbar-link:hover { color: ${styles.linkHoverColor}; }\n        .veldic-navbar-control { color: ${styles.textColor}; }\n        .veldic-navbar-control:hover { color: ${styles.linkHoverColor}; }\n        .veldic-navbar-row {\n          --navbar-height: ${styles.height.mobile}px;\n          --navbar-pad-x: ${styles.paddingX.mobile}px;\n        }\n        @media (min-width: 768px) {\n          .veldic-navbar-row {\n            --navbar-height: ${styles.height.desktop}px;\n            --navbar-pad-x: ${styles.paddingX.desktop}px;\n          }\n        }\n      `}</style>
       <header
-        className="veldic-navbar sticky top-0 z-50 border-b border-white/10"
-        style={{ backgroundColor: styles.backgroundColor, color: styles.textColor }}
+        className="veldic-navbar glass-edge sticky top-0 z-50 border-b border-white/60"
+        style={{
+          backgroundColor: `color-mix(in srgb, ${styles.backgroundColor} 72%, transparent)`,
+          color: styles.textColor,
+          backdropFilter: "blur(20px) saturate(180%)",
+          WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        }}
       >
       {/* Entrance animation (admin-configurable; defaults to load-triggered
           for above-the-fold chrome). Reduced-motion is fully disabled via CSS. */}
@@ -80,7 +85,7 @@ export default function Navbar({
         {settings?.logo?.trim() && !logoFailed ? (
           <Link
             href="/"
-            className="font-display text-xl font-semibold tracking-tight text-bone"
+            className="font-display text-xl font-semibold tracking-tight text-ink"
             aria-label={storeName}
           >
             <Image src={settings.logo} alt={storeName} width={180} height={32} unoptimized onError={() => setLogoFailed(true)} className="max-w-[180px] object-contain" style={{ width: "auto", height: "auto", maxHeight: "calc(var(--navbar-height) - 16px)" }} />
@@ -88,7 +93,7 @@ export default function Navbar({
         ) : (
           <Link
             href="/"
-            className="font-display text-xl font-semibold tracking-tight text-bone"
+            className="font-display text-xl font-semibold tracking-tight text-ink"
           >
             {storeName}
           </Link>
@@ -172,7 +177,7 @@ export default function Navbar({
 
       {/* Expanding Search Bar */}
       {showSearch && (
-        <div className="hidden border-t border-white/10 px-6 py-4 md:block">
+        <div className="hidden border-t border-ink/10 px-6 py-4 md:block">
           <form onSubmit={handleSearch} className="mx-auto max-w-2xl">
             <div className="relative">
               <input
@@ -181,12 +186,12 @@ export default function Navbar({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products..."
-                className="w-full border border-white/20 bg-ink px-4 py-2.5 font-sans text-sm text-white outline-none transition-colors duration-150 focus:border-white placeholder:text-white/40"
+                className="w-full border border-ink/15 bg-white/80 px-4 py-2.5 font-sans text-sm text-ink shadow-inner outline-none backdrop-blur transition-colors duration-150 placeholder:text-stone/70 focus:border-moss focus:bg-white/95"
                 minLength={2}
               />
               <button
                 type="submit"
-                className="absolute right-0 top-1/2 -translate-y-1/2 bg-white px-3 py-2.5 text-ink transition-colors duration-150 hover:bg-white/90 cursor-pointer"
+                className="absolute right-0 top-1/2 -translate-y-1/2 bg-moss px-3 py-2.5 text-white transition-colors duration-150 hover:bg-moss-hover cursor-pointer"
                 aria-label="Search submit"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
@@ -201,7 +206,7 @@ export default function Navbar({
 
       {/* Mobile Menu */}
       {open && (
-        <div className="border-t border-white/10 px-6 py-6 space-y-6 md:hidden">
+        <div className="border-t border-ink/10 bg-white/75 px-6 py-6 space-y-6 backdrop-blur-xl md:hidden">
           {data.navLinks.map((link) => (
             <Link
               key={`${link.href}-${link.label}-mobile`}
@@ -230,12 +235,12 @@ export default function Navbar({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
-              className="flex-1 border border-white/20 bg-ink px-4 py-2 font-sans text-sm text-white outline-none transition-colors duration-150 focus:border-white placeholder:text-white/40"
+              className="flex-1 border border-ink/15 bg-white/80 px-4 py-2 font-sans text-sm text-ink outline-none shadow-inner transition-colors duration-150 focus:border-moss placeholder:text-stone/70"
               minLength={2}
             />
             <button
               type="submit"
-              className="bg-white px-5 py-2 text-xs font-medium text-ink transition-colors duration-150 hover:bg-white/90 cursor-pointer"
+              className="bg-moss px-5 py-2 text-xs font-medium text-white transition-colors duration-150 hover:bg-moss-hover cursor-pointer"
             >
               Go
             </button>
@@ -247,7 +252,7 @@ export default function Navbar({
               <Link
                 onClick={() => setOpen(false)}
                 href="/account"
-                className="flex items-center gap-3 font-sans text-sm text-bone/80 transition-colors duration-150 hover:text-bone"
+                className="flex items-center gap-3 font-sans text-sm text-ink/80 transition-colors duration-150 hover:text-moss"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
                   <circle cx="12" cy="8" r="4" />
@@ -257,7 +262,7 @@ export default function Navbar({
               </Link>
               <button
                 onClick={handleLogout}
-                className="block font-sans text-sm text-bone/80 transition-colors duration-150 hover:text-bone cursor-pointer"
+                className="block font-sans text-sm text-ink/80 transition-colors duration-150 hover:text-moss cursor-pointer"
               >
                 Logout
               </button>
@@ -266,7 +271,7 @@ export default function Navbar({
             <Link
               onClick={() => setOpen(false)}
               href="/login"
-              className="flex items-center gap-3 font-sans text-sm text-bone/80 transition-colors duration-150 hover:text-bone pt-2"
+              className="flex items-center gap-3 font-sans text-sm text-ink/80 transition-colors duration-150 hover:text-moss pt-2"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
                 <circle cx="12" cy="8" r="4" />
@@ -280,7 +285,7 @@ export default function Navbar({
           <Link
             onClick={() => setOpen(false)}
             href="/cart"
-            className="flex items-center gap-3 font-sans text-sm text-bone/80 transition-colors duration-150 hover:text-bone pt-2"
+            className="flex items-center gap-3 font-sans text-sm text-ink/80 transition-colors duration-150 hover:text-moss pt-2"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />

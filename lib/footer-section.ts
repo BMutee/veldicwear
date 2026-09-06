@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { z } from "zod";
-import { animationSchema, breakpointSchema, hexColorSchema, normalizeAnimation, normalizeBreakpoint } from "./section-shared";
+import { animationSchema, breakpointSchema, hexColorSchema, normalizeAnimation, normalizeBreakpoint, migrateLinkHoverColor, migrateSurfaceColor, migrateTextColor } from "./section-shared";
 
 const footerLinkSchema = z.object({
   label: z.string().default(""),
@@ -49,18 +49,16 @@ export const footerContentSchema = z.object({
 
 export type FooterContent = z.infer<typeof footerContentSchema>;
 
-// Defaults match Footer.tsx's current hardcoded styling: `bg-nav` (ink #171512)
-// with bone text, `px-6 py-16` (24 / 64 / 64). linkColor default #A8A29E is the
-// WCAG AA-passing value (Tailwind stone-400) requested — brighter than the old
-// `text-bone/60` blend and AA-compliant on the ink background.
+// Defaults match Footer.tsx's V3 styling: light glass surface (bone) with
+// slate-ink text. linkColor default #5B6B85 is the V3 muted slate (WCAG AA).
 export const FOOTER_DEFAULT_STYLES: FooterStyles = {
   paddingTop: { mobile: 40, desktop: 64 },
   paddingBottom: { mobile: 40, desktop: 64 },
   paddingX: { mobile: 24, desktop: 24 },
-  backgroundColor: "#171512", // --color-ink (bg-nav)
-  textColor: "#FAFAF8", // --color-bone
-  linkColor: "#A8A29E", // stone-400, WCAG AA on ink
-  linkHoverColor: "#FAFAF8", // --color-bone (matches hover:text-bone)
+  backgroundColor: "#F3F7FC", // --color-bone (light glass surface)
+  textColor: "#1B2737", // --color-ink
+  linkColor: "#5B6B85", // --color-stone (muted slate, WCAG AA on bone)
+  linkHoverColor: "#2563EB", // --color-moss (accent blue)
   animation: { type: "NONE", scrollTrigger: true },
 };
 
@@ -130,6 +128,10 @@ export function parseFooterContent(raw: unknown): FooterContent {
       paddingTop: normalizeBreakpoint((clean.styles as Record<string, unknown> | undefined)?.paddingTop, FOOTER_DEFAULT_STYLES.paddingTop, 40, 400),
       paddingBottom: normalizeBreakpoint((clean.styles as Record<string, unknown> | undefined)?.paddingBottom, FOOTER_DEFAULT_STYLES.paddingBottom, 40, 400),
       paddingX: normalizeBreakpoint((clean.styles as Record<string, unknown> | undefined)?.paddingX, FOOTER_DEFAULT_STYLES.paddingX, 24, 200),
+      backgroundColor: migrateSurfaceColor(((clean.styles as Record<string, unknown> | undefined)?.backgroundColor as string | undefined) ?? FOOTER_DEFAULT_STYLES.backgroundColor),
+      textColor: migrateTextColor(((clean.styles as Record<string, unknown> | undefined)?.textColor as string | undefined) ?? FOOTER_DEFAULT_STYLES.textColor),
+      linkColor: migrateTextColor(((clean.styles as Record<string, unknown> | undefined)?.linkColor as string | undefined) ?? FOOTER_DEFAULT_STYLES.linkColor),
+      linkHoverColor: migrateLinkHoverColor(((clean.styles as Record<string, unknown> | undefined)?.linkHoverColor as string | undefined) ?? FOOTER_DEFAULT_STYLES.linkHoverColor),
       animation: normalizeAnimation((clean.styles as Record<string, unknown> | undefined)?.animation),
     },
   };

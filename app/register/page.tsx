@@ -55,22 +55,22 @@ export default function RegisterPage() {
   };
 
   const inputClass = (hasError: boolean) =>
-    `w-full border px-4 py-3 font-sans text-sm text-[#1C1917] outline-none transition-colors duration-200 bg-white placeholder:text-[#A8A29E] ${
+    `w-full border px-4 py-3 font-sans text-sm text-[#1B2737] outline-none transition-colors duration-200 bg-white placeholder:text-[#5B6B85] ${
       hasError
         ? "border-[#DC2626] focus:border-[#DC2626]"
-        : "border-[#1C1917]/20 focus:border-[#CA8A04]"
+        : "border-[#1B2737]/20 focus:border-[#2563EB]"
     }`;
 
-  const labelClass = "block font-display text-xs font-bold tracking-[0.15em] uppercase text-[#1C1917]";
+  const labelClass = "block font-display text-xs font-bold tracking-[0.15em] uppercase text-[#1B2737]";
 
   return (
-    <main className="min-h-screen bg-[#FAFAF9]">
+    <main className="min-h-screen bg-[#F3F7FC]">
       <div className="mx-auto max-w-lg px-4 py-16 sm:px-6 sm:py-24">
-        <div className="border border-[#1C1917]/10 bg-white p-8 sm:p-10">
-          <h1 className="font-display text-3xl font-black uppercase tracking-tight text-[#1C1917] sm:text-4xl">
+        <div className="border border-[#1B2737]/10 bg-white p-8 sm:p-10">
+          <h1 className="font-display text-3xl font-black uppercase tracking-tight text-[#1B2737] sm:text-4xl">
             Create Account
           </h1>
-          <p className="mt-2 font-sans text-sm text-[#78716C]">
+          <p className="mt-2 font-sans text-sm text-[#5B6B85]">
             Join Veldic Wear and get the latest drops.
           </p>
 
@@ -180,19 +180,19 @@ export default function RegisterPage() {
               disabled={loading}
               className={`w-full py-3.5 font-display text-sm font-bold tracking-[0.15em] uppercase transition-colors duration-200 cursor-pointer ${
                 loading
-                  ? "cursor-not-allowed bg-[#1C1917]/10 text-[#A8A29E]"
-                  : "bg-[#1C1917] text-[#FAFAF9] hover:bg-[#CA8A04] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#CA8A04]"
+                  ? "cursor-not-allowed bg-[#1B2737]/10 text-[#5B6B85]"
+                  : "bg-[#1B2737] text-[#F3F7FC] hover:bg-[#2563EB] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2563EB]"
               }`}
             >
               {loading ? "Creating account…" : "Create Account"}
             </button>
           </form>
 
-          <p className="mt-6 text-center font-sans text-sm text-[#78716C]">
+          <p className="mt-6 text-center font-sans text-sm text-[#5B6B85]">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="font-semibold text-[#1C1917] underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
+              className="font-semibold text-[#1B2737] underline decoration-[#2563EB]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#2563EB] cursor-pointer"
             >
               Sign in
             </Link>

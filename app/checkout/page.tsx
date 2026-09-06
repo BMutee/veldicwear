@@ -107,25 +107,25 @@ export default function CheckoutPage() {
   };
 
   const inputClass = (hasError: boolean) =>
-    `w-full border px-4 py-3 font-sans text-sm text-[#1C1917] outline-none transition-colors duration-200 bg-white placeholder:text-[#A8A29E] ${
+    `w-full border px-4 py-3 font-sans text-sm text-[#1B2737] outline-none transition-colors duration-200 bg-white placeholder:text-[#5B6B85] ${
       hasError
         ? "border-[#DC2626] focus:border-[#DC2626]"
-        : "border-[#1C1917]/20 focus:border-[#CA8A04]"
+        : "border-[#1B2737]/20 focus:border-[#2563EB]"
     }`;
 
-  const labelClass = "font-display text-xs font-bold tracking-[0.15em] uppercase text-[#1C1917]";
+  const labelClass = "font-display text-xs font-bold tracking-[0.15em] uppercase text-[#1B2737]";
 
   return (
-    <main className="bg-[#FAFAF9] min-h-screen">
+    <main className="bg-[#F3F7FC] min-h-screen">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-3">
           {/* Left: Shipping form */}
           <div className="lg:col-span-2">
-            <div className="border border-[#1C1917]/10 bg-white p-8">
-              <h1 className="font-display text-2xl font-black text-[#1C1917] sm:text-3xl">
+            <div className="border border-[#1B2737]/10 bg-white p-8">
+              <h1 className="font-display text-2xl font-black text-[#1B2737] sm:text-3xl">
                 Checkout
               </h1>
-              <p className="mt-2 font-sans text-sm text-[#78716C]">
+              <p className="mt-2 font-sans text-sm text-[#5B6B85]">
                 Enter your shipping and contact details to complete your order.
               </p>
 
@@ -216,7 +216,7 @@ export default function CheckoutPage() {
                 <div>
                   <label className={labelClass}>
                     Apartment, Unit{" "}
-                    <span className="text-[#A8A29E] font-sans text-xs tracking-normal normal-case font-normal">
+                    <span className="text-[#5B6B85] font-sans text-xs tracking-normal normal-case font-normal">
                       (optional)
                     </span>
                   </label>
@@ -275,7 +275,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <p className="font-sans text-xs text-[#A8A29E]">
+                <p className="font-sans text-xs text-[#5B6B85]">
                   Your information is securely transmitted via Stripe. We never store your payment details.
                 </p>
 
@@ -285,8 +285,8 @@ export default function CheckoutPage() {
                   disabled={loading || !isValid}
                   className={`w-full py-3.5 font-display text-sm font-bold tracking-[0.15em] uppercase transition-colors duration-200 cursor-pointer lg:hidden ${
                     loading || !isValid
-                      ? "cursor-not-allowed bg-[#1C1917]/10 text-[#A8A29E]"
-                      : "bg-[#1C1917] text-[#FAFAF9] hover:bg-[#CA8A04]"
+                      ? "cursor-not-allowed bg-[#1B2737]/10 text-[#5B6B85]"
+                      : "bg-[#1B2737] text-[#F3F7FC] hover:bg-[#2563EB]"
                   }`}
                 >
                   {loading ? "Processing..." : "Place Order"}
@@ -311,7 +311,7 @@ export default function CheckoutPage() {
               onShippingProtectionChange={setHasShippingProtection}
             />
             {vc.currency === "EUR" && (
-              <p className="mt-3 text-center font-sans text-xs leading-relaxed text-[#78716C]">
+              <p className="mt-3 text-center font-sans text-xs leading-relaxed text-[#5B6B85]">
                 {EUR_ESTIMATE_DISCLAIMER}
               </p>
             )}

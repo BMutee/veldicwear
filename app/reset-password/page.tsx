@@ -55,30 +55,30 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#FAFAF9] flex items-center justify-center px-4">
-      <div className="w-full max-w-md border border-[#1C1917]/10 bg-white p-8 sm:p-10">
+    <main className="min-h-screen bg-[#F3F7FC] flex items-center justify-center px-4">
+      <div className="w-full max-w-md border border-[#1B2737]/10 bg-white p-8 sm:p-10">
         <Link
           href="/"
-          className="inline-block font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]"
+          className="inline-block font-display text-2xl font-black uppercase tracking-tight text-[#1B2737]"
         >
           VELDIC
         </Link>
 
         {success ? (
           <div className="mt-8">
-            <h1 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
+            <h1 className="font-display text-2xl font-black uppercase tracking-tight text-[#1B2737]">
               Password Reset
             </h1>
-            <p className="mt-3 font-sans text-sm leading-relaxed text-[#78716C]">
+            <p className="mt-3 font-sans text-sm leading-relaxed text-[#5B6B85]">
               Your password has been successfully reset. Redirecting you to sign in…
             </p>
           </div>
         ) : (
           <>
-            <h1 className="mt-8 font-display text-3xl font-black uppercase tracking-tight text-[#1C1917] sm:text-4xl">
+            <h1 className="mt-8 font-display text-3xl font-black uppercase tracking-tight text-[#1B2737] sm:text-4xl">
               Reset Password
             </h1>
-            <p className="mt-2 font-sans text-sm text-[#78716C]">
+            <p className="mt-2 font-sans text-sm text-[#5B6B85]">
               Enter your new password below.
             </p>
 
@@ -90,7 +90,7 @@ export default function ResetPasswordPage() {
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-6">
               <div>
-                <label htmlFor="password" className="block font-display text-xs font-bold uppercase tracking-[0.15em] text-[#1C1917]">
+                <label htmlFor="password" className="block font-display text-xs font-bold uppercase tracking-[0.15em] text-[#1B2737]">
                   New Password
                 </label>
                 <input
@@ -101,12 +101,12 @@ export default function ResetPasswordPage() {
                   placeholder="Min. 8 characters"
                   required
                   minLength={8}
-                  className="mt-2 w-full border border-[#1C1917]/20 px-4 py-3 font-sans text-sm text-[#1C1917] outline-none transition-colors duration-200 bg-white placeholder:text-[#A8A29E] focus:border-[#CA8A04]"
+                  className="mt-2 w-full border border-[#1B2737]/20 px-4 py-3 font-sans text-sm text-[#1B2737] outline-none transition-colors duration-200 bg-white placeholder:text-[#5B6B85] focus:border-[#2563EB]"
                 />
               </div>
 
               <div>
-                <label htmlFor="confirm-password" className="block font-display text-xs font-bold uppercase tracking-[0.15em] text-[#1C1917]">
+                <label htmlFor="confirm-password" className="block font-display text-xs font-bold uppercase tracking-[0.15em] text-[#1B2737]">
                   Confirm Password
                 </label>
                 <input
@@ -117,14 +117,14 @@ export default function ResetPasswordPage() {
                   placeholder="Repeat your password"
                   required
                   minLength={8}
-                  className="mt-2 w-full border border-[#1C1917]/20 px-4 py-3 font-sans text-sm text-[#1C1917] outline-none transition-colors duration-200 bg-white placeholder:text-[#A8A29E] focus:border-[#CA8A04]"
+                  className="mt-2 w-full border border-[#1B2737]/20 px-4 py-3 font-sans text-sm text-[#1B2737] outline-none transition-colors duration-200 bg-white placeholder:text-[#5B6B85] focus:border-[#2563EB]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading || !token}
-                className="w-full bg-[#1C1917] py-3.5 font-display text-sm font-bold uppercase tracking-[0.15em] text-[#FAFAF9] transition-colors duration-200 hover:bg-[#CA8A04] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                className="w-full bg-[#1B2737] py-3.5 font-display text-sm font-bold uppercase tracking-[0.15em] text-[#F3F7FC] transition-colors duration-200 hover:bg-[#2563EB] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
               >
                 {loading ? "Resetting…" : "Reset Password"}
               </button>
