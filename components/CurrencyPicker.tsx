@@ -12,8 +12,9 @@ import {
 /**
  * Navbar currency icon + dropdown.
  *
- * A globe icon button (styled to match the cart/account icons: bone -> bone on
- * hover, 20px stroke icon) opens a dropdown of USD/CAD/EUR. Selecting one
+ * A globe icon button (styled to match the other navbar controls via
+ * .veldic-navbar-control, which inherits the admin-configured navbar text
+ * color) opens a dropdown of USD/CAD/EUR. Selecting one
  * persists a MANUAL preference via POST /api/currency (writes
  * currency_source=manual) and refreshes the page so the new currency is
  * reflected server-side.
@@ -83,8 +84,8 @@ export default function CurrencyPicker({
         onClick={() => setOpen((o) => !o)}
         className={
           variant === "mobile"
-            ? "flex items-center gap-3 font-sans text-sm text-bone/80 transition-colors duration-150 hover:text-bone cursor-pointer"
-            : "relative flex items-center text-bone/80 transition-colors duration-150 hover:text-bone cursor-pointer"
+            ? "veldic-navbar-control flex items-center gap-3 font-sans text-sm transition-colors duration-150 cursor-pointer"
+            : "veldic-navbar-control relative flex items-center transition-colors duration-150 cursor-pointer"
         }
         aria-haspopup="listbox"
         aria-expanded={open}

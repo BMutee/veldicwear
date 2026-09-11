@@ -27,7 +27,7 @@ export default function CartIcon() {
   return (
     <Link
       href="/cart"
-      className="relative text-bone/80 transition-colors duration-150 hover:text-bone cursor-pointer"
+      className="veldic-navbar-control relative transition-colors duration-150 cursor-pointer"
       aria-label="Shopping cart"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
