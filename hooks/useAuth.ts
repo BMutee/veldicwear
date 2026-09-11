@@ -33,16 +33,32 @@ export function useAuth() {
   const { data: session, isPending: loading, refetch } = authClient.useSession();
   const user = (session?.user as User | undefined) ?? null;
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; role?: string; twoFactorRedirect?: boolean }> => {
+  const login = async (
+    email: string,
+    password: string,
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    role?: string;
+    twoFactorRedirect?: boolean;
+  }> => {
     try {
       const { data, error } = await authClient.signIn.email({ email, password });
       if (error) {
         return { success: false, error: error.message || "Invalid email or password." };
       }
-      if (data?.user) {
+      // Better Auth's twoFactor plugin returns `twoFactorRedirect: true` with
+      // NO user/session when the account has 2FA enabled. The caller must
+      // show the code-entry step and finish sign-in via verifyTotp/verifyOtp.
+      // (Cast needed: the client type union doesn't expose the flag.)
+      const d = data as { twoFactorRedirect?: boolean; user?: User | null } | null;
+      if (d?.twoFactorRedirect) {
+        return { success: true, twoFactorRedirect: true };
+      }
+      if (d?.user) {
         await refetch();
       }
-      const role = (data?.user as User | undefined)?.role;
+      const role = d?.user?.role;
       return { success: true, role };
     } catch (err) {
       // Surface the underlying network/API failure instead of a generic message,
@@ -50,6 +66,57 @@ export function useAuth() {
       console.error("signIn.email threw:", err);
       const message = err instanceof Error ? err.message : String(err);
       return { success: false, error: message || "Unable to connect. Please try again." };
+    }
+  };
+
+  /**
+   * Finish a 2FA login with a TOTP code from an authenticator app.
+   * `trustDevice` skips the code prompt on subsequent logins from the same
+   * browser (requires `trustDevice: true` on the server plugin).
+   */
+  const verifyTotp = async (
+    code: string,
+  ): Promise<{ success: boolean; error?: string; role?: string }> => {
+    try {
+      const { data, error } = await authClient.twoFactor.verifyTotp({ code, trustDevice: true });
+      if (error) {
+        return { success: false, error: error.message || "Invalid code. Try again." };
+      }
+      await refetch();
+      const role = (data?.user as User | undefined)?.role;
+      return { success: true, role };
+    } catch {
+      return { success: false, error: "Unable to connect. Please try again." };
+    }
+  };
+
+  /** Trigger the email-OTP fallback (sends a code via `sendOTP`). */
+  const sendEmailOtp = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { error } = await authClient.twoFactor.sendOtp();
+      if (error) {
+        return { success: false, error: error.message || "Failed to send the email code." };
+      }
+      return { success: true };
+    } catch {
+      return { success: false, error: "Unable to connect. Please try again." };
+    }
+  };
+
+  /** Finish a 2FA login with the code received by email. */
+  const verifyEmailOtp = async (
+    code: string,
+  ): Promise<{ success: boolean; error?: string; role?: string }> => {
+    try {
+      const { data, error } = await authClient.twoFactor.verifyOtp({ code });
+      if (error) {
+        return { success: false, error: error.message || "Invalid code. Try again." };
+      }
+      await refetch();
+      const role = (data?.user as User | undefined)?.role;
+      return { success: true, role };
+    } catch {
+      return { success: false, error: "Unable to connect. Please try again." };
     }
   };
 
@@ -91,6 +158,9 @@ export function useAuth() {
     login,
     register,
     logout,
+    verifyTotp,
+    sendEmailOtp,
+    verifyEmailOtp,
     authClient,
   };
 }

@@ -27,6 +27,7 @@ model User {
   sessions          Session[]
   orders            Order[]
   twoFactorSessions TwoFactorSession[]
+  twoFactor         TwoFactor?
   securityLogs      SecurityAuditLog[]
   wishlistItems     WishlistItem[]
   reviews           Review[]
@@ -79,6 +80,8 @@ model Verification {
   identifier String
   value      String
   expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([identifier, value])
   @@map("Verification")
@@ -463,4 +466,34 @@ model FAQ {
   updatedAt DateTime @updatedAt
 
   @@map("FAQ")
+}
+
+model NewsletterSubscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  status         String    @default("active") // active | unsubscribed
+  source         String    @default("website") // footer | newsletter-section | ...
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+
+  @@map("NewsletterSubscriber")
+}
+
+/**
+ * Better Auth twoFactor plugin storage. Holds the encrypted TOTP secret,
+ * encrypted backup codes, and whether the secret has been verified (TOTP).
+ * Required for POST /api/auth/two-factor/enable to work.
+ */
+model TwoFactor {
+  id                      String    @id @default(cuid())
+  userId                  String    @unique
+  secret                  String
+  backupCodes             String
+  verified                Boolean   @default(false)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("TwoFactor")
 }

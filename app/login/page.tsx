@@ -17,9 +17,13 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, verifyTotp, sendEmailOtp, verifyEmailOtp } = useAuth();
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [show2fa, setShow2fa] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorError, setTwoFactorError] = useState("");
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false);
 
   const {
     register,
@@ -43,6 +47,14 @@ export default function LoginPage() {
       return;
     }
 
+    // Account has 2FA enabled — show the code-entry step. The session is only
+    // created after the code is verified (see handleVerify2fa).
+    if (result.twoFactorRedirect) {
+      setShow2fa(true);
+      setLoading(false);
+      return;
+    }
+
     // Check user role and redirect accordingly
     // Wait a moment for session to propagate
     setTimeout(() => {
@@ -52,6 +64,43 @@ export default function LoginPage() {
         router.push("/account");
       }
     }, 300);
+  };
+
+  const handleVerify2fa = async (code: string) => {
+    if (twoFactorLoading) return;
+    setTwoFactorError("");
+    setTwoFactorLoading(true);
+
+    // Try the authenticator-app code first.
+    let result = await verifyTotp(code);
+    if (!result.success) {
+      // Fall back to treating it as an emailed OTP code.
+      result = await verifyEmailOtp(code);
+    }
+
+    if (!result.success) {
+      setTwoFactorError(result.error || "Invalid code. Try again.");
+      setTwoFactorLoading(false);
+      return;
+    }
+
+    setTimeout(() => {
+      if (result.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/account");
+      }
+    }, 300);
+  };
+
+  const handleSendEmailCode = async () => {
+    setTwoFactorError("");
+    const result = await sendEmailOtp();
+    if (!result.success) {
+      setTwoFactorError(result.error || "Failed to send the email code.");
+      return;
+    }
+    setTwoFactorError("");
   };
 
   const inputClass = (hasError: boolean) =>
@@ -139,6 +188,75 @@ export default function LoginPage() {
               {loading ? "Signing in…" : "Sign In"}
             </button>
           </form>
+
+          {show2fa && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleVerify2fa(twoFactorCode.trim());
+              }}
+              className="mt-8 space-y-6 border-t border-[#1B2737]/10 pt-8"
+            >
+              <div>
+                <h2 className="font-display text-xl font-black uppercase tracking-tight text-[#1B2737]">
+                  Two-factor verification
+                </h2>
+                <p className="mt-2 font-sans text-sm text-[#5B6B85]">
+                  Enter the 6-digit code from your authenticator app, or the code we emailed you.
+                </p>
+              </div>
+
+              {twoFactorError && (
+                <div className="border border-[#DC2626]/30 bg-[#DC2626]/5 p-4" role="alert">
+                  <p className="font-sans text-sm text-[#DC2626]">{twoFactorError}</p>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="twoFactorCode" className={labelClass}>
+                  Verification code
+                </label>
+                <input
+                  id="twoFactorCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  maxLength={6}
+                  placeholder="123456"
+                  value={twoFactorCode}
+                  onChange={(e) => {
+                    setTwoFactorCode(e.target.value.replace(/\D/g, ""));
+                    setTwoFactorError("");
+                  }}
+                  className={`mt-2 text-center font-mono text-lg tracking-[0.4em] ${inputClass(!!twoFactorError)}`}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={twoFactorLoading || twoFactorCode.length < 6}
+                className={`w-full py-3.5 font-display text-sm font-bold tracking-[0.15em] uppercase transition-colors duration-200 cursor-pointer ${
+                  twoFactorLoading || twoFactorCode.length < 6
+                    ? "cursor-not-allowed bg-[#1B2737]/10 text-[#5B6B85]"
+                    : "bg-[#1B2737] text-[#F3F7FC] hover:bg-[#2563EB] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2563EB]"
+                }`}
+              >
+                {twoFactorLoading ? "Verifying…" : "Verify code"}
+              </button>
+
+              <p className="text-center font-sans text-xs text-[#5B6B85]">
+                No authenticator app?{" "}
+                <button
+                  type="button"
+                  onClick={handleSendEmailCode}
+                  className="font-semibold text-[#2563EB] underline decoration-[#2563EB]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#2563EB] cursor-pointer"
+                >
+                  Email me a code
+                </button>
+              </p>
+            </form>
+          )}
 
           <p className="mt-6 text-center font-sans text-sm text-[#5B6B85]">
             Don&apos;t have an account?{" "}

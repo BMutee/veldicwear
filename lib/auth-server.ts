@@ -97,6 +97,9 @@ function buildAuth() {
     },
     plugins: [
       twoFactor({
+        // Trust verified devices so users aren't prompted for a code on every
+        // login from the same browser (client passes trustDevice on verify).
+        trustDevice: true,
         otpOptions: {
           async sendOTP({ user, otp }) {
             // Send OTP via email for admin 2FA
