@@ -10,11 +10,12 @@ import {
 } from "@/lib/currency-map";
 
 /**
- * Navbar currency icon + dropdown.
+ * Navbar currency symbol + dropdown.
  *
- * A globe icon button (styled to match the other navbar controls via
- * .veldic-navbar-control, which inherits the admin-configured navbar text
- * color) opens a dropdown of USD/CAD/EUR. Selecting one
+ * A button showing the ACTIVE currency's symbol ($ / C$ / €) — styled to
+ * match the other navbar controls via .veldic-navbar-control, which inherits
+ * the admin-configured navbar text color — opens a dropdown of USD/CAD/EUR.
+ * Selecting one
  * persists a MANUAL preference via POST /api/currency (writes
  * currency_source=manual) and refreshes the page so the new currency is
  * reflected server-side.
@@ -90,21 +91,29 @@ export default function CurrencyPicker({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`Change currency (current: ${info.label})`}
+        title={`Currency: ${info.label}`}
       >
+        {/* Active-currency symbol + code, sized to match the 20px navbar icons. */}
+        <span className="flex h-5 items-center gap-1 font-sans text-sm font-semibold leading-none">
+          <span aria-hidden="true">{info.symbol}</span>
+          <span className="font-mono text-[10px] font-medium tracking-wide opacity-70">
+            {info.code}
+          </span>
+        </span>
+        {/* Small caret to signal the dropdown. */}
         <svg
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
-          className="h-5 w-5"
+          className="ml-0.5 h-3 w-3 opacity-70"
+          aria-hidden="true"
         >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M2 12h20" />
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          <path d="m6 9 6 6 6-6" />
         </svg>
         {variant === "mobile" && (
           <span>
-            Currency <span className="font-mono text-xs text-stone">{info.code}</span>
+            Currency <span className="text-xs text-stone">{info.name}</span>
           </span>
         )}
       </button>
