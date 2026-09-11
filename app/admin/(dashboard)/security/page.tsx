@@ -2,7 +2,8 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import QRCode from "react-qr-code";
 
 export default function AdminSecurityPage() {
   const { user, loading: authLoading, authClient } = useAuth();
@@ -16,6 +17,22 @@ export default function AdminSecurityPage() {
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
   const [step, setStep] = useState<"idle" | "setup" | "verify">("idle");
   const [verificationCode, setVerificationCode] = useState("");
+
+  /**
+   * Extract the raw base32 secret from the otpauth URI so the user can type
+   * it into their authenticator app manually.
+   * The old regex parsed the URI LABEL (email) instead of the `secret=`
+   * query param, so the displayed "key" was rejected by authenticator apps.
+   */
+  const manualKey = useMemo(() => {
+    if (!totpUri) return "";
+    try {
+      const url = new URL(totpUri);
+      return url.searchParams.get("secret") ?? "";
+    } catch {
+      return "";
+    }
+  }, [totpUri]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -159,14 +176,11 @@ export default function AdminSecurityPage() {
           {/* TOTP Setup - Show QR code / key */}
           {step === "setup" && totpUri && (
             <div className="mt-6 space-y-4">
-              {/* QR Code */}
+              {/* QR Code — rendered locally (the old chart.googleapis.com
+                  API was shut down by Google, so the <img> never loaded) */}
               <div className="flex justify-center">
                 <div className="border-2 border-ink/10 p-4 bg-white">
-                  <img
-                    src={`https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encodeURIComponent(totpUri)}`}
-                    alt="Scan this QR code with your authenticator app"
-                    className="w-48 h-48"
-                  />
+                  <QRCode value={totpUri} size={192} data-testid="totp-qr" />
                 </div>
               </div>
 
@@ -176,7 +190,7 @@ export default function AdminSecurityPage() {
                   Or enter this key manually:
                 </p>
                 <code className="block bg-white border border-ink/10 px-4 py-3 font-mono text-sm text-ink break-all select-all">
-                  {totpUri.replace(/^otpauth:\/\/totp\//, "").split("?")[0]?.replace(/^[^:]+:/, "") || totpUri}
+                  {manualKey || totpUri}
                 </code>
               </div>
 
