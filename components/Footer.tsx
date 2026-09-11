@@ -62,6 +62,8 @@ export default function Footer({
 }) {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const data = parseFooterContent(content);
@@ -89,11 +91,31 @@ export default function Footer({
     { label: "Address", value: base.address, href: null },
   ].filter((c) => c.value);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim().length > 0) {
+    const trimmed = email.trim();
+    if (!trimmed || !trimmed.includes("@")) {
+      setError(true);
+      return;
+    }
+    setSubmitting(true);
+    setError(false);
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed, source: "footer" }),
+      });
+      if (!res.ok) {
+        setError(true);
+        return;
+      }
       setSubscribed(true);
       setEmail("");
+    } catch {
+      setError(true);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -151,18 +173,28 @@ export default function Footer({
                 ref={inputRef}
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError(false);
+                }}
                 placeholder="Enter your email"
                 required
+                aria-label="Email address"
                 className="flex-1 border-b border-ink/20 bg-transparent px-0 py-2.5 font-sans text-sm outline-none transition-colors duration-150 placeholder:text-stone/60 focus:border-moss"
               />
               <button
                 type="submit"
-                className="bg-moss px-5 py-2.5 font-sans text-xs font-medium text-white transition-colors duration-150 hover:bg-moss-hover cursor-pointer"
+                disabled={submitting}
+                className="bg-moss px-5 py-2.5 font-sans text-xs font-medium text-white transition-colors duration-150 hover:bg-moss-hover disabled:cursor-wait disabled:opacity-70 cursor-pointer"
               >
-                {subscribed ? "Done!" : "Subscribe"}
+                {subscribed ? "Done!" : submitting ? "…" : "Subscribe"}
               </button>
             </form>
+            {error && !subscribed && (
+              <p className="mt-2 font-sans text-xs text-clay" role="alert">
+                Something went wrong. Please check your email and try again.
+              </p>
+            )}
           </div>
 
           {data.shopLinks && data.shopLinks.length > 0 && (

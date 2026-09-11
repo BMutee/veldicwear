@@ -28,7 +28,7 @@ const fallback: NewsletterContent = {
 export default function Newsletter({ initialContent }: { initialContent?: NewsletterContent | null }) {
   const [content, setContent] = useState<NewsletterContent | null>(initialContent ?? null);
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
 
   useEffect(() => {
     // Theme document supplies content (app/page.tsx) — legacy fetch is a
@@ -42,16 +42,28 @@ export default function Newsletter({ initialContent }: { initialContent?: Newsle
 
   const data = content || fallback;
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes("@")) {
       setStatus("error");
       return;
     }
-    setTimeout(() => {
+    setStatus("submitting");
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source: "newsletter-section" }),
+      });
+      if (!res.ok) {
+        setStatus("error");
+        return;
+      }
       setStatus("success");
       setEmail("");
-    }, 500);
+    } catch {
+      setStatus("error");
+    }
   };
 
   return (
@@ -108,9 +120,10 @@ export default function Newsletter({ initialContent }: { initialContent?: Newsle
           </div>
           <button
             type="submit"
-            className="bg-moss px-8 py-4 font-sans text-sm font-medium text-white transition-colors duration-150 hover:bg-moss-hover cursor-pointer"
+            disabled={status === "submitting"}
+            className="bg-moss px-8 py-4 font-sans text-sm font-medium text-white transition-colors duration-150 hover:bg-moss-hover disabled:cursor-wait disabled:opacity-70 cursor-pointer"
           >
-            {data.buttonText}
+            {status === "submitting" ? "Subscribing…" : data.buttonText}
           </button>
         </form>
 

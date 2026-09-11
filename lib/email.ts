@@ -154,3 +154,46 @@ export async function sendOrderConfirmationEmail(options: {
     html,
   });
 }
+
+export async function sendWelcomeEmail(options: { to: string }) {
+  const { to } = options;
+  const siteUrl =
+    process.env.BETTER_AUTH_URL ??
+    process.env.NEXT_PUBLIC_BASE_URL ??
+    "http://localhost:3000";
+  const shopUrl = `${siteUrl}/collections`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; color: #1B2737; max-width: 600px; margin: 0 auto; background: #F3F7FC;">
+      <div style="background: #2563EB; padding: 32px 24px; text-align: center;">
+        <h1 style="color: #FFFFFF; font-size: 24px; margin: 0; letter-spacing: 2px;">VELDIC WEAR</h1>
+      </div>
+      <div style="padding: 32px 24px;">
+        <h2 style="font-size: 20px; margin: 0 0 12px;">Welcome to the community 🎉</h2>
+        <p style="font-size: 14px; line-height: 1.6; color: #5B6B85; margin: 0 0 16px;">
+          Thanks for subscribing! You're now on the list to be the first to know about
+          new collections, exclusive drops, and limited-edition releases.
+        </p>
+        <p style="text-align: center; margin: 24px 0;">
+          <a href="${shopUrl}" style="display: inline-block; background: #2563EB; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: bold; padding: 14px 32px; border-radius: 4px;">Shop the latest drop</a>
+        </p>
+        <p style="font-size: 14px; line-height: 1.6; color: #5B6B85; margin: 24px 0 0;">
+          If you have any questions, just reply to this email — we're happy to help.
+        </p>
+      </div>
+      <div style="padding: 20px 24px; border-top: 1px solid #E2E8F0; text-align: center;">
+        <p style="font-size: 12px; color: #5B6B85; margin: 0;">
+          You're receiving this email because you subscribed at veldicwear.com.
+          <br />
+          No spam. <a href="${siteUrl}/privacy" style="color: #5B6B85;">Unsubscribe anytime</a>.
+        </p>
+      </div>
+    </div>
+  `;
+
+  return sendDeoMail({
+    to: [to],
+    subject: "Welcome to Veldic Wear — you're in!",
+    html,
+  });
+}
