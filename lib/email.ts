@@ -1,6 +1,9 @@
 const DEO_MAIL_API_KEY = process.env.DEO_MAIL_API_KEY ?? "";
 const DEO_MAIL_API_URL = "https://api.deomail.com/v1/send";
-const DEFAULT_FROM = "info@veldicwear.com";
+// DeoMail only authorizes the exact lowercase sender identity
+// (e.g. info@veldicwear.com) — normalize in case EMAIL_FROM is set
+// with different casing like "Info@veldicwear.com".
+const DEFAULT_FROM = (process.env.EMAIL_FROM ?? "info@veldicwear.com").toLowerCase();
 
 async function sendDeoMail(options: {
   from?: string;
@@ -23,7 +26,7 @@ async function sendDeoMail(options: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: options.from ?? DEFAULT_FROM,
+      from: (options.from ?? DEFAULT_FROM).toLowerCase(),
       to: options.to,
       subject: options.subject,
       html: options.html,
