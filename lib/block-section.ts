@@ -248,7 +248,8 @@ export function sanitizeBlockContent(type: BlockType, raw: unknown): BlockConten
     const productIds = parsed.productIds
       .map((id) => id.trim())
       .filter((id) => (seen.has(id) ? false : (seen.add(id), true)));
-    if (productIds.length === 0) throw new Error("Featured products must include at least one product.");
+    // Zero pins is valid: the storefront auto-fills with the newest active
+    // products (fully automatic "New Arrivals"). Titles stay editable.
     return {
       productIds,
       featuredSectionTitle: sanitizeHtml(parsed.featuredSectionTitle),
