@@ -6,19 +6,19 @@ import { FEATURED_BLOCK_DEFAULT_STYLES } from "@/lib/block-section";
 import Reveal from "@/components/motion/Reveal";
 
 // ---------------------------------------------------------------------------
-// FeaturedProducts — now sourced from a FEATURED_PRODUCTS block
-// (SiteSection("featured-products") via sectionKey), manually curated with an
-// ordered product-ID list. The legacy SiteSection("featured-products")
-// content row is left in place but UNREAD by app code (see lib/featured-section.ts).
+// FeaturedProducts — sourced from the featured-products section's
+// _featured-products static block: PINNED product IDs (admin order) first,
+// with remaining slots AUTO-FILLED by the newest active products (hybrid:
+// curation + "New Arrivals" freshness, always up to 8).
 //
 // Render rules:
-//   - Query `where: { id: { in: productIds }, active: true }` — inactive
+//   - Query `where: { id: { in: pinnedIds }, active: true }` — inactive
 //     (unpublished) products never appear on the live storefront.
-//   - Preserve the admin's productIds array order (a DB `in` query does not
-//     guarantee order) and silently skip any ID that is missing or inactive —
+//   - Preserve the admin's pinned order (a DB `in` query does not guarantee
+//     order) and silently skip any pinned ID that is missing or inactive —
 //     no broken cards, no crash.
-//   - If no block exists yet (pre-migration / fresh DB), fall back to the
-//     legacy "latest 8 featured (else latest 8) active products" query.
+//   - Auto-fill: newest active products (createdAt desc), excluding pinned
+//     IDs, fill the grid up to 8. Zero pins = fully automatic newest 8.
 // ---------------------------------------------------------------------------
 
 type FeaturedProductsProps = {
@@ -26,37 +26,43 @@ type FeaturedProductsProps = {
   styles?: FeaturedBlockStyles | null;
 };
 
+const MAX_FEATURED_PRODUCTS = 8;
+
 export default async function FeaturedProducts({
   content,
   styles: storedStyles,
 }: FeaturedProductsProps) {
   const s = storedStyles ?? FEATURED_BLOCK_DEFAULT_STYLES;
-  const ids = content?.productIds ?? [];
+  const pinnedIds = content?.productIds ?? [];
 
   let displayProducts: Awaited<ReturnType<typeof queryBlockProducts>>;
-  if (ids.length > 0) {
-    const products = await queryBlockProducts(ids);
+  if (pinnedIds.length > 0) {
+    const products = await queryBlockProducts(pinnedIds);
     const byId = new Map(products.map((p) => [p.id, p]));
-    displayProducts = ids
+    const pinned = pinnedIds
       .map((id) => byId.get(id))
       .filter((p): p is NonNullable<typeof p> => Boolean(p));
+    // Top up with the newest active products (skipping anything pinned,
+// valid or not) so the grid stays full at 8 as catalog churns.
+    const needed = MAX_FEATURED_PRODUCTS - pinned.length;
+    const fill =
+      needed > 0
+        ? await prisma.product.findMany({
+            take: needed,
+            where: { active: true, id: { notIn: pinnedIds } },
+            include: { variants: true, images: true },
+            orderBy: { createdAt: "desc" },
+          })
+        : [];
+    displayProducts = [...pinned, ...fill];
   } else {
-    // No block yet — legacy behavior, now also restricted to active products.
-    const featured = await prisma.product.findMany({
-      take: 8,
-      where: { featured: true, active: true },
+    // Nothing pinned — fully automatic: the 8 newest active products.
+    displayProducts = await prisma.product.findMany({
+      take: MAX_FEATURED_PRODUCTS,
+      where: { active: true },
       include: { variants: true, images: true },
       orderBy: { createdAt: "desc" },
     });
-    displayProducts =
-      featured.length > 0
-        ? featured
-        : await prisma.product.findMany({
-            take: 8,
-            where: { active: true },
-            include: { variants: true, images: true },
-            orderBy: { createdAt: "desc" },
-          });
   }
 
   const title = content?.featuredSectionTitle ?? "New Arrivals";

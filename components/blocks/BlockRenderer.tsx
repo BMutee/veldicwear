@@ -30,9 +30,9 @@ export default function BlockRenderer({ block }: { block: BlockRecord }) {
   return wrapped(<GalleryBlock blockId={block.id} content={parsed.content as Extract<ReturnType<typeof parseStoredBlock>["content"], { images: unknown[] }>} styles={parsed.styles} />);
 }
 
-// Admin preview for the curated product list — the full grid renders live on
+// Admin preview for the hybrid list — the full grid renders live on
 // the homepage (server-side query); here we show an honest placeholder with
-// the curated order and count rather than fetching products in the browser.
+// the pinned count rather than fetching products in the browser.
 function FeaturedProductsPreview({ content }: { content: FeaturedBlockContent }) {
   return (
     <section className="px-6 py-12">

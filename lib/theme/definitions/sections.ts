@@ -70,7 +70,7 @@ export const SECTION_DEFS: SectionDef[] = [
   {
     type: "featured-products",
     name: "t:sections.featured-products.name",
-    description: "Hand-picked product grid (up to 8 products).",
+    description: "Pinned products first, auto-filled with newest arrivals (up to 8).",
     locked: true,
     settings: [],
     blocks: [{ type: "_featured-products", max: 1 }],

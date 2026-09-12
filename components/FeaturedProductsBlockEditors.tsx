@@ -119,11 +119,11 @@ export function FeaturedProductsContentEditor({ content, onChange }: { content: 
 
       <div className="rounded-lg border border-stone/20 p-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-stone">Featured products ({picked.length}/8)</span>
-          <span className="text-xs text-stone">Order shown is display order.</span>
+          <span className="text-sm font-medium text-stone">Pinned products ({picked.length}/8)</span>
+          <span className="text-xs text-stone">Pinned first; rest auto-fills with newest.</span>
         </div>
         {picked.length === 0 ? (
-          <p className="mt-3 text-sm text-stone">No products selected yet. Use the search below to add up to 8.</p>
+          <p className="mt-3 text-sm text-stone">Nothing pinned — the section shows the 8 newest products. Use the search below to pin favorites.</p>
         ) : (
           <ol className="mt-3 space-y-2">
             {picked.map((id, index) => {

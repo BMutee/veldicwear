@@ -83,7 +83,7 @@ export const BLOCK_DEFS: BlockDef[] = [
     type: "_featured-products",
     name: "t:blocks._featured-products.name",
     settings: [
-      { id: "productIds", label: "t:fields.product_ids", type: "product_picker", max_items: 8, default: [], info: "Order = display order. Up to 8 products." },
+      { id: "productIds", label: "t:fields.product_ids", type: "product_picker", max_items: 8, default: [], info: "Pinned products show first, in this order. Remaining slots (up to 8 total) auto-fill with the newest products." },
       { id: "featuredSectionTitle", label: "t:fields.section_title", type: "text", default: "New Arrivals" },
       { id: "featuredSectionSubtitle", label: "t:fields.section_subtitle", type: "text", default: "Considered pieces, built to last." },
       { id: "styleHeader", label: "t:fields.group_style", type: "header" },

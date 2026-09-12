@@ -118,8 +118,9 @@ function animationOf(
 }
 
 /** FEATURED_PRODUCTS content+styles from the static block's settings bag.
- *  An empty curated list yields null content so the component falls back to
- *  its legacy "latest featured active products" query. */
+ *  Hybrid sourcing: pinned IDs keep admin order; the component auto-fills
+ *  remaining slots with the newest active products (empty pins = newest 8).
+ *  Content is always returned so titles survive with zero pins. */
 export function featuredAdapter(settings: SettingValues): {
   content: FeaturedBlockContent | null;
   styles: FeaturedBlockStyles;
@@ -128,8 +129,11 @@ export function featuredAdapter(settings: SettingValues): {
     ? (settings["productIds"] as unknown[]).filter((v): v is string => typeof v === "string" && v.trim().length > 0)
     : [];
   const title = str(settings, "featuredSectionTitle").trim() || "New Arrivals";
-  const content: FeaturedBlockContent | null =
-    ids.length > 0 ? { productIds: ids.slice(0, 8), featuredSectionTitle: title, featuredSectionSubtitle: str(settings, "featuredSectionSubtitle") } : null;
+  const content: FeaturedBlockContent = {
+    productIds: ids.slice(0, 8),
+    featuredSectionTitle: title,
+    featuredSectionSubtitle: str(settings, "featuredSectionSubtitle") || "Considered pieces, built to last.",
+  };
 
   const styles: FeaturedBlockStyles = {
     paddingTop: bp(settings, "paddingTop", FEATURED_BLOCK_DEFAULT_STYLES.paddingTop),

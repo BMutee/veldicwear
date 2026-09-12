@@ -49,7 +49,7 @@ const en: Dict = {
   "fields.text_color": "Text color",
   "fields.animation": "Animation",
   "fields.animation_scroll_trigger": "Animate on scroll",
-  "fields.product_ids": "Products",
+  "fields.product_ids": "Pinned products",
   "fields.section_title": "Section title",
   "fields.section_subtitle": "Section subtitle",
   "fields.looks": "Looks",
