@@ -71,7 +71,6 @@ export async function POST(request: NextRequest) {
       subject: `[Veldic Wear Contact] ${safeSubject}`,
       html,
       text,
-      fingerprint: false, // fingerprint footer disabled (paid DeoMail plan)
     });
 
     // Persist every submission so no message is ever lost if email fails
