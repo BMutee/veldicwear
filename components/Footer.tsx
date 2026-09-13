@@ -86,7 +86,6 @@ export default function Footer({
 
   // Contact details that are actually set in store settings.
   const contactItems = [
-    { label: "Email", value: base.email, href: base.email ? `mailto:${base.email}` : null },
     { label: "Phone", value: base.phone, href: base.phone ? `tel:${base.phone}` : null },
     { label: "Address", value: base.address, href: null },
   ].filter((c) => c.value);
