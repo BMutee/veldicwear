@@ -5,7 +5,7 @@ const DEO_MAIL_API_URL = "https://api.deomail.com/v1/send";
 // with different casing like "Info@veldicwear.com".
 const DEFAULT_FROM = (process.env.EMAIL_FROM ?? "info@veldicwear.com").toLowerCase();
 
-async function sendDeoMail(options: {
+export async function sendDeoMail(options: {
   from?: string;
   to: string[];
   subject: string;
@@ -13,6 +13,8 @@ async function sendDeoMail(options: {
   text?: string;
   cc?: string[];
   bcc?: string[];
+  replyTo?: string;
+  /** Defaults to true (free-plan compatible). Only paid plans may pass false. */
   fingerprint?: boolean;
 }) {
   if (!DEO_MAIL_API_KEY) {
@@ -33,7 +35,9 @@ async function sendDeoMail(options: {
       text: options.text,
       cc: options.cc,
       bcc: options.bcc,
-      fingerprint: options.fingerprint ?? false,
+      replyTo: options.replyTo,
+      reply_to: options.replyTo,
+      fingerprint: options.fingerprint ?? true,
     }),
   });
 
@@ -41,6 +45,14 @@ async function sendDeoMail(options: {
 
   if (!response.ok) {
     throw new Error(`DeoMail API error (${response.status}): ${data.error ?? "Unknown error"}`);
+  }
+
+  // DeoMail returns HTTP 200 even for logical failures
+  // (e.g. FINGERPRINT_REQUIRES_PLAN) — treat success:false as an error
+  // so callers never report "sent" when nothing was delivered.
+  if (data && typeof data === "object" && "success" in data && (data as { success?: boolean }).success === false) {
+    const err = data as { error?: string; code?: string };
+    throw new Error(`DeoMail API error${err.code ? ` (${err.code})` : ""}: ${err.error ?? "Unknown error"}`);
   }
 
   return data;
