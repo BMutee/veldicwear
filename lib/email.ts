@@ -14,7 +14,7 @@ export async function sendDeoMail(options: {
   cc?: string[];
   bcc?: string[];
   replyTo?: string;
-  /** Defaults to true (free-plan compatible). Only paid plans may pass false. */
+  /** Fingerprint footer disabled by default. Requires a paid DeoMail plan. */
   fingerprint?: boolean;
 }) {
   if (!DEO_MAIL_API_KEY) {
@@ -37,7 +37,7 @@ export async function sendDeoMail(options: {
       bcc: options.bcc,
       replyTo: options.replyTo,
       reply_to: options.replyTo,
-      fingerprint: options.fingerprint ?? true,
+      fingerprint: options.fingerprint ?? false,
     }),
   });
 
