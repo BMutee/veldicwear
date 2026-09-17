@@ -217,11 +217,11 @@ export default function CheckoutSuccessClient() {
             </li>
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
-              <strong className="text-[#1B2737]">In transit:</strong> 4–11 business days
+              <strong className="text-[#1B2737]">In transit:</strong> 3–6 business days
             </li>
             <li className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
-              <strong className="text-[#1B2737]">Total delivery window:</strong> 7–15 business days
+              <strong className="text-[#1B2737]">Total delivery window:</strong> up to 10 business days
             </li>
           </ul>
           <p className="mt-3 font-sans text-xs text-[#5B6B85]">

@@ -128,6 +128,65 @@ function normalizeVariantProperty(variant: CJVariant): string {
 }
 
 /**
+ * Known apparel size tokens, ordered longest-first so matching "2XL" wins
+ * over a naive suffix match on "XL".
+ */
+const SIZE_TOKENS = [
+  "XXXL",
+  "XXL",
+  "2XL",
+  "3XL",
+  "4XL",
+  "5XL",
+  "6XL",
+  "XXXS",
+  "XXS",
+  "2XS",
+  "3XS",
+  "ONE SIZE",
+  "OS",
+  "XS",
+  "SM",
+  "MD",
+  "LG",
+  "XL",
+  "S",
+  "M",
+  "L",
+];
+
+/**
+ * Split a CJ variantKey like "Black Zone2-M" or "Wine Red-XXL" into
+ * { color, size }. CJ encodes these as "<color>-<size>" but the color part
+ * itself may contain spaces (and even hyphens, e.g. "T-shirt-Red-M").
+ *
+ * Strategy: look for a trailing "-<SIZE>" segment (also tolerating "/",
+ * whitespace, or ":" separators) where SIZE is a known apparel token.
+ * Returns null when no size suffix is found.
+ */
+function splitVariantKey(variantKey: string): { color: string | null; size: string } | null {
+  const key = variantKey.trim();
+  if (!key) return null;
+
+  for (const token of SIZE_TOKENS) {
+    // Separators CJ uses between color and size: "-", "/", " ", ":"
+    const pattern = new RegExp(`[\\-/:\\s]+(${token})$`, "i");
+    const match = key.match(pattern);
+    if (match) {
+      const size = match[1].toUpperCase();
+      const colorPart = key.slice(0, match.index).trim().replace(/[\-/:,\s]+$/, "").trim();
+      return { color: colorPart || null, size };
+    }
+  }
+
+  // Single-variant products with a bare size key ("M") or "One Size".
+  const bare = key.toUpperCase();
+  if (SIZE_TOKENS.includes(bare)) return { color: null, size: bare };
+
+  return null;
+}
+
+/**
  * Parse a CJ variant property string to extract the size value.
  * CJ variants typically use a format like "Size: M" or "Color: Red, Size: M".
  */
@@ -137,11 +196,16 @@ function extractSizeFromVariant(variant: CJVariant): string | null {
     const sizeMatch = property.match(/Size:\s*([^,]+)/i);
     if (sizeMatch) return sizeMatch[1].trim();
   }
+  // CJ's modern format: variantProperty is "[]" and all info lives in
+  // variantKey as "<color>-<size>" (e.g. "Dark Grey-XL", "Black Zone2-M").
+  if (variant.variantKey) {
+    const split = splitVariantKey(variant.variantKey);
+    if (split) return split.size;
+    return variant.variantKey.trim();
+  }
   if (variant.variantName) return variant.variantName.trim();
-  // variantKey is the short variant label (e.g. "Silver Frame Gray");
-  // prefer it over variantNameEn, which for single-variant products is the
-  // entire product name and unusable as a size.
-  if (variant.variantKey) return variant.variantKey.trim();
+  // variantNameEn is the entire product name for some single-variant
+  // products — only usable as a last resort.
   if (variant.variantNameEn) return variant.variantNameEn.trim();
   return null;
 }
@@ -151,6 +215,13 @@ function extractColorFromVariant(variant: CJVariant): string | null {
   if (property) {
     const colorMatch = property.match(/(?:Color|Colour):\s*([^,]+)/i);
     if (colorMatch) return colorMatch[1].trim();
+  }
+  // CJ's modern format: color is the prefix of variantKey ("Black Zone2-M"
+  // -> "Black Zone2"). variantNameEn is NOT used here — for many products
+  // it is the full product title, not a color.
+  if (variant.variantKey) {
+    const split = splitVariantKey(variant.variantKey);
+    if (split) return split.color;
   }
   return null;
 }

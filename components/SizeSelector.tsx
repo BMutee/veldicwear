@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Variant = {
   size: string;
@@ -8,17 +8,64 @@ type Variant = {
   price: number;
 };
 
+const SIZE_ORDER = [
+  "XXXS",
+  "XXS",
+  "XS",
+  "S",
+  "M",
+  "L",
+  "XL",
+  "2XL",
+  "XXL",
+  "3XL",
+  "4XL",
+  "5XL",
+  "6XL",
+  "XXXL",
+  "OS",
+  "ONE SIZE",
+];
+
 export default function SizeSelector({
   sizes,
   onChange,
+  resetKey,
 }: {
   sizes: Variant[];
   onChange?: (size: string) => void;
+  resetKey?: string;
 }) {
   const [selected, setSelected] = useState("");
 
+  // Clear selection when the parent signals a color change (or a new set of
+  // sizes arrives that no longer contains the selection).
+  useEffect(() => {
+    setSelected((prev) => {
+      if (!prev) return prev;
+      const stillThere = sizes.some((v) => v.size === prev && v.stock > 0);
+      if (stillThere) return prev;
+      if (onChange) onChange("");
+      return "";
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey]);
+
+  // Dedupe by size label (multiple colors share S/M/L…) and sort in
+  // logical size order so S M L XL renders instead of import order.
+  const orderIndex = (size: string) => {
+    const i = SIZE_ORDER.indexOf(size.toUpperCase());
+    return i === -1 ? SIZE_ORDER.length : i;
+  };
+  const seen = new Map<string, Variant>();
+  for (const v of sizes) {
+    const existing = seen.get(v.size);
+    if (!existing || (existing.stock <= 0 && v.stock > 0)) seen.set(v.size, v);
+  }
+  const uniqueSizes = [...seen.values()].sort((a, b) => orderIndex(a.size) - orderIndex(b.size));
+
   function selectSize(size: string) {
-    const variant = sizes.find((v) => v.size === size);
+    const variant = uniqueSizes.find((v) => v.size === size);
     if (variant && variant.stock <= 0) return;
     setSelected(size);
     if (onChange) onChange(size);
@@ -29,13 +76,14 @@ export default function SizeSelector({
       <p className="eyebrow mb-3">Select size</p>
 
       <div className="flex flex-wrap gap-2">
-        {sizes.map((variant) => {
+        {uniqueSizes.map((variant) => {
           const isOutOfStock = variant.stock <= 0;
           const isSelected = selected === variant.size;
 
           return (
             <button
               key={variant.size}
+              type="button"
               disabled={isOutOfStock}
               onClick={() => selectSize(variant.size)}
               className={`min-w-[56px] px-4 py-2.5 font-sans text-sm font-medium transition-all duration-150 cursor-pointer ${

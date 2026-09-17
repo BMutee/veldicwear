@@ -141,16 +141,23 @@ export default function ProductClient({
   // USD-stored price rendered in the viewer's currency (same math as checkout).
   const { toDisplay, fmt } = useViewerCurrency();
 
-  const availableColors = sizes.reduce(
-    (acc, variant) => {
-      if (variant.color && !acc.includes(variant.color)) {
-        acc.push(variant.color);
-      }
-      return acc;
-    },
-    [] as string[],
-  );
+  const availableColors = sizes.reduce((acc, variant) => {
+    if (variant.color && !acc.includes(variant.color)) {
+      acc.push(variant.color);
+    }
+    return acc;
+  }, [] as string[]);
   const hasColorData = availableColors.length > 0;
+
+  // Sizes shown depend on the selected color (each color may offer a
+  // different size run). Before a color is picked, show the union of sizes.
+  const availableSizes = Array.from(
+    new Set(
+      sizes
+        .filter((variant) => !hasColorData || !selectedColor || variant.color === selectedColor)
+        .map((variant) => variant.size),
+    ),
+  );
 
   const selectedVariant = sizes.find(
     (variant) =>
@@ -169,6 +176,11 @@ export default function ProductClient({
 
   const handleColorSelect = (color: string) => {
     setSelectedColor(color);
+    // Clear the size if it isn't offered in the new color.
+    const stillOffered = sizes.some(
+      (variant) => variant.color === color && variant.size === selectedSize,
+    );
+    if (selectedSize && !stillOffered) setSelectedSize("");
     const matchingImage = productImages.find((img) => img.color === color);
     if (matchingImage?.url) setActiveImage(matchingImage.url);
   };
@@ -291,7 +303,13 @@ export default function ProductClient({
 
         {/* Size selector */}
         <div className="mt-6">
-          <SizeSelector sizes={sizes} onChange={setSelectedSize} />
+          <SizeSelector
+            sizes={sizes.filter((variant) =>
+              !hasColorData || !selectedColor ? availableSizes.includes(variant.size) : variant.color === selectedColor,
+            )}
+            onChange={setSelectedSize}
+            resetKey={selectedColor}
+          />
         </div>
 
         {/* Stock status */}

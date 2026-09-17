@@ -169,12 +169,12 @@ export default function TermsPage() {
                 carrier.
               </p>
               <p>
-                <strong className="text-[#1C1917]">Transit:</strong> After processing, delivery takes approximately 4&ndash;11
+                <strong className="text-[#1C1917]">Transit:</strong> After processing, delivery takes approximately 3&ndash;6
                 days depending on the destination and shipping method selected at checkout.
               </p>
               <p>
                 <strong className="text-[#1C1917]">Total Delivery Window:</strong> From the moment you place your order to
-                delivery at your door, you can expect a total timeline of approximately <strong className="text-[#1C1917]">7&ndash;15
+                delivery at your door, you can expect a total timeline of approximately <strong className="text-[#1C1917]">up to 10
                 days</strong>. This is an estimate, not a guarantee — carrier delays, customs clearance, and other
                 unforeseen circumstances may extend this window.
               </p>
