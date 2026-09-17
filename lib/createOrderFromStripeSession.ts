@@ -29,9 +29,26 @@ export async function createOrderFromStripeSession(
   const phone = session.metadata?.customer_phone ?? session.customer_details?.phone ?? "";
   const shippingAddress = session.metadata?.shipping_address ?? "";
   const requestedUserId = session.metadata?.user_id ?? session.client_reference_id ?? linkingUserId ?? null;
-  const [address, city, country, postalCode] = shippingAddress
+
+  // Prefer the structured shipping blob. The legacy comma-joined string shifts
+  // every field after an optional apartment (e.g. "12 Main St, Apt 4, Edmonton,
+  // Canada, T6K" would yield city="Apt 4", country="Edmonton"), so only fall
+  // back to positional splitting for sessions created before it existed.
+  let structuredShipping: { address?: string; city?: string; country?: string; postalCode?: string } | null = null;
+  if (session.metadata?.shipping_json) {
+    try {
+      structuredShipping = JSON.parse(session.metadata.shipping_json);
+    } catch {
+      structuredShipping = null;
+    }
+  }
+  const [legacyAddress, legacyCity, legacyCountry, legacyPostalCode] = shippingAddress
     .split(",")
     .map((value) => value.trim());
+  const address = structuredShipping?.address?.trim() || legacyAddress || "";
+  const city = structuredShipping?.city?.trim() || legacyCity || "";
+  const country = structuredShipping?.country?.trim() || legacyCountry || "";
+  const postalCode = structuredShipping?.postalCode?.trim() || legacyPostalCode || "";
 
   // The ID comes from server-created Stripe metadata/client_reference_id.
   // `linkingUserId` is an extra fallback from the success-page handler where
@@ -98,26 +115,28 @@ export async function createOrderFromStripeSession(
     // Recover product name + size. The most reliable source is `product_data.name`
     // because we encode size there on the checkout side. Stripe's `description` on
     // a line item comes from `product_data.description` and may be present.
+    //
+    // The name carries a trailing "(Size: X)" or "(Size: X, Color: Y)" marker.
+    // Each capture excludes the comma/close-paren so size never swallows the
+    // colour — previously `[^)]+` produced size="S, Color: Black Zone2", which
+    // broke variant lookups both here and in CJ fulfillment.
     const stripeProduct = item.price?.product;
     const rawName =
       stripeProduct && typeof stripeProduct === "object" && !stripeProduct.deleted && stripeProduct.name
         ? stripeProduct.name
         : item.description ?? "Product";
 
-    // Strip the trailing "(Size: X, Color: Y)" marker from the product name to recover
-    // the original product name, and grab the size + color from the same match.
-    const sizeFromName = rawName.match(/\(Size:\s*([^)]+)\)/);
-    const itemName = sizeFromName ? rawName.replace(/\s*\(Size:[^)]+\)\s*$/, "").trim() : rawName;
+    const markerMatch = rawName.match(/\(Size:\s*([^,)]+)(?:,\s*Color:\s*([^)]+))?\)/i);
+    const itemName = markerMatch ? rawName.slice(0, markerMatch.index).trim() : rawName;
     const itemSize =
-      sizeFromName?.[1]?.trim() ||
-      item.description?.match(/Size:\s*([^,]+)/)?.[1]?.trim() ||
+      markerMatch?.[1]?.trim() ||
+      item.description?.match(/Size:\s*([^,)]+)/)?.[1]?.trim() ||
       "N/A";
 
     // Extract color from the same "(Size: X, Color: Y)" marker or the description.
     // Falls back to null (NOT "N/A") — null means "no color for this product".
-    const colorFromName = sizeFromName?.[1]?.match(/Color:\s*([^,)]+)/i)?.[1]?.trim();
     const itemColor =
-      colorFromName ||
+      markerMatch?.[2]?.trim() ||
       item.description?.match(/Color:\s*([^,)]+)/i)?.[1]?.trim() ||
       null;
 

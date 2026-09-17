@@ -343,36 +343,52 @@ export default function AdminOrderDetailPage() {
 
             {order.cjCartReference && order.cjFulfillmentStatus !== "failed" && (
               <div className="text-sm font-body space-y-1">
-                <p>
-                  <span className="text-stone">CJ Cart Reference:</span>{" "}
-                  <span className="text-ink font-mono text-xs">{order.cjCartReference}</span>
-                </p>
                 {(() => {
-                  // Try to parse the structured cart reference to show item breakdown
+                  // Structured shipment reference written by cjFulfillOrder.
                   try {
                     const parsed = JSON.parse(order.cjCartReference);
-                    if (parsed.cjItemCount) {
-                      return (
-                        <p className="text-xs text-stone">
-                          {parsed.cjItemCount} item(s) sent to CJ cart.
+                    return (
+                      <>
+                        {parsed.logisticName && (
+                          <p>
+                            <span className="text-stone">Shipping method:</span>{" "}
+                            <span className="text-ink">
+                              {parsed.logisticName}
+                              {parsed.shippingDays ? ` (${parsed.shippingDays} days)` : ""}
+                            </span>
+                            {typeof parsed.shippingCost === "number" && parsed.shippingCost > 0 && (
+                              <span className="text-stone"> — CJ postage ${parsed.shippingCost.toFixed(2)}</span>
+                            )}
+                          </p>
+                        )}
+                        {typeof parsed.orderMoney === "number" && (
+                          <p>
+                            <span className="text-stone">Amount due to CJ:</span>{" "}
+                            <span className="text-ink">${parsed.orderMoney.toFixed(2)}</span>
+                          </p>
+                        )}
+                        {parsed.cjItemCount ? (
+                          <p className="text-xs text-stone">{parsed.cjItemCount} item(s) sent to CJ.</p>
+                        ) : null}
+                        {parsed.nonCjItemNames && (
+                          <p className="text-xs text-amber-600 font-medium">
+                            ⚠ Non-CJ items need manual handling: {parsed.nonCjItemNames}
+                          </p>
+                        )}
+                        <p className="text-xs text-stone break-all">
+                          Shipment: <span className="font-mono">{parsed.shipmentsId}</span>
                         </p>
-                      );
-                    }
-                  } catch {}
-                  return null;
-                })()}
-                {(() => {
-                  try {
-                    const parsed = JSON.parse(order.cjCartReference);
-                    if (parsed.nonCjItemNames) {
-                      return (
-                        <p className="text-xs text-amber-600 font-medium">
-                          ⚠ Non-CJ items need manual handling: {parsed.nonCjItemNames}
-                        </p>
-                      );
-                    }
-                  } catch {}
-                  return null;
+                      </>
+                    );
+                  } catch {
+                    // Legacy plain-string reference.
+                    return (
+                      <p>
+                        <span className="text-stone">CJ Cart Reference:</span>{" "}
+                        <span className="text-ink font-mono text-xs">{order.cjCartReference}</span>
+                      </p>
+                    );
+                  }
                 })()}
               </div>
             )}

@@ -192,6 +192,7 @@ export async function POST(request: NextRequest) {
     const { shipping } = body;
     const customerEmail = shipping?.email ?? "";
     const customerName = `${shipping?.firstName ?? ""} ${shipping?.lastName ?? ""}`.trim();
+    // Legacy single-string address kept for display/back-compat.
     const shippingAddress = [
       shipping?.address ?? "",
       shipping?.apartment ? `Apt ${shipping.apartment}` : "",
@@ -201,6 +202,15 @@ export async function POST(request: NextRequest) {
     ]
       .filter(Boolean)
       .join(", ");
+    // Structured copy — the comma-joined string shifts every field after an
+    // optional apartment when split, so order creation reads this instead.
+    const shippingStructured = JSON.stringify({
+      address: shipping?.address ?? "",
+      apartment: shipping?.apartment ?? "",
+      city: shipping?.city ?? "",
+      country: shipping?.country ?? "",
+      postalCode: shipping?.postalCode ?? "",
+    });
     const customerPhone = shipping?.phone ?? "";
 
     // Derive from the actual request host (x-forwarded-host) so Stripe always
@@ -222,6 +232,7 @@ export async function POST(request: NextRequest) {
         customer_email: customerEmail,
         customer_phone: customerPhone,
         shipping_address: shippingAddress,
+        shipping_json: shippingStructured,
         cart_items: JSON.stringify(
           cart.map((i) => ({ id: i.id, size: i.size, color: i.color ?? null, quantity: i.quantity })),
         ),
