@@ -246,7 +246,9 @@ export default function AdminCJOrderSync() {
 
   const flowActions: { label: string; run: () => void }[] = [
     { label: "Create Order V2", run: postJson("create-v2", "Create Order V2") },
+    { label: "Create Sandbox Order V2", run: postJson("create-sandbox-v2", "Create Sandbox Order V2") },
     { label: "Create Order V3", run: postJson("create-v3", "Create Order V3") },
+    { label: "Create Sandbox Order V3", run: postJson("create-sandbox-v3", "Create Sandbox Order V3") },
     { label: "Add Orders to Cart", run: postJson("add-cart", "Add Cart") },
     { label: "Confirm Add Cart", run: postJson("confirm-cart", "Confirm Add Cart") },
     { label: "Generate Parent Order", run: postJson("save-generate-parent-order", "Save/Generate Parent Order") },
