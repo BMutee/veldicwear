@@ -4,12 +4,18 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { clearCart } from "@/lib/cart";
+import DeliveryEstimate from "@/components/DeliveryEstimate";
 
 type OrderItem = {
   name: string;
   size: string;
   quantity: number;
   price: number;
+  /**
+   * Derived server-side from live stock (0 = must be sourced from the supplier,
+   * >0 = ships fast) — there is no stored sourcing flag on Product.
+   */
+  sourcingRequired?: boolean;
 };
 
 type OrderData = {
@@ -27,6 +33,8 @@ type OrderData = {
   status: string;
   hasShippingProtection: boolean;
   items: OrderItem[];
+  /** ISO timestamp of when the order was placed. */
+  createdAt?: string;
 };
 
 const money = new Intl.NumberFormat("en-US", {
@@ -112,7 +120,10 @@ export default function CheckoutSuccessClient() {
 
   const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = order.total;
-  const orderDate = new Date().toLocaleDateString("en-US", {
+  // Use the real order date (from the confirmation API) rather than "now" —
+  // the customer may open this page long after checkout.
+  const placedAt = order.createdAt ? new Date(order.createdAt) : new Date();
+  const orderDate = placedAt.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -202,32 +213,13 @@ export default function CheckoutSuccessClient() {
           </div>
         </div>
 
-        {/* Delivery estimate */}
-        <div className="mt-6 border border-[#2563EB]/20 bg-[#2563EB]/5 p-6 sm:p-8">
-          <h2 className="font-display text-sm font-bold uppercase tracking-[0.15em] text-[#1B2737]">
-            Estimated Delivery
-          </h2>
-          <p className="mt-3 font-sans text-sm leading-relaxed text-[#44403C]">
-            Your order is being prepped. Here is the estimated timeline:
-          </p>
-          <ul className="mt-3 space-y-1 font-sans text-sm text-[#44403C]">
-            <li className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
-              <strong className="text-[#1B2737]">Processing & quality check:</strong> 1–4 business days
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
-              <strong className="text-[#1B2737]">In transit:</strong> 3–6 business days
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
-              <strong className="text-[#1B2737]">Total delivery window:</strong> up to 10 business days
-            </li>
-          </ul>
-          <p className="mt-3 font-sans text-xs text-[#5B6B85]">
-            These are estimates, not guarantees. Carrier delays or customs clearance may extend the window.
-          </p>
-        </div>
+        {/* Delivery estimate — real order date, and the full ordered list so the
+            slowest item's sourcing status drives the shared delivery window */}
+        <DeliveryEstimate
+          orderDate={placedAt}
+          items={order.items}
+          className="mt-6"
+        />
 
         {/* Actions */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:justify-start">

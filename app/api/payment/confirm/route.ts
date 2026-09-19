@@ -4,6 +4,8 @@ import { sendOrderConfirmationEmail } from "@/lib/email";
 import { auth } from "@/lib/auth-server";
 import { createOrderFromStripeSession } from "@/lib/createOrderFromStripeSession";
 import { createOrderTrackingToken } from "@/lib/order-tracking";
+import { prisma } from "@/lib/prisma";
+import { sourcingRequiredFromStock } from "@/lib/getDeliveryEstimate";
 
 export async function POST(request: NextRequest) {
   let sessionId: string | null = null;
@@ -56,6 +58,39 @@ export async function POST(request: NextRequest) {
     const result = await createOrderFromStripeSession(session, linkingUserId);
     const trackingToken = createOrderTrackingToken(result.order.id);
 
+    // Delivery estimate for the confirmation page. There is no stored sourcing
+    // flag on Product, so it is derived from live CJ-synced stock (stock <= 0 =
+    // must be sourced, stock > 0 = ships fast). Best-effort: if the lookup
+    // fails the client falls back to the conservative "needs sourcing" window,
+    // and the customer — who has already paid — still gets a confirmation.
+    const availableStockByProductId = new Map<string, number>();
+    try {
+      const orderedProductIds = Array.from(
+        new Set(
+          result.items
+            .map((item: { productId?: string }) => item.productId)
+            .filter((id): id is string => typeof id === "string" && id.length > 0),
+        ),
+      );
+
+      if (orderedProductIds.length > 0) {
+        const productRows = await prisma.product.findMany({
+          where: { id: { in: orderedProductIds } },
+          select: { id: true, stock: true, variants: { select: { stock: true } } },
+        });
+
+        for (const row of productRows) {
+          // A product is on hand if any variant (or its own stock) is positive.
+          availableStockByProductId.set(
+            row.id,
+            Math.max(row.stock, ...row.variants.map((variant) => variant.stock), 0),
+          );
+        }
+      }
+    } catch (stockLookupError) {
+      console.error("Order confirm: delivery-estimate stock lookup failed", stockLookupError);
+    }
+
     // Attempt to send confirmation email — whether or not this request created the order.
     // The webhook may have created it first (race condition), in which case result.created
     // is false but the customer still deserves a confirmation.
@@ -104,11 +139,15 @@ export async function POST(request: NextRequest) {
         total: result.order.total,
         status: result.order.status,
         hasShippingProtection: result.order.hasShippingProtection,
-        items: result.items.map((item: { name: string; size: string; quantity: number; price: number }) => ({
+        createdAt: result.order.createdAt,
+        items: result.items.map((item: { name: string; size: string; quantity: number; price: number; productId?: string }) => ({
           name: item.name,
           size: item.size,
           quantity: item.quantity,
           price: item.price,
+          sourcingRequired: sourcingRequiredFromStock(
+            (item.productId ? availableStockByProductId.get(item.productId) : undefined) ?? 0,
+          ),
         })),
       },
     });
@@ -119,7 +158,6 @@ export async function POST(request: NextRequest) {
     // constraint violation on stripeSessionId), try to link it now.
     if (msg.includes("Unique constraint") || msg.includes("stripeSessionId")) {
       try {
-        const { prisma } = await import("@/lib/prisma");
         const existing = await prisma.order.findFirst({
           where: { stripeSessionId: sessionId },
         });

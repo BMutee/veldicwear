@@ -6,6 +6,8 @@ import Image from "next/image";
 import { CartItem, getCart, saveCart } from "@/lib/cart";
 import { normalizeImageSrc } from "@/lib/image";
 import CouponInput from "@/components/CouponInput";
+import DeliveryEstimate from "@/components/DeliveryEstimate";
+import { sourcingRequiredFromStock } from "@/lib/getDeliveryEstimate";
 import { useViewerCurrency } from "@/lib/use-viewer-currency";
 
 function Icon({ name, className = "h-5 w-5" }: { name: "minus" | "plus" | "trash" | "bag" | "arrow"; className?: string }) {
@@ -194,6 +196,13 @@ export default function CartPage() {
             <div className="mt-5 flex items-baseline justify-between">
               <span className="font-display text-lg font-semibold text-ink">Total</span>
               <span className="font-mono text-2xl text-ink">{money.format(subtotal - discountAmount)}</span>
+            </div>
+            <div className="mt-5">
+              <DeliveryEstimate
+                items={cart.map((item) => ({
+                  sourcingRequired: sourcingRequiredFromStock(item.variantStock),
+                }))}
+              />
             </div>
             <Link href="/checkout" className="btn-primary mt-6 flex w-full items-center justify-center cursor-pointer">Checkout <Icon name="arrow" className="h-4 w-4" /></Link>
             <Link href="/shop" className="mt-4 block text-center text-xs font-medium uppercase tracking-wide text-ink underline decoration-moss decoration-2 underline-offset-4 transition-colors duration-150 hover:text-moss cursor-pointer">Continue shopping</Link>

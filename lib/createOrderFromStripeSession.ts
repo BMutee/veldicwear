@@ -78,11 +78,13 @@ export async function createOrderFromStripeSession(
         size: string;
         quantity: number;
         price: number;
+        productId: string;
       }) => ({
         name: oi.name,
         size: oi.size,
         quantity: oi.quantity,
         price: oi.price,
+        productId: oi.productId,
       })),
       emailAddress: order.email,
       orderNumber: order.orderNumber,
