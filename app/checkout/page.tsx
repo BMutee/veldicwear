@@ -45,11 +45,17 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    setCart(getCart());
+    // The cart is fully server-renderable as empty; hydrate from localStorage
+    // here. Deferred via timeout so no state is set synchronously in the
+    // effect body (same pattern as the cart page's initial load).
+    const timer = window.setTimeout(() => setCart(getCart()), 0);
 
     const handleCartUpdate = () => setCart(getCart());
     window.addEventListener("cartUpdated", handleCartUpdate);
-    return () => window.removeEventListener("cartUpdated", handleCartUpdate);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+    };
   }, []);
 
   const subtotal = useMemo(

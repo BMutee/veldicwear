@@ -87,7 +87,12 @@ export default function EditorBlocksManager({ sectionKey, onSaved }: { sectionKe
   }, [api]);
 
   useEffect(() => {
-    void load();
+    // Deferred so the initial fetch doesn't set state synchronously in the
+    // effect body (same macrotask pattern as the cart page's initial load).
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   useEffect(() => () => {
@@ -118,7 +123,10 @@ export default function EditorBlocksManager({ sectionKey, onSaved }: { sectionKe
     }
   };
 
-  flushRef.current = flushSave;
+  // Keep the latest flush callback without writing the ref during render.
+  useEffect(() => {
+    flushRef.current = flushSave;
+  });
 
   const updateSelected = (patch: Partial<BlockRow>) => {
     const row = blocks.find((b) => b.id === selectedId);

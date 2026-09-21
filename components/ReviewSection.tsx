@@ -52,7 +52,12 @@ export default function ReviewSection({ productId }: Props) {
   };
 
   useEffect(() => {
-    fetchReviews();
+    // Deferred so the initial fetch doesn't set state synchronously in the
+    // effect body (same macrotask pattern as the cart page's initial load).
+    const timer = window.setTimeout(() => {
+      void fetchReviews();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [productId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e: React.FormEvent) => {

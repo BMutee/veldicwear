@@ -51,26 +51,31 @@ function SearchPageInner() {
   }, []);
 
   useEffect(() => {
-    const q = searchParams.get("q")?.trim() || "";
-    setQuery(q);
-    if (q.length < 2) {
-      setProducts([]);
-      setTotal(0);
-      return;
-    }
-
-    setLoading(true);
-    fetch(`/api/search?q=${encodeURIComponent(q)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setProducts(data.products ?? []);
-        setTotal(data.total ?? 0);
-      })
-      .catch(() => {
+    // Deferred so the query sync + fetch don't set state synchronously in the
+    // effect body (same macrotask pattern as the cart page's initial load).
+    const timer = window.setTimeout(() => {
+      const q = searchParams.get("q")?.trim() || "";
+      setQuery(q);
+      if (q.length < 2) {
         setProducts([]);
         setTotal(0);
-      })
-      .finally(() => setLoading(false));
+        return;
+      }
+
+      setLoading(true);
+      fetch(`/api/search?q=${encodeURIComponent(q)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setProducts(data.products ?? []);
+          setTotal(data.total ?? 0);
+        })
+        .catch(() => {
+          setProducts([]);
+          setTotal(0);
+        })
+        .finally(() => setLoading(false));
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [searchParams]);
 
   const handleSubmit = (e: React.FormEvent) => {

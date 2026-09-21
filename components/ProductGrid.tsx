@@ -27,7 +27,29 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-export default function ProductGrid({ products }: { products: any[] }) {
+// Structural shape of a storefront product as delivered by the shop/search/
+// wishlist endpoints (Prisma Product with relations). Extra fields are
+// permitted so richer payloads stay assignable.
+export type ProductGridItem = {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  compareAtPrice: number | null;
+  featured?: boolean;
+  stock: number;
+  description?: string | null;
+  images?: { url: string }[];
+  variants?: {
+    id?: string;
+    size: string;
+    color?: string | null;
+    stock: number;
+    price: number | null;
+  }[];
+};
+
+export default function ProductGrid({ products }: { products: ProductGridItem[] }) {
   const router = useRouter();
   // Storefront prices are stored in USD; render them in the viewer's currency
   // with the SAME conversion/rounding checkout uses (toDisplay), falling back
@@ -41,20 +63,24 @@ export default function ProductGrid({ products }: { products: any[] }) {
     const ids = products.map((p) => p.id);
     fetch(`/api/reviews/summary?ids=${encodeURIComponent(ids.join(","))}`)
       .then((res) => res.ok ? res.json() : {})
-      .then((data: any) => setReviewData(data.summary ?? {}))
+      .then((data: unknown) => {
+      const summary = (data as { summary?: Record<string, { average: number; count: number }> } | null)?.summary;
+      setReviewData(summary ?? {});
+    })
       .catch(() => {});
   }, [products]);
 
   // Resolve the best image for a product: main image first, then first color image, then fallback
-  const getProductImage = (product: any): string => {
+  const getProductImage = (product: ProductGridItem): string => {
     if (product.image) return product.image;
-    if (product.images?.length > 0 && product.images[0].url) return product.images[0].url;
+    const firstImage = product.images?.[0];
+    if (firstImage?.url) return firstImage.url;
     return "";
   };
 
   const handleQuickAdd = (
     e: React.MouseEvent,
-    product: any,
+    product: ProductGridItem,
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -68,6 +94,10 @@ export default function ProductGrid({ products }: { products: any[] }) {
     }
 
     const variant = variants[0];
+    if (variant.price === null) {
+      router.push(`/product/${product.id}`);
+      return;
+    }
     const result = addToCart(
       {
         id: product.id,
@@ -96,7 +126,9 @@ export default function ProductGrid({ products }: { products: any[] }) {
       className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
     >
       {products.map((product) => {
-        const variantPrices = product.variants.map((v: any) => v.price);
+        const variantPrices = (product.variants ?? [])
+          .map((v) => v.price)
+          .filter((p): p is number => typeof p === "number");
         const minPrice =
           variantPrices.length > 0 ? Math.min(...variantPrices) : product.price;
         const maxPrice =

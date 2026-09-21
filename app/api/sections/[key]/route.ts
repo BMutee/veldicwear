@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Public: get a single section by key
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ key: string }> }
 ) {
   const { key } = await params;

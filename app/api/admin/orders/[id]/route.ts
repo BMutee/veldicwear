@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { requireAdminApi } from "@/lib/admin-guard-api";
 import { sendOrderShippedEmail } from "@/lib/email";
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAdminApi();
   if (error) return error;
 
@@ -90,7 +91,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   const previousStatus = currentOrder.status;
-  const updateData: any = {};
+  const updateData: Prisma.OrderUpdateInput = {};
 
   if (body.status) {
     updateData.status = body.status;
@@ -108,18 +109,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     include: { items: true },
   });
 
-  const order_: any = order;
-
   // Send email ONLY when status actually transitions INTO "Shipped" from a different status
   const transitioningToShipped = body.status === "Shipped" && previousStatus !== "Shipped";
   if (transitioningToShipped) {
     try {
       await sendOrderShippedEmail({
-        to: order_.email,
-        orderNumber: order_.orderNumber,
-        trackingCarrier: order_.trackingCarrier || undefined,
-        trackingNumber: order_.trackingNumber || undefined,
-        items: order_.items.map((item: any) => ({
+        to: order.email,
+        orderNumber: order.orderNumber,
+        trackingCarrier: order.trackingCarrier || undefined,
+        trackingNumber: order.trackingNumber || undefined,
+        items: order.items.map((item) => ({
           name: item.name,
           size: item.size,
           quantity: item.quantity,

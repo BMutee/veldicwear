@@ -2,10 +2,26 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import QRCode from "react-qr-code";
 
-export default function AdminSecurityPage() {
+type SessionUser = {
+  twoFactorEnabled?: boolean | null;
+  role?: string | null;
+};
+
+type TwoFactorResult = {
+  error?: { message?: string | null } | null;
+};
+
+type EnableTwoFactorResult = TwoFactorResult & {
+  data?: {
+    totpURI?: string | null;
+    backupCodes?: string[] | null;
+    recoveryCodes?: string[] | null;
+  } | null;
+};
+  export default function AdminSecurityPage() {
   const { user, loading: authLoading, authClient } = useAuth();
   const router = useRouter();
   const [password, setPassword] = useState("");
@@ -17,6 +33,29 @@ export default function AdminSecurityPage() {
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
   const [step, setStep] = useState<"idle" | "setup" | "verify">("idle");
   const [verificationCode, setVerificationCode] = useState("");
+
+  const checkStatus = useCallback(async () => {
+    try {
+      const { data } = await authClient.getSession();
+      const su = data?.user as SessionUser | undefined;
+      setTwoFactorEnabled(su?.twoFactorEnabled ?? false);
+    } catch {
+      // not enabled
+    } finally {
+      setLoading(false);
+    }
+  }, [authClient]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) { router.replace("/login"); return; }
+    // Deferred so the status fetch doesn't set state synchronously in the
+    // effect body (same pattern as the cart page's initial load).
+    const timer = window.setTimeout(() => {
+      void checkStatus();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [user, authLoading, router, checkStatus]);
 
   /**
    * Extract the raw base32 secret from the otpauth URI so the user can type
@@ -34,31 +73,13 @@ export default function AdminSecurityPage() {
     }
   }, [totpUri]);
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) { router.replace("/login"); return; }
-    checkStatus();
-  }, [user, authLoading, router]);
-
-  const checkStatus = async () => {
-    try {
-      const { data } = await authClient.getSession();
-      const su = data?.user as any;
-      setTwoFactorEnabled(su?.twoFactorEnabled ?? false);
-    } catch {
-      // not enabled
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleEnable = async () => {
     if (!password) return;
     setActionLoading(true);
     setMessage(null);
     try {
       // Step 1: Enable 2FA - get TOTP URI
-      const res = await authClient.twoFactor.enable({ password }) as any;
+      const res = await authClient.twoFactor.enable({ password }) as EnableTwoFactorResult;
       if (res.error) {
         setMessage({ type: "error", text: res.error.message || "Failed to enable 2FA." });
         setActionLoading(false);
@@ -71,8 +92,9 @@ export default function AdminSecurityPage() {
         setStep("setup");
         setMessage({ type: "success", text: "2FA key generated! Scan the QR code or enter the key in your authenticator app, then verify with a code." });
       }
-    } catch (err: any) {
-      setMessage({ type: "error", text: err?.message || "An error occurred." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "An error occurred.";
+      setMessage({ type: "error", text: message });
     } finally {
       setActionLoading(false);
     }
@@ -83,7 +105,7 @@ export default function AdminSecurityPage() {
     setActionLoading(true);
     setMessage(null);
     try {
-      const res = await authClient.twoFactor.verifyTotp({ code: verificationCode }) as any;
+      const res = await authClient.twoFactor.verifyTotp({ code: verificationCode }) as TwoFactorResult;
       if (res.error) {
         setMessage({ type: "error", text: res.error.message || "Invalid code. Try again." });
       } else {
@@ -93,8 +115,9 @@ export default function AdminSecurityPage() {
         setPassword("");
         setVerificationCode("");
       }
-    } catch (err: any) {
-      setMessage({ type: "error", text: err?.message || "An error occurred." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "An error occurred.";
+      setMessage({ type: "error", text: message });
     } finally {
       setActionLoading(false);
     }
@@ -105,7 +128,7 @@ export default function AdminSecurityPage() {
     setActionLoading(true);
     setMessage(null);
     try {
-      const res = await authClient.twoFactor.disable({ password }) as any;
+      const res = await authClient.twoFactor.disable({ password }) as TwoFactorResult;
       if (res.error) {
         setMessage({ type: "error", text: res.error.message || "Failed to disable 2FA." });
       } else {
@@ -116,8 +139,9 @@ export default function AdminSecurityPage() {
         setMessage({ type: "success", text: "Two-factor authentication disabled." });
         setPassword("");
       }
-    } catch (err: any) {
-      setMessage({ type: "error", text: err?.message || "An error occurred." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "An error occurred.";
+      setMessage({ type: "error", text: message });
     } finally {
       setActionLoading(false);
     }
@@ -285,7 +309,7 @@ export default function AdminSecurityPage() {
           </h2>
           <div className="mt-4 space-y-2 font-sans text-sm text-ink">
             <p><span className="text-stone">Email: </span>{user?.email}</p>
-            <p><span className="text-stone">Role: </span><span className="font-bold text-clay uppercase">{user && 'role' in user ? (user as any).role : 'admin'}</span></p>
+            <p><span className="text-stone">Role: </span><span className="font-bold text-clay uppercase">{(user as SessionUser | null)?.role ?? 'admin'}</span></p>
             <p><span className="text-stone">Name: </span>{user?.firstName} {user?.lastName}</p>
           </div>
         </div>

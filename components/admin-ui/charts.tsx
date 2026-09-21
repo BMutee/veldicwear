@@ -145,7 +145,14 @@ export function DonutChart({
 
   const r = (size - thickness) / 2;
   const c = 2 * Math.PI * r;
-  let acc = 0;
+
+  // Prefix offset per segment, computed up front so the render pass never
+  // mutates a running accumulator.
+  const validSegments = segments.filter((s) => s.value > 0);
+  const offsets = validSegments.reduce<number[]>((list, _s) => {
+    const prev = list.length === 0 ? 0 : list[list.length - 1] + validSegments[list.length - 1].value / total;
+    return [...list, prev];
+  }, []);
 
   return (
     <svg
@@ -163,29 +170,25 @@ export function DonutChart({
           stroke="rgba(23,21,18,0.06)"
           strokeWidth={thickness}
         />
-        {segments
-          .filter((s) => s.value > 0)
-          .map((s, i) => {
-            const frac = s.value / total;
-            const dash = frac * c;
-            const el = (
-              <circle
-                key={`${chartId}-${i}`}
-                cx={size / 2}
-                cy={size / 2}
-                r={r}
-                fill="none"
-                stroke={s.color}
-                strokeWidth={thickness}
-                strokeDasharray={`${dash.toFixed(2)} ${(c - dash).toFixed(2)}`}
-                strokeDashoffset={(-acc * c).toFixed(2)}
-              >
-                <title>{`${s.label}: ${s.value}`}</title>
-              </circle>
-            );
-            acc += frac;
-            return el;
-          })}
+        {validSegments.map((s, i) => {
+          const frac = s.value / total;
+          const dash = frac * c;
+          return (
+            <circle
+              key={`${chartId}-${i}`}
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={thickness}
+              strokeDasharray={`${dash.toFixed(2)} ${(c - dash).toFixed(2)}`}
+              strokeDashoffset={(-offsets[i] * c).toFixed(2)}
+            >
+              <title>{`${s.label}: ${s.value}`}</title>
+            </circle>
+          );
+        })}
       </g>
       {centerValue && (
         <text x="50%" y="48%" textAnchor="middle" fontSize="22" fontWeight="700" fill="#171512">

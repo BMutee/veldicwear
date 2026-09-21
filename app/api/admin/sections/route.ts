@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { requireAdminApi } from "@/lib/admin-guard-api";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -44,8 +45,9 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(section);
-  } catch (error: any) {
-    if (error?.code === "P2002") {
+  } catch (error) {
+    const code = (error as { code?: string } | null)?.code;
+    if (code === "P2002") {
       return NextResponse.json({ error: "A section with this key already exists" }, { status: 409 });
     }
     console.error("Failed to create section:", error);
@@ -66,7 +68,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const data: any = {};
+    const data: Prisma.SiteSectionUpdateInput = {};
     if (key !== undefined) data.key = key;
     if (label !== undefined) data.label = label;
     if (content !== undefined) data.content = typeof content === "string" ? content : JSON.stringify(content);

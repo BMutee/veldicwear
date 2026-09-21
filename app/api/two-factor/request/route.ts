@@ -45,7 +45,8 @@ export async function POST() {
     });
 
     return NextResponse.json({ success: true, message: "Verification code sent to your email." });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to send code." }, { status: 500 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to send code.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -14,7 +14,6 @@ import {
 import {
   ThemeBreakpointField,
   ThemeColorField,
-  ThemeAnimationField,
   ttabCls,
   T_INPUT_CLS,
   T_LABEL_CLS,
@@ -47,7 +46,10 @@ export default function AdminNavbarEditor({ initialContent, initialSavedAt, defa
 
   // Latest content so a registered panel flusher always saves fresh values.
   const formRef = useRef(form);
-  formRef.current = form;
+  // Keep the latest content without writing the ref during render.
+  useEffect(() => {
+    formRef.current = form;
+  });
   const flushRef = useRef<() => Promise<boolean>>(async () => true);
   useEffect(() => registerPanelFlusher("navbar", () => flushRef.current()), []);
 
@@ -108,7 +110,11 @@ export default function AdminNavbarEditor({ initialContent, initialSavedAt, defa
       setSaving(false);
     }
   };
-  flushRef.current = saveNow;
+
+  // Keep the latest flush callback without writing the ref during render.
+  useEffect(() => {
+    flushRef.current = saveNow;
+  });
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -290,7 +296,6 @@ function StyleTab({ embedded = false, styles, updateStyle }: { embedded?: boolea
   const legend = embedded ? T_LEGEND_CLS : "text-sm font-semibold uppercase tracking-wide text-ink font-display";
   const Breakpoint = embedded ? ThemeBreakpointField : BreakpointField;
   const Color = embedded ? ThemeColorField : ColorField;
-  const Animation = embedded ? ThemeAnimationField : AnimationField;
   return (
     <div className="space-y-6">
       <fieldset className="space-y-4">

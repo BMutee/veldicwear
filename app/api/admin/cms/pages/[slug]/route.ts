@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin-guard-api";
 import { parseCtaFields, sanitizeHtml } from "@/lib/sanitize";
 
-export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { error } = await requireAdminApi();
   if (error) return error;
   const { slug } = await params;
@@ -51,7 +51,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ slug
   return NextResponse.json(page);
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { error } = await requireAdminApi();
   if (error) return error;
   const { slug } = await params;

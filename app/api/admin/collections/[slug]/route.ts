@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin-guard-api";
 
-export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
   const collection = await prisma.collection.findUnique({
@@ -74,7 +74,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ slug
   return NextResponse.json(collection);
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { error } = await requireAdminApi();
   if (error) return error;
 

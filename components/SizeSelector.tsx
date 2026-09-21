@@ -39,15 +39,19 @@ export default function SizeSelector({
   const [selected, setSelected] = useState("");
 
   // Clear selection when the parent signals a color change (or a new set of
-  // sizes arrives that no longer contains the selection).
+  // sizes arrives that no longer contains the selection). Deferred via timeout
+  // so the effect never sets state synchronously in its body.
   useEffect(() => {
-    setSelected((prev) => {
-      if (!prev) return prev;
-      const stillThere = sizes.some((v) => v.size === prev && v.stock > 0);
-      if (stillThere) return prev;
-      if (onChange) onChange("");
-      return "";
-    });
+    const timer = window.setTimeout(() => {
+      setSelected((prev) => {
+        if (!prev) return prev;
+        const stillThere = sizes.some((v) => v.size === prev && v.stock > 0);
+        if (stillThere) return prev;
+        if (onChange) onChange("");
+        return "";
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 

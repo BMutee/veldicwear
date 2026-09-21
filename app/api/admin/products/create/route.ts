@@ -2,6 +2,18 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin-guard-api";
 
+type AdminVariantInput = {
+  size: string;
+  stock?: number | string | null;
+  price?: number | string | null;
+  costPrice?: number | string | null;
+};
+
+type AdminImageInput = {
+  color: string;
+  url: string;
+};
+
 export async function POST(request: Request) {
   const { error } = await requireAdminApi();
   if (error) return error;
@@ -58,8 +70,9 @@ export async function POST(request: Request) {
   }
 
   // ── Compute stock from variant totals ──
-  const variants = (body.variants ?? []) as Array<{ size: string; stock?: number; price?: number }>;
-  const totalStock = variants.reduce((sum: number, v: any) => sum + (Number(v.stock) || 0), 0);
+  const rawVariants = (body.variants ?? []) as unknown;
+  const variants = (Array.isArray(rawVariants) ? rawVariants : []) as AdminVariantInput[];
+  const totalStock = variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
 
   // ── Auto-populate main image from first color image if not provided ──
   const mainImage = body.image?.trim() || (body.images?.[0]?.url) || "";
@@ -83,7 +96,7 @@ export async function POST(request: Request) {
       active: body.active ?? true,
       collectionId: body.collectionId || null,
       variants: {
-        create: (body.variants ?? []).map((variant: any) => ({
+        create: ((body.variants ?? []) as AdminVariantInput[]).map((variant) => ({
           size: variant.size,
           stock: Number(variant.stock) || 0,
           price: Number(variant.price) || 0,
@@ -91,7 +104,7 @@ export async function POST(request: Request) {
         })),
       },
       images: {
-        create: (body.images ?? []).map((img: any) => ({
+        create: ((body.images ?? []) as AdminImageInput[]).map((img) => ({
           color: img.color,
           url: img.url,
         })),

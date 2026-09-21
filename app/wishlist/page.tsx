@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import ProductGrid from "@/components/ProductGrid";
+import type { ProductGridItem } from "@/components/ProductGrid";
 import Link from "next/link";
 
 export default function WishlistPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<ProductGridItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -15,11 +15,11 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [sentEmail, setSentEmail] = useState("");
 
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<ForgotFormData>({
     resolver: zodResolver(forgotSchema),
@@ -42,6 +42,9 @@ export default function ForgotPasswordPage() {
       });
 
       if (res.ok) {
+        // Snapshot the address at submit time — the form is no longer needed
+        // once the confirmation renders, so nothing keeps watching it.
+        setSentEmail(data.email);
         setSent(true);
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -83,7 +86,7 @@ export default function ForgotPasswordPage() {
               <p className="mt-3 font-sans text-sm leading-relaxed text-[#5B6B85]">
                 If an account with{" "}
                 <strong className="text-[#1B2737]">
-                  {watch("email")}
+                  {sentEmail}
                 </strong>{" "}
                 exists, you will receive a password reset link shortly.
               </p>

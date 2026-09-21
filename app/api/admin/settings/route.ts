@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin-guard-api";
 
+const SETTING_FIELDS = [
+  "storeName", "logo", "email", "phone", "address", "instagram", "facebook",
+  "twitter", "tiktok", "youtube", "copyrightText", "footerNavLinks",
+  "currency", "currencySymbol",
+] as const;
+
+type SettingField = (typeof SETTING_FIELDS)[number];
+
+type SettingValue = string | null;
+
 const DEFAULT_SETTINGS = {
   id: "store",
   storeName: "VELDIC WEAR",
@@ -36,22 +46,21 @@ export async function PUT(request: Request) {
   const { error } = await requireAdminApi();
   if (error) return error;
 
-  const body = await request.json();
+  const body: Record<string, unknown> = await request.json();
 
-  const data: any = {};
-  const fields = [
-    "storeName", "logo", "email", "phone", "address", "instagram", "facebook",
-    "twitter", "tiktok", "youtube", "copyrightText", "footerNavLinks",
-    "currency", "currencySymbol",
-  ];
-  for (const field of fields) {
-    if (body[field] !== undefined) data[field] = body[field];
+  // Allowlist of scalar settings fields; anything else in the payload is
+  // ignored so arbitrary keys can never reach the Prisma update.
+  const data = {} as { [K in SettingField]?: SettingValue };
+  for (const field of SETTING_FIELDS) {
+    const value = body[field];
+    if (value === undefined) continue;
+    data[field] = value === null ? null : String(value);
   }
 
   const settings = await prisma.storeSettings.upsert({
     where: { id: "store" },
-    create: { ...DEFAULT_SETTINGS, ...data },
-    update: data,
+    create: { ...DEFAULT_SETTINGS },
+    update: data as { [K in SettingField]?: string },
   });
 
   return NextResponse.json(settings);

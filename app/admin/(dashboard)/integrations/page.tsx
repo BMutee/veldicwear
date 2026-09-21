@@ -40,7 +40,12 @@ export default function AdminIntegrationsPage() {
   }, [router]);
 
   useEffect(() => {
-    loadKeys();
+    // Deferred so the initial fetch doesn't set state synchronously in the
+    // effect body (same macrotask pattern as the cart page's initial load).
+    const timer = window.setTimeout(() => {
+      void loadKeys();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [loadKeys]);
 
   const handleGenerate = async () => {

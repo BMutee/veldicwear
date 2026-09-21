@@ -60,7 +60,10 @@ export default function AdminFooterEditor({
 
   // Latest content so a registered panel flusher always saves fresh values.
   const formRef = useRef(form);
-  formRef.current = form;
+  // Keep the latest content without writing the ref during render.
+  useEffect(() => {
+    formRef.current = form;
+  });
   const flushRef = useRef<() => Promise<boolean>>(async () => true);
   useEffect(() => registerPanelFlusher("footer", () => flushRef.current()), []);
 
@@ -140,7 +143,11 @@ export default function AdminFooterEditor({
       /* saveNow already surfaced the error */
     }
   };
-  flushRef.current = saveNow;
+
+  // Keep the latest flush callback without writing the ref during render.
+  useEffect(() => {
+    flushRef.current = saveNow;
+  });
 
   const handleReset = () => {
     setForm(defaults);

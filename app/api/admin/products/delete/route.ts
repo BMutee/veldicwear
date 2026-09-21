@@ -19,9 +19,10 @@ export async function DELETE(request: Request) {
     });
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
+  } catch (err) {
     // Prisma P2003 is a foreign key constraint violation
-    if (err?.code === "P2003" || err?.code === "P2014") {
+    const code = (err as { code?: string } | null)?.code;
+    if (code === "P2003" || code === "P2014") {
       // The product has existing OrderItems — prevent deletion, suggest deactivation
       return NextResponse.json(
         {

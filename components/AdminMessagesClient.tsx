@@ -44,7 +44,12 @@ export default function AdminMessagesClient() {
   }, [showUnreadOnly]);
 
   useEffect(() => {
-    void load();
+    // Deferred so the initial fetch doesn't set state synchronously in the
+    // effect body (same macrotask pattern as the cart page's initial load).
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   const filtered = messages.filter((m) => {

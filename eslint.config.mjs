@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
     ".claude/**", // ClaudeKit skill tooling (standalone CJS scripts)
     "tmp/**", // local scratch space (git-ignored)
     "extension/**", // self-contained browser-extension artifact with its own runtime
+    "theme/**", // self-contained Shopify Horizon theme (Liquid + its own JS runtime)
   ]),
   {
     // Plain CommonJS Node scripts/services — run directly with `node`, never

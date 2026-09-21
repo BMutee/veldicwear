@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type LookItem = {
+  id: string | number;
   title: string;
   description: string;
   background: string;
@@ -28,7 +29,7 @@ const fallback: LookbookContent = {
     { id: 1, title: "Low Ground", description: "Easy layers for everyday terrain", background: "bg-stone/10", accent: "bg-moss" },
     { id: 2, title: "Mid Ground", description: "Versatile pieces for shifting weather", background: "bg-stone/20", accent: "bg-moss" },
     { id: 3, title: "High Ground", description: "Technical kit for the long way up", background: "bg-stone/30", accent: "bg-moss" },
-  ] as any,
+  ],
   ctaText: "View full lookbook",
   ctaLink: "/collection"
 };
@@ -105,7 +106,7 @@ export default function Lookbook({ initialContent }: { initialContent?: Lookbook
           viewport={{ once: true }}
           className="grid gap-6 md:grid-cols-3"
         >
-          {looks.map((look: any, index: number) => (
+          {looks.map((look, index: number) => (
             <motion.div
               key={look.id || index}
               variants={item}
