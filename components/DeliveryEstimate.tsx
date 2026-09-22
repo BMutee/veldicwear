@@ -5,6 +5,7 @@ import {
   PROCESSING_DAYS_IN_STOCK,
   PROCESSING_DAYS_SOURCED_MAX,
   SHIPPING_DAYS_MAX,
+  SHIPPING_DAYS_MIN,
   getDeliveryEstimate,
   getEstimateForItems,
 } from "@/lib/getDeliveryEstimate";
@@ -154,7 +155,7 @@ export default function DeliveryEstimate({
         key: "shipping",
         glyph: <TruckGlyph />,
         title: "On its way",
-        detail: `tracked shipping, most orders arrive within ${SHIPPING_DAYS_MAX} days${arrivalWindow}`,
+        detail: `tracked shipping, usually ${SHIPPING_DAYS_MIN}–${SHIPPING_DAYS_MAX} days${arrivalWindow}`,
         complete: false,
       },
     ];

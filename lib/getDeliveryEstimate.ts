@@ -4,8 +4,8 @@
  * Processing ("preparing your order") time:
  *   - In stock, ships fast ............ 2 calendar days
  *   - Must be sourced from supplier ... 3–5 calendar days
- * Shipping ("on its way") time: up to 11 calendar days — CJ's 90th-percentile
- * transit estimate.
+ * Shipping ("on its way") time: 6–11 calendar days — CJ's observed transit
+ * spread, with 11 days the 90th-percentile (worst-case) estimate.
  *
  * Every window here is in CALENDAR days, weekends included. That is deliberate:
  * CJ quotes transit percentiles in calendar days, so an "11 day" promise means
@@ -22,6 +22,7 @@
 export const PROCESSING_DAYS_IN_STOCK = 2;
 export const PROCESSING_DAYS_SOURCED_MIN = 3;
 export const PROCESSING_DAYS_SOURCED_MAX = 5;
+export const SHIPPING_DAYS_MIN = 6;
 export const SHIPPING_DAYS_MAX = 11;
 
 export type DeliveryEstimate = {
@@ -31,7 +32,7 @@ export type DeliveryEstimate = {
   preparedByMax: Date;
   /** Earliest possible arrival at the customer. */
   arrivalMin: Date;
-  /** Latest expected arrival (processing max + CJ's 90th-percentile transit). */
+  /** Latest expected arrival (processing max + slowest transit). */
   arrivalMax: Date;
 };
 
@@ -86,7 +87,9 @@ export function getDeliveryEstimate(
   return {
     preparedByMin,
     preparedByMax,
-    arrivalMin: addCalendarDays(preparedByMin, SHIPPING_DAYS_MAX),
+    // Best case: fastest processing + fastest transit.
+    arrivalMin: addCalendarDays(preparedByMin, SHIPPING_DAYS_MIN),
+    // Worst case: slowest processing + slowest transit.
     arrivalMax: addCalendarDays(preparedByMax, SHIPPING_DAYS_MAX),
   };
 }
