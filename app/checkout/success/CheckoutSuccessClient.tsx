@@ -11,11 +11,6 @@ type OrderItem = {
   size: string;
   quantity: number;
   price: number;
-  /**
-   * Derived server-side from live stock (0 = must be sourced from the supplier,
-   * >0 = ships fast) — there is no stored sourcing flag on Product.
-   */
-  sourcingRequired?: boolean;
 };
 
 type OrderData = {
@@ -213,11 +208,11 @@ export default function CheckoutSuccessClient() {
           </div>
         </div>
 
-        {/* Delivery estimate — real order date, and the full ordered list so the
-            slowest item's sourcing status drives the shared delivery window */}
+        {/* Delivery estimate — real order date, pre-selected to the shipping
+            destination; the customer can still switch regions */}
         <DeliveryEstimate
           orderDate={placedAt}
-          items={order.items}
+          country={order.country}
           className="mt-6"
         />
 

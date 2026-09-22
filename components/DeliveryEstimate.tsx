@@ -2,31 +2,27 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  PROCESSING_DAYS_IN_STOCK,
-  PROCESSING_DAYS_SOURCED_MAX,
-  SHIPPING_DAYS_MAX,
-  SHIPPING_DAYS_MIN,
+  ESTIMATE_REGIONS,
+  PACKING_DAYS_MAX,
+  PACKING_DAYS_MIN,
+  REGION_LABELS,
   getDeliveryEstimate,
-  getEstimateForItems,
+  regionFromCountry,
+  type EstimateRegion,
 } from "@/lib/getDeliveryEstimate";
-
-type EstimateItem = { sourcingRequired?: boolean };
 
 type Props = {
   /** When the order was (or will be) placed. Defaults to right now. */
   orderDate?: Date;
-  /** Single-item status (e.g. the product page). */
-  sourcingRequired?: boolean;
   /**
-   * Whole cart / order status. When provided this wins over `sourcingRequired`
-   * and the slowest item's status drives the estimate, because a shared order
-   * ships together (see `getEstimateForItems`).
+   * Destination country as free text ("Canada", "United States") or an ISO-2
+   * code. Selects the initially active tab; the customer can switch regions.
    */
-  items?: EstimateItem[];
+  country?: string;
+  /** Fixed region (skips the country lookup). */
+  region?: EstimateRegion;
   className?: string;
 };
-
-const GLYPH_SIZE = 12;
 
 // Built once at module scope: creating formatters during render is unnecessary
 // work, and date formatting must be deterministic between renders.
@@ -35,73 +31,21 @@ const DAY_FORMAT = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-function CheckGlyph() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={GLYPH_SIZE}
-      height={GLYPH_SIZE}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={3}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function ClockGlyph() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={GLYPH_SIZE}
-      height={GLYPH_SIZE}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7.5V12l3 2" />
-    </svg>
-  );
-}
-
-function TruckGlyph() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width={GLYPH_SIZE}
-      height={GLYPH_SIZE}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" />
-    </svg>
-  );
-}
-
 export default function DeliveryEstimate({
   orderDate,
-  sourcingRequired,
-  items,
+  country,
+  region,
   className = "",
 }: Props) {
+  const activeRegion = region ?? regionFromCountry(country);
+
   // Defaulting to "now" must not happen during render: the server and the
   // client would compute different dates on the hydration pass. `undefined`
   // until the effect runs keeps the first render deterministic on both sides.
   // The update is deferred through a timeout (the same pattern the cart page
   // uses for its initial load) so no state is set synchronously in the effect.
   const [clientNow, setClientNow] = useState<number | undefined>(undefined);
+  const [selectedRegion, setSelectedRegion] = useState<EstimateRegion>(activeRegion);
 
   useEffect(() => {
     if (orderDate !== undefined) return;
@@ -109,91 +53,111 @@ export default function DeliveryEstimate({
     return () => window.clearTimeout(timer);
   }, [orderDate]);
 
+  // Re-sync when the caller's destination changes (e.g. the confirmation page
+  // resolving its order). Deferred via timeout so the effect never sets state
+  // synchronously in its body.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSelectedRegion(activeRegion), 0);
+    return () => window.clearTimeout(timer);
+  }, [activeRegion]);
+
   // `orderDate.getTime()` keeps the dependency stable across equal Date objects.
   const orderDateMs = orderDate?.getTime() ?? clientNow;
-  const stages = useMemo(() => {
-    // Missing flags fall back to "needs sourcing" so a partial payload can only
-    // ever make the estimate more conservative, never over-promise.
-    const scopedItems = items?.map((item) => ({
-      sourcingRequired: item.sourcingRequired ?? true,
-    }));
 
+  const stages = useMemo(() => {
     // Before the client clock resolves there are no dates to add. The copy
     // below is identical either way, so hydration always matches.
     const estimate =
       orderDateMs === undefined
         ? null
-        : scopedItems && scopedItems.length > 0
-          ? getEstimateForItems(scopedItems, new Date(orderDateMs))
-          : getDeliveryEstimate(new Date(orderDateMs), sourcingRequired ?? true);
+        : getDeliveryEstimate(new Date(orderDateMs), selectedRegion);
 
-    const readyBy = estimate
-      ? ` — ready by ${DAY_FORMAT.format(estimate.preparedByMax)}`
-      : "";
     const arrivalWindow = estimate
-      ? ` — around ${DAY_FORMAT.format(estimate.arrivalMin)}–${DAY_FORMAT.format(
+      ? `${DAY_FORMAT.format(estimate.arrivalMin)} – ${DAY_FORMAT.format(
           estimate.arrivalMax,
         )}`
-      : "";
+      : "– –";
 
     return [
       {
-        key: "received",
-        glyph: <CheckGlyph />,
-        title: "Order received",
-        detail: "today",
-        complete: true,
+        key: "ordered",
+        title: "Ordered",
+        detail: "Today",
       },
       {
-        key: "preparing",
-        glyph: <ClockGlyph />,
-        title: "Preparing your order",
-        detail: `usually ${PROCESSING_DAYS_IN_STOCK} days, up to ${PROCESSING_DAYS_SOURCED_MAX} for made-to-order items${readyBy}`,
-        complete: false,
+        key: "packed",
+        title: "Packed & shipped",
+        detail: `${PACKING_DAYS_MIN}–${PACKING_DAYS_MAX} days`,
       },
       {
-        key: "shipping",
-        glyph: <TruckGlyph />,
-        title: "On its way",
-        detail: `tracked shipping, usually ${SHIPPING_DAYS_MIN}–${SHIPPING_DAYS_MAX} days${arrivalWindow}`,
-        complete: false,
+        key: "home",
+        title: "Home",
+        detail: arrivalWindow,
       },
     ];
-  }, [orderDateMs, sourcingRequired, items]);
+  }, [orderDateMs, selectedRegion]);
+
+  const headline = stages[2].detail;
 
   return (
     <div
       className={`border border-stone/10 bg-white p-5 shadow-card rounded-lg ${className}`}
     >
-      <p className="eyebrow">Delivery estimate</p>
+      <p className="eyebrow">Estimated arrival</p>
 
-      <ol className="mt-4 space-y-3">
-        {stages.map((stage) => (
-          <li key={stage.key} className="flex items-start gap-3">
-            <span
-              className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full ${
-                stage.complete
-                  ? "bg-moss text-white"
-                  : "border border-stone/20 text-stone"
+      {/* Region tabs */}
+      <div className="mt-3 flex flex-wrap gap-2" role="tablist" aria-label="Shipping destination">
+        {ESTIMATE_REGIONS.map((regionKey) => {
+          const isActive = regionKey === selectedRegion;
+          return (
+            <button
+              key={regionKey}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setSelectedRegion(regionKey)}
+              className={`px-3.5 py-1.5 font-sans text-xs font-semibold uppercase tracking-wide transition-colors duration-150 cursor-pointer ${
+                isActive
+                  ? "border border-ink bg-ink text-white"
+                  : "border border-stone/20 bg-transparent text-ink hover:border-ink"
               }`}
             >
-              {stage.glyph}
+              {REGION_LABELS[regionKey]}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Headline window */}
+      <p className="mt-4 font-display text-3xl font-bold tracking-tight text-ink">
+        {headline}
+        <span className="ml-2 align-middle font-sans text-xs font-medium uppercase tracking-wide text-stone">
+          est.
+        </span>
+      </p>
+
+      {/* Staged timeline */}
+      <ol className="mt-5 grid grid-cols-3 gap-3">
+        {stages.map((stage) => (
+          <li key={stage.key} className="min-w-0">
+            <span
+              className={`block h-1 w-full ${stage.key === "ordered" ? "bg-ink" : "bg-stone/20"}`}
+              aria-hidden="true"
+            />
+            <span className="mt-2.5 block font-display text-xs font-bold uppercase tracking-wide text-ink">
+              {stage.title}
             </span>
-            <span className="min-w-0">
-              <span className="block font-sans text-sm font-medium text-ink">
-                {stage.title}
-              </span>
-              <span className="block font-sans text-xs leading-relaxed text-stone">
-                {stage.detail}
-              </span>
+            <span className="mt-1 block font-sans text-xs leading-relaxed text-stone">
+              {stage.detail}
             </span>
           </li>
         ))}
       </ol>
 
       <p className="mt-4 border-t border-stone/10 pt-3 font-sans text-xs leading-relaxed text-stone">
-        You&apos;ll get tracking by email the moment it ships. Rare delays from
-        customs or weather aren&apos;t included above.
+        Ships from Canada in {PACKING_DAYS_MIN}–{PACKING_DAYS_MAX} days.
+        Arrival is the carrier&apos;s estimate and can move a day or two. Tracking
+        lands in your inbox the moment it ships.
       </p>
     </div>
   );

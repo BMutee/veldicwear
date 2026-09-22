@@ -9,7 +9,6 @@ import ReviewSection from "./ReviewSection";
 import DeliveryEstimate from "./DeliveryEstimate";
 import { normalizeImageSrc } from "@/lib/image";
 import { useViewerCurrency } from "@/lib/use-viewer-currency";
-import { sourcingRequiredFromStocks } from "@/lib/getDeliveryEstimate";
 
 type Variant = {
   size: string;
@@ -175,13 +174,6 @@ export default function ProductClient({
     product.compareAtPrice && product.compareAtPrice > displayPrice;
 
   const maxQty = Math.min(selectedVariant?.stock ?? 99, 10);
-
-  // No sourcing flag exists on Product — it is derived from the live CJ-synced
-  // stock. Only the selected variant's stock counts when a size is chosen;
-  // otherwise fall back to the product-level stock.
-  const sourcingRequired = sourcingRequiredFromStocks(
-    selectedVariant ? [selectedVariant.stock] : [product.stock],
-  );
 
   const handleColorSelect = (color: string) => {
     setSelectedColor(color);
@@ -367,9 +359,9 @@ export default function ProductClient({
           </div>
         </div>
 
-        {/* Delivery estimate — derived from live stock, not a stored flag */}
+        {/* Delivery estimate — Canada default, tabbed per destination */}
         <div className="mt-8">
-          <DeliveryEstimate sourcingRequired={sourcingRequired} />
+          <DeliveryEstimate />
         </div>
 
         {/* Accordion */}
