@@ -328,8 +328,7 @@ const defaultSections = [
       supportLinks: [
         { label: "Contact", href: "/contact" },
         { label: "FAQ", href: "/faq" },
-        { label: "Shipping & Returns", href: "/shipping" },
-        { label: "Size Guide", href: "/size-guide" }
+        { label: "Shipping & Returns", href: "/shipping" }
       ],
       companyLinks: [
         { label: "About Us", href: "/about" },
