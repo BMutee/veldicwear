@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import ProductClient from "@/components/ProductClient";
 import ProductGrid from "@/components/ProductGrid";
+import Newsletter from "@/components/Newsletter";
+import type { SizeChartData } from "@/lib/size-chart";
 
 export default async function ProductPage({
   params,
@@ -71,19 +73,25 @@ export default async function ProductPage({
             color: img.color,
             url: img.url,
           }))}
+          sizeChart={(product.sizeChart ?? null) as SizeChartData | null}
         />
 
-        {/* You Might Also Like */}
+        {/* Complete the fit — cross-sell */}
         {relatedProducts.length > 0 && (
           <section className="mt-20">
             <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
-              You might also like
+              Complete the fit
             </h2>
             <div className="mt-8">
               <ProductGrid products={relatedProducts} />
             </div>
           </section>
         )}
+
+        {/* Newsletter */}
+        <div className="mt-24">
+          <Newsletter />
+        </div>
       </div>
     </main>
   );

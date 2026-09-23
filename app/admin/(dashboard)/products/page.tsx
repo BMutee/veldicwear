@@ -39,6 +39,7 @@ type ProductWithRelations = {
   active: boolean;
   createdAt: Date;
   collectionId: string | null;
+  sizeChart?: unknown;
   variants: ProductVariant[];
   images: ProductImage[];
 };

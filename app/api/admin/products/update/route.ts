@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin-guard-api";
@@ -68,6 +69,13 @@ export async function PUT(request: Request) {
       if (!img.url) errors.push("Image " + (i + 1) + ": URL is required.");
     }
   }
+  if (
+    body.sizeChart !== undefined &&
+    body.sizeChart !== null &&
+    (typeof body.sizeChart !== "object" || Array.isArray(body.sizeChart))
+  ) {
+    errors.push("Size chart must be an object.");
+  }
 
   if (errors.length > 0) {
     return NextResponse.json({ error: "Validation failed", details: errors }, { status: 400 });
@@ -75,6 +83,12 @@ export async function PUT(request: Request) {
 
   // ── Auto-populate main image from first color image if not provided ──
   const mainImage = body.image?.trim() || (body.images?.[0]?.url) || "";
+
+  // ── Per-product size chart (JSON); null falls back to the default chart ──
+  const sizeChartJson =
+    body.sizeChart && typeof body.sizeChart === "object" && !Array.isArray(body.sizeChart)
+      ? (body.sizeChart as Prisma.InputJsonValue)
+      : null;
 
   // ── Compute stock from variant totals ──
   const rawVariants = (body.variants ?? []) as unknown;
@@ -100,6 +114,9 @@ export async function PUT(request: Request) {
       featured: body.featured ?? false,
       active: body.active ?? true,
       collectionId: body.collectionId || null,
+      ...(body.sizeChart !== undefined
+        ? { sizeChart: sizeChartJson ?? Prisma.DbNull }
+        : {}),
       variants: {
         deleteMany: { productId: body.id },
         create: ((body.variants ?? []) as AdminVariantInput[]).map((variant) => ({

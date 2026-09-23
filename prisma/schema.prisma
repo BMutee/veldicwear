@@ -103,6 +103,7 @@ model Product {
   weightUnit     String? @default("kg")
   featured       Boolean @default(false)
   videoUrl       String? // CJ product video (product/query videoUrl); null when CJ has none
+  sizeChart      Json? // Per-product size chart content, edited in Admin > Products
 
   active    Boolean  @default(true)
   createdAt DateTime @default(now())

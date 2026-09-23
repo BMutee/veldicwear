@@ -18,6 +18,13 @@ import { Modal, ConfirmDialog } from "@/components/admin-ui/Modal";
 import { useToast } from "@/components/admin-ui/toast";
 import { useCloudinaryUpload } from "@/components/admin-ui/use-cloudinary";
 import { DataTable, type Column } from "@/components/admin-ui/DataTable";
+import {
+  defaultSizeChartForm,
+  parseSizesText,
+  serializeSizeChart,
+  sizeChartToForm,
+  type SizeChartForm,
+} from "@/lib/size-chart";
 
 type ProductVariant = {
   id: string;
@@ -55,6 +62,7 @@ export type Product = {
   active: boolean;
   createdAt: Date;
   collectionId: string | null;
+  sizeChart?: unknown;
   variants: ProductVariant[];
   images: ProductImage[];
 };
@@ -78,6 +86,7 @@ export type ProductForm = {
   active: boolean;
   variants: VariantEntry[];
   images: ImageEntry[];
+  sizeChart: SizeChartForm;
 };
 
 export const emptyForm: ProductForm = {
@@ -96,6 +105,7 @@ export const emptyForm: ProductForm = {
   active: true,
   variants: [],
   images: [],
+  sizeChart: defaultSizeChartForm(),
 };
 
 /** Map a stored product (with relations) onto the editable form shape. */
@@ -122,6 +132,7 @@ export function productToForm(product: Product): ProductForm {
       costPrice: v.costPrice,
     })),
     images: product.images.map((img) => ({ id: img.id, color: img.color, url: img.url })),
+    sizeChart: sizeChartToForm(product.sizeChart),
   };
 }
 
@@ -218,6 +229,79 @@ export default function AdminProductsClient({
     setForm((prev) => ({ ...prev, images: prev.images.filter((img) => img.id !== id) }));
   };
 
+  // ─── Size chart (stored as Product.sizeChart, rendered in the product page's
+  //     "Size Chart" accordion) ────────────────────────────────────────────────
+  const chartSizes = parseSizesText(form.sizeChart.sizesText);
+
+  function setSizeChartField<K extends keyof SizeChartForm>(
+    field: K,
+    value: SizeChartForm[K],
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      sizeChart: { ...prev.sizeChart, [field]: value },
+    }));
+  }
+
+  function updateChartRow(
+    rowIndex: number,
+    patch: Partial<SizeChartForm["rows"][number]>,
+  ) {
+    setForm((prev) => ({
+      ...prev,
+      sizeChart: {
+        ...prev.sizeChart,
+        rows: prev.sizeChart.rows.map((row, i) =>
+          i === rowIndex ? { ...row, ...patch } : row,
+        ),
+      },
+    }));
+  }
+
+  function updateChartValue(rowIndex: number, colIndex: number, value: string) {
+    setForm((prev) => ({
+      ...prev,
+      sizeChart: {
+        ...prev.sizeChart,
+        rows: prev.sizeChart.rows.map((row, i) =>
+          i === rowIndex
+            ? {
+                ...row,
+                values: row.values.map((v, ci) => (ci === colIndex ? value : v)),
+              }
+            : row,
+        ),
+      },
+    }));
+  }
+
+  function addChartRow() {
+    setForm((prev) => ({
+      ...prev,
+      sizeChart: {
+        ...prev.sizeChart,
+        rows: [
+          ...prev.sizeChart.rows,
+          {
+            label: "",
+            callout: String(prev.sizeChart.rows.length + 1),
+            values: Array(parseSizesText(prev.sizeChart.sizesText).length).fill(""),
+          },
+        ],
+      },
+    }));
+  }
+
+  function removeChartRow(rowIndex: number) {
+    setForm((prev) => ({
+      ...prev,
+      sizeChart: {
+        ...prev.sizeChart,
+        rows: prev.sizeChart.rows.filter((_, i) => i !== rowIndex),
+      },
+    }));
+  }
+
   // __PART2B__
   // ─── Submit (create / update) ───────────────────────────────────────────────
   const handleSubmit = async (event: React.FormEvent) => {
@@ -254,6 +338,7 @@ export default function AdminProductsClient({
         color: img.color,
         url: img.url,
       })),
+      sizeChart: serializeSizeChart(form.sizeChart),
     };
 
     const endpoint = editingId ? "/api/admin/products/update" : "/api/admin/products/create";
@@ -654,6 +739,136 @@ export default function AdminProductsClient({
                 ) : (
                   <p className="text-xs text-stone">No color images added yet.</p>
                 )}
+              </div>
+            </Card>
+
+            {/* Size chart — drives the "Size Chart" accordion on the product page */}
+            <Card>
+              <CardHeader title="Size chart" />
+              <div className="space-y-4 p-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="space-y-1 text-xs font-medium text-stone">
+                    Heading
+                    <Input
+                      value={form.sizeChart.heading}
+                      onChange={(v) => setSizeChartField("heading", v)}
+                      placeholder="e.g. Laid flat · Unisex"
+                    />
+                  </label>
+                  <label className="space-y-1 text-xs font-medium text-stone">
+                    Sizes (columns, comma-separated)
+                    <Input
+                      value={form.sizeChart.sizesText}
+                      onChange={(v) => setSizeChartField("sizesText", v)}
+                      placeholder="S, M, L, XL, 2XL"
+                    />
+                  </label>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-medium text-stone">
+                      Measurements (inches)
+                    </p>
+                    <Button variant="secondary" type="button" onClick={addChartRow}>
+                      Add row
+                    </Button>
+                  </div>
+                  {form.sizeChart.rows.length > 0 ? (
+                    form.sizeChart.rows.map((row, rowIndex) => (
+                      <div
+                        key={rowIndex}
+                        className="space-y-2 rounded-lg border border-stone/20 p-3"
+                      >
+                        <div className="flex flex-wrap items-end gap-3">
+                          <label className="space-y-1 text-xs font-medium text-stone">
+                            Row label
+                            <Input
+                              value={row.label}
+                              onChange={(v) => updateChartRow(rowIndex, { label: v })}
+                              placeholder="Chest"
+                              className="w-44"
+                            />
+                          </label>
+                          <label className="space-y-1 text-xs font-medium text-stone">
+                            Badge
+                            <Input
+                              value={row.callout}
+                              onChange={(v) => updateChartRow(rowIndex, { callout: v })}
+                              placeholder="1"
+                              className="w-16"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => removeChartRow(rowIndex)}
+                            className="mb-1.5 cursor-pointer text-xs font-medium text-clay transition-colors hover:text-red-700 focus:outline-none"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          {chartSizes.length > 0 ? (
+                            chartSizes.map((size, colIndex) => (
+                              <label
+                                key={`${rowIndex}-${colIndex}`}
+                                className="space-y-1 text-xs font-medium text-stone"
+                              >
+                                {size}
+                                <Input
+                                  value={row.values[colIndex] ?? ""}
+                                  onChange={(v) =>
+                                    updateChartValue(rowIndex, colIndex, v)
+                                  }
+                                  placeholder="—"
+                                  className="w-20"
+                                />
+                              </label>
+                            ))
+                          ) : (
+                            <p className="text-xs text-stone">
+                              Add sizes above to enter measurements.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-stone">
+                      No measurement rows yet — the default chart is used.
+                    </p>
+                  )}
+                </div>
+                <label className="block space-y-1 text-xs font-medium text-stone">
+                  Notes (footnote under the table)
+                  <Textarea
+                    rows={3}
+                    value={form.sizeChart.notes}
+                    onChange={(v) => setSizeChartField("notes", v)}
+                  />
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="space-y-1 text-xs font-medium text-stone">
+                    Callout title
+                    <Input
+                      value={form.sizeChart.calloutTitle}
+                      onChange={(v) => setSizeChartField("calloutTitle", v)}
+                      placeholder="Not sure?"
+                    />
+                  </label>
+                  <label className="block space-y-1 text-xs font-medium text-stone">
+                    Callout text
+                    <Textarea
+                      rows={2}
+                      value={form.sizeChart.calloutBody}
+                      onChange={(v) => setSizeChartField("calloutBody", v)}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-stone">
+                  Shown in the product page&apos;s &quot;Size Chart&quot; accordion.
+                  Blank fields fall back to the default chart content.
+                </p>
               </div>
             </Card>
 

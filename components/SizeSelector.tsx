@@ -8,7 +8,7 @@ type Variant = {
   price: number;
 };
 
-const SIZE_ORDER = [
+export const SIZE_ORDER = [
   "XXXS",
   "XXS",
   "XS",
@@ -31,25 +31,29 @@ export default function SizeSelector({
   sizes,
   onChange,
   resetKey,
+  selected: controlledSelected,
 }: {
   sizes: Variant[];
   onChange?: (size: string) => void;
   resetKey?: string;
+  /** Controlled selection, e.g. synced from the size chart. Omit to manage it internally. */
+  selected?: string;
 }) {
-  const [selected, setSelected] = useState("");
+  const isControlled = controlledSelected !== undefined;
+  const [internalSelected, setInternalSelected] = useState("");
+  const selected = isControlled ? controlledSelected : internalSelected;
 
   // Clear selection when the parent signals a color change (or a new set of
   // sizes arrives that no longer contains the selection). Deferred via timeout
-  // so the effect never sets state synchronously in its body.
+  // so the effect never sets state synchronously in its body. When controlled,
+  // the reset is reported through onChange so the parent clears too.
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setSelected((prev) => {
-        if (!prev) return prev;
-        const stillThere = sizes.some((v) => v.size === prev && v.stock > 0);
-        if (stillThere) return prev;
-        if (onChange) onChange("");
-        return "";
-      });
+      if (!selected) return;
+      const stillThere = sizes.some((v) => v.size === selected && v.stock > 0);
+      if (stillThere) return;
+      setInternalSelected("");
+      if (onChange) onChange("");
     }, 0);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,7 +75,8 @@ export default function SizeSelector({
   function selectSize(size: string) {
     const variant = uniqueSizes.find((v) => v.size === size);
     if (variant && variant.stock <= 0) return;
-    setSelected(size);
+    // Controlled mode: the parent (shared with the size chart) owns the state.
+    if (!isControlled) setInternalSelected(size);
     if (onChange) onChange(size);
   }
 

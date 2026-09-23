@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import AddToCartButton from "./AddToCartButton";
 import SizeSelector from "./SizeSelector";
 import WishlistButton from "./WishlistButton";
 import ReviewSection from "./ReviewSection";
 import DeliveryEstimate from "./DeliveryEstimate";
+import EmailGateOffer from "./EmailGateOffer";
+import SizeChart from "./SizeChart";
+import type { SizeChartData } from "@/lib/size-chart";
 import { normalizeImageSrc } from "@/lib/image";
 import { useViewerCurrency } from "@/lib/use-viewer-currency";
 
@@ -35,11 +38,13 @@ type ProductClientProps = {
   };
   sizes: Variant[];
   productImages: ProductImage[];
+  /** Per-product size chart content (Product.sizeChart), edited in Admin → Products. */
+  sizeChart?: SizeChartData | null;
 };
 
 type AccordionItem = {
   title: string;
-  content: string;
+  content: string | ReactNode;
 };
 
 const DEFAULT_DESCRIPTION =
@@ -47,9 +52,6 @@ const DEFAULT_DESCRIPTION =
 
 const SHIPPING_RETURNS =
   "Free standard shipping on all orders over $100. Express shipping available at checkout. Returns accepted within 30 days of delivery in unworn condition with original tags attached.";
-
-const SIZE_GUIDE =
-  "Model is 6'1\" wearing size M. For the best fit, we recommend taking your chest, waist, and inseam measurements and comparing them to our size chart available on each product page.";
 
 function Accordion({ data }: { data: AccordionItem[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -82,10 +84,14 @@ function Accordion({ data }: { data: AccordionItem[] }) {
                 isOpen ? "max-h-[3000px] pb-4" : "max-h-0"
               }`}
             >
-              <div
-                className="prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: item.content }}
-              />
+              {typeof item.content === "string" ? (
+                <div
+                  className="prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: item.content }}
+                />
+              ) : (
+                item.content
+              )}
             </div>
           </div>
         );
@@ -134,6 +140,7 @@ export default function ProductClient({
   product,
   sizes,
   productImages,
+  sizeChart,
 }: ProductClientProps) {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
@@ -206,8 +213,14 @@ export default function ProductClient({
       content: SHIPPING_RETURNS,
     },
     {
-      title: "Size Guide",
-      content: SIZE_GUIDE,
+      title: "Size Chart",
+      content: (
+        <SizeChart
+          sizes={sizes.map((variant) => variant.size)}
+          data={sizeChart}
+          selectedSize={selectedSize}
+        />
+      ),
     },
   ];
 
@@ -277,6 +290,9 @@ export default function ProductClient({
           )}
         </div>
 
+        {/* Email gate — discounted price unlocked by subscribing */}
+        <EmailGateOffer price={displayPrice} />
+
         {/* Color selector */}
         {hasColorData && (
           <div className="mt-8">
@@ -308,6 +324,7 @@ export default function ProductClient({
             sizes={sizes.filter((variant) =>
               !hasColorData || !selectedColor ? availableSizes.includes(variant.size) : variant.color === selectedColor,
             )}
+            selected={selectedSize}
             onChange={setSelectedSize}
             resetKey={selectedColor}
           />
