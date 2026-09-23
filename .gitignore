@@ -20,6 +20,8 @@ tmp/
 .cj-page.html
 .dev-server.log
 .ext-key-test.json
+tsc_verify*.txt
+dev-server.err
 
 # Python bytecode caches
 __pycache__/
