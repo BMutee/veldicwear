@@ -177,8 +177,12 @@ export async function createOrderFromStripeSession(
           stock: 0,
           sku: `stripe-${Date.now()}`,
           barcode: "",
+          // Keep trackInventory OFF for these one-off placeholders: they are
+          // created with stock 0 and no matching variant, so enabling tracking
+          // would make the decrement loop throw "Variant not found" and break
+          // order creation. trackInventory=false short-circuits the guard.
           trackInventory: false,
-          sellOutOfStock: true,
+          sellOutOfStock: false,
           weight: 0,
           weightUnit: "kg",
           featured: false,

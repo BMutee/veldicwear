@@ -79,7 +79,6 @@ export type ProductForm = {
   sku: string;
   barcode: string;
   trackInventory: boolean;
-  sellOutOfStock: boolean;
   weight: number | null;
   weightUnit: string;
   featured: boolean;
@@ -98,7 +97,6 @@ export const emptyForm: ProductForm = {
   sku: "",
   barcode: "",
   trackInventory: true,
-  sellOutOfStock: false,
   weight: null,
   weightUnit: "kg",
   featured: false,
@@ -119,7 +117,6 @@ export function productToForm(product: Product): ProductForm {
     sku: product.sku || "",
     barcode: product.barcode || "",
     trackInventory: product.trackInventory,
-    sellOutOfStock: product.sellOutOfStock,
     weight: product.weight,
     weightUnit: product.weightUnit || "kg",
     featured: product.featured,
@@ -322,7 +319,6 @@ export default function AdminProductsClient({
       sku: form.sku || null,
       barcode: form.barcode || null,
       trackInventory: form.trackInventory,
-      sellOutOfStock: form.sellOutOfStock,
       weight: form.weight || null,
       weightUnit: form.weightUnit || "kg",
       featured: form.featured,
@@ -422,7 +418,6 @@ export default function AdminProductsClient({
     sku: product.sku,
     barcode: product.barcode,
     trackInventory: product.trackInventory,
-    sellOutOfStock: product.sellOutOfStock,
     weight: product.weight,
     weightUnit: product.weightUnit,
     featured: product.featured,
@@ -664,10 +659,6 @@ export default function AdminProductsClient({
               <label className="flex cursor-pointer items-center gap-2">
                 <Toggle checked={form.trackInventory} onChange={(v) => setForm((prev) => ({ ...prev, trackInventory: v }))} />
                 <span className="text-sm font-medium text-ink">Track inventory</span>
-              </label>
-              <label className="flex cursor-pointer items-center gap-2">
-                <Toggle checked={form.sellOutOfStock} onChange={(v) => setForm((prev) => ({ ...prev, sellOutOfStock: v }))} />
-                <span className="text-sm font-medium text-ink">Sell out of stock</span>
               </label>
             </div>
 

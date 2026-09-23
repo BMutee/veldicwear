@@ -108,7 +108,8 @@ export async function PUT(request: Request) {
       sku: body.sku || null,
       barcode: body.barcode || null,
       trackInventory: body.trackInventory ?? true,
-      sellOutOfStock: body.sellOutOfStock ?? false,
+      // Always false — products must never sell past zero stock.
+      sellOutOfStock: false,
       weight: body.weight ? Number(body.weight) : null,
       weightUnit: body.weightUnit || "kg",
       featured: body.featured ?? false,
