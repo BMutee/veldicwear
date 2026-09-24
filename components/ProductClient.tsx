@@ -173,9 +173,20 @@ export default function ProductClient({
       (!hasColorData || !selectedColor || variant.color === selectedColor),
   );
 
+  const variantPrices = sizes.map((variant) => variant.price);
+  const minVariantPrice =
+    variantPrices.length > 0 ? Math.min(...variantPrices) : product.price;
+  const maxVariantPrice =
+    variantPrices.length > 0 ? Math.max(...variantPrices) : product.price;
+  const hasPriceRange =
+    variantPrices.length > 1 && minVariantPrice !== maxVariantPrice;
+
   const displayPrice = selectedVariant
     ? selectedVariant.price
     : product.price;
+  // Match the product card ("From $X"): before a variant is picked and prices
+  // differ, prefix the lowest price with "From".
+  const showFromPrefix = !selectedVariant && hasPriceRange;
 
   const hasDiscount =
     product.compareAtPrice && product.compareAtPrice > displayPrice;
@@ -280,6 +291,9 @@ export default function ProductClient({
 
         {/* Price */}
         <div className="mt-3 flex items-center gap-3">
+          {showFromPrefix && (
+            <span className="font-sans text-sm text-stone">From</span>
+          )}
           <span className="font-mono text-2xl text-ink">
             {fmt(toDisplay(displayPrice))}
           </span>
