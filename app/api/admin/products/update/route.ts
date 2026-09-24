@@ -26,7 +26,7 @@ type AdminImageInput = {
 };
 
 /** A single label change applied to every variant and image of one color. */
-export type ProductColorRename = {
+type ProductColorRename = {
   from: string;
   to: string;
 };
@@ -43,7 +43,7 @@ function normalizedColor(value: string | null | undefined): string | null {
  * sourceColor is deliberately left untouched so later CJ syncs still match
  * the right variant and do not undo the rename.
  */
-export function applyColorRenames<T extends { color?: string | null }>(
+function applyColorRenames<T extends { color?: string | null }>(
   entries: T[],
   renames: ProductColorRename[]
 ): T[] {
