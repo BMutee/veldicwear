@@ -12,6 +12,8 @@ type ProductVariant = {
   costPrice: number | null;
   productId: string;
   cjVariantId: string | null;
+  sku: string | null;
+  sourceColor: string | null;
 };
 
 type ProductImage = {

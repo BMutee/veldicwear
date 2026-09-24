@@ -8,12 +8,52 @@ type AdminVariantInput = {
   stock?: number | string | null;
   price?: number | string | null;
   costPrice?: number | string | null;
+  /** Display name shown in Admin and on the storefront. */
+  color?: string | null;
+  /** Original CJ color. Only ever set for CJ imports; never changed by a rename. */
+  sourceColor?: string | null;
+  /** Stable local id so edits keep the existing row instead of replacing it. */
+  id?: string | null;
+  /** CJ variant id (vid). Preserved across admin edits so re-syncs keep matching. */
+  cjVariantId?: string | null;
+  /** CJ variant SKU. Preserved across admin edits. */
+  sku?: string | null;
 };
 
 type AdminImageInput = {
   color: string;
   url: string;
 };
+
+/** A single label change applied to every variant and image of one color. */
+export type ProductColorRename = {
+  from: string;
+  to: string;
+};
+
+function normalizedColor(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Rename a color across the whole product: every variant row and every
+ * color-specific image that currently uses the old label. The original CJ
+ * sourceColor is deliberately left untouched so later CJ syncs still match
+ * the right variant and do not undo the rename.
+ */
+export function applyColorRenames<T extends { color?: string | null }>(
+  entries: T[],
+  renames: ProductColorRename[]
+): T[] {
+  return entries.map((entry) => {
+    const current = normalizedColor(entry.color)?.toLowerCase() ?? null;
+    const rename = renames.find((r) => normalizedColor(r.from)?.toLowerCase() === current);
+    if (!rename || current === null) return entry;
+    return { ...entry, color: normalizedColor(rename.to) };
+  });
+}
 
 export async function PUT(request: Request) {
   const { error } = await requireAdminApi();
@@ -62,6 +102,25 @@ export async function PUT(request: Request) {
         errors.push("Variant " + (i + 1) + ' ("' + (v.size || "?") + '"): cost price cannot be negative.');
     }
   }
+  if (body.colorRenames !== undefined && !Array.isArray(body.colorRenames)) {
+    errors.push("Color renames must be an array.");
+  }
+  const renames: ProductColorRename[] = Array.isArray(body.colorRenames)
+    ? body.colorRenames
+    : [];
+  if (renames.some((r) => !r || typeof r !== "object")) {
+    errors.push("Color renames must be objects with from and to.");
+  } else {
+    for (let i = 0; i < renames.length; i++) {
+      const rename = renames[i];
+      if (!rename.from || typeof rename.from !== "string" || rename.from.trim().length === 0) {
+        errors.push("Color rename " + (i + 1) + ": original color is required.");
+      }
+      if (!rename.to || typeof rename.to !== "string" || rename.to.trim().length === 0) {
+        errors.push("Color rename " + (i + 1) + ": new color is required.");
+      }
+    }
+  }
   if (body.images && Array.isArray(body.images)) {
     for (let i = 0; i < body.images.length; i++) {
       const img = body.images[i];
@@ -93,7 +152,31 @@ export async function PUT(request: Request) {
   // ── Compute stock from variant totals ──
   const rawVariants = (body.variants ?? []) as unknown;
   const variants = (Array.isArray(rawVariants) ? rawVariants : []) as AdminVariantInput[];
-  const totalStock = variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+  const renamedVariants = applyColorRenames(variants, renames);
+  const renamedImages = applyColorRenames(
+    ((body.images ?? []) as AdminImageInput[]),
+    renames
+  );
+  const totalStock = renamedVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+
+  // Renames must not merge two different colors of the same size into one row.
+  const variantKeys = renamedVariants.map(
+    (v) => `${v.size?.trim() ?? ""}|||${normalizedColor(v.color) ?? ""}`
+  );
+  const duplicateKeys = variantKeys.filter(
+    (key, index) => variantKeys.indexOf(key) !== index
+  );
+  if (duplicateKeys.length > 0) {
+    return NextResponse.json(
+      {
+        error: "Validation failed",
+        details: [
+          "Color rename would merge variants with the same size and color. Choose a different color name.",
+        ],
+      },
+      { status: 400 }
+    );
+  }
 
   // ── Update product with variant & image replacement ──
   const product = await prisma.product.update({
@@ -120,16 +203,26 @@ export async function PUT(request: Request) {
         : {}),
       variants: {
         deleteMany: { productId: body.id },
-        create: ((body.variants ?? []) as AdminVariantInput[]).map((variant) => ({
-          size: variant.size,
-          stock: Number(variant.stock) || 0,
-          price: Number(variant.price) || 0,
-          costPrice: variant.costPrice != null && variant.costPrice !== "" ? Number(variant.costPrice) : null,
-        })),
+        create: renamedVariants.map((variant) => {
+          // Carry over the row identity + CJ linkage the client sent so edits
+          // keep updating the same variant instead of dropping its sync keys.
+          const id = typeof variant.id === "string" && variant.id.trim() ? variant.id.trim() : undefined;
+          return {
+            ...(id ? { id } : {}),
+            size: variant.size,
+            color: normalizedColor(variant.color),
+            sourceColor: normalizedColor(variant.sourceColor),
+            cjVariantId: normalizedColor(variant.cjVariantId),
+            sku: normalizedColor(variant.sku),
+            stock: Number(variant.stock) || 0,
+            price: Number(variant.price) || 0,
+            costPrice: variant.costPrice != null && variant.costPrice !== "" ? Number(variant.costPrice) : null,
+          };
+        }),
       },
       images: {
         deleteMany: { productId: body.id },
-        create: ((body.images ?? []) as AdminImageInput[]).map((img) => ({
+        create: renamedImages.map((img) => ({
           color: img.color,
           url: img.url,
         })),

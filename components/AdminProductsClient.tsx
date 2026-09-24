@@ -30,11 +30,13 @@ type ProductVariant = {
   id: string;
   size: string;
   color: string | null;
+  sourceColor: string | null;
   stock: number;
   price: number | null;
   costPrice: number | null;
   productId: string;
   cjVariantId: string | null;
+  sku: string | null;
 };
 
 type ProductImage = {
@@ -67,8 +69,19 @@ export type Product = {
   images: ProductImage[];
 };
 
-type VariantEntry = { id: string; size: string; stock: number; price: number | null; costPrice: number | null };
+type VariantEntry = {
+  id: string;
+  size: string;
+  color: string | null;
+  sourceColor: string | null;
+  cjVariantId: string | null;
+  sku: string | null;
+  stock: number;
+  price: number | null;
+  costPrice: number | null;
+};
 type ImageEntry = { id: string; color: string | null; url: string };
+type ColorRenameEntry = { id: string; from: string; to: string };
 
 export type ProductForm = {
   name: string;
@@ -85,6 +98,7 @@ export type ProductForm = {
   active: boolean;
   variants: VariantEntry[];
   images: ImageEntry[];
+  colorRenames: ColorRenameEntry[];
   sizeChart: SizeChartForm;
 };
 
@@ -103,6 +117,7 @@ export const emptyForm: ProductForm = {
   active: true,
   variants: [],
   images: [],
+  colorRenames: [],
   sizeChart: defaultSizeChartForm(),
 };
 
@@ -124,11 +139,16 @@ export function productToForm(product: Product): ProductForm {
     variants: product.variants.map((v) => ({
       id: v.id,
       size: v.size,
+      color: v.color,
+      sourceColor: v.sourceColor,
+      cjVariantId: v.cjVariantId,
+      sku: v.sku,
       stock: v.stock,
       price: v.price,
       costPrice: v.costPrice,
     })),
     images: product.images.map((img) => ({ id: img.id, color: img.color, url: img.url })),
+    colorRenames: [],
     sizeChart: sizeChartToForm(product.sizeChart),
   };
 }
@@ -161,8 +181,23 @@ export default function AdminProductsClient({
   const [variantSize, setVariantSize] = useState("");
   const [variantStock, setVariantStock] = useState("");
   const [variantPrice, setVariantPrice] = useState("");
+  const [variantColor, setVariantColor] = useState("");
   const [imgColor, setImgColor] = useState("");
   const [imgUrl, setImgUrl] = useState("");
+
+  // Distinct colors present across variants + color images, in first-seen order.
+  const formColors = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const v of form.variants) {
+      const trimmed = v.color?.trim() ?? "";
+      if (trimmed && !seen.has(trimmed.toLowerCase())) seen.set(trimmed.toLowerCase(), trimmed);
+    }
+    for (const img of form.images) {
+      const trimmed = img.color?.trim() ?? "";
+      if (trimmed && !seen.has(trimmed.toLowerCase())) seen.set(trimmed.toLowerCase(), trimmed);
+    }
+    return [...seen.values()];
+  }, [form.variants, form.images]);
 
   // ─── Cloudinary upload handlers ──────────────────────────────────────────────
   const handleMainImageUpload = useCallback(
@@ -195,19 +230,59 @@ export default function AdminProductsClient({
   const addVariant = () => {
     const size = variantSize.trim();
     if (!size) return;
+    const color = variantColor.trim() || null;
     const stock = Math.max(0, parseInt(variantStock) || 0);
     const price = Math.max(0, parseFloat(variantPrice) || 0);
     setForm((prev) => ({
       ...prev,
-      variants: [...prev.variants, { id: crypto.randomUUID(), size, stock, price, costPrice: null }],
+      variants: [
+        ...prev.variants,
+        {
+          id: crypto.randomUUID(),
+          size,
+          color,
+          sourceColor: null,
+          cjVariantId: null,
+          sku: null,
+          stock,
+          price,
+          costPrice: null,
+        },
+      ],
     }));
     setVariantSize("");
+    setVariantColor("");
     setVariantStock("");
     setVariantPrice("");
   };
 
   const removeVariant = (id: string) => {
     setForm((prev) => ({ ...prev, variants: prev.variants.filter((v) => v.id !== id) }));
+  };
+
+  const addColorRename = (from: string) => {
+    const current = from.trim();
+    if (!current) return;
+    setForm((prev) => {
+      if (prev.colorRenames.some((r) => r.from.toLowerCase() === current.toLowerCase())) {
+        return prev;
+      }
+      return {
+        ...prev,
+        colorRenames: [...prev.colorRenames, { id: crypto.randomUUID(), from: current, to: current }],
+      };
+    });
+  };
+
+  const updateColorRename = (id: string, to: string) => {
+    setForm((prev) => ({
+      ...prev,
+      colorRenames: prev.colorRenames.map((r) => (r.id === id ? { ...r, to } : r)),
+    }));
+  };
+
+  const removeColorRename = (id: string) => {
+    setForm((prev) => ({ ...prev, colorRenames: prev.colorRenames.filter((r) => r.id !== id) }));
   };
 
   const addImage = () => {
@@ -329,11 +404,20 @@ export default function AdminProductsClient({
         stock: v.stock,
         price: v.price,
         costPrice: v.costPrice,
+        color: v.color,
+        sourceColor: v.sourceColor,
+        cjVariantId: v.cjVariantId,
+        sku: v.sku,
       })),
       images: form.images.map((img) => ({
         color: img.color,
         url: img.url,
       })),
+      colorRenames: editingId
+        ? form.colorRenames
+            .map((r) => ({ from: r.from.trim(), to: r.to.trim() }))
+            .filter((r) => r.from && r.to && r.from.toLowerCase() !== r.to.toLowerCase())
+        : [],
       sizeChart: serializeSizeChart(form.sizeChart),
     };
 
@@ -422,7 +506,16 @@ export default function AdminProductsClient({
     weightUnit: product.weightUnit,
     featured: product.featured,
     active: product.active,
-    variants: product.variants.map((v) => ({ size: v.size, stock: v.stock, price: v.price })),
+    variants: product.variants.map((v) => ({
+      size: v.size,
+      stock: v.stock,
+      price: v.price,
+      costPrice: v.costPrice,
+      color: v.color,
+      sourceColor: v.sourceColor,
+      cjVariantId: v.cjVariantId,
+      sku: v.sku,
+    })),
     images: product.images.map((img) => ({ color: img.color, url: img.url })),
     ...overrides,
   });
@@ -672,6 +765,16 @@ export default function AdminProductsClient({
                     <Input value={variantSize} onChange={setVariantSize} placeholder="e.g. M" className="w-24" />
                   </label>
                   <label className="space-y-1 text-xs font-medium text-stone">
+                    Color
+                    <Input
+                      value={variantColor}
+                      onChange={setVariantColor}
+                      placeholder="e.g. Black"
+                      className="w-28"
+                      ariaLabel="Variant color"
+                    />
+                  </label>
+                  <label className="space-y-1 text-xs font-medium text-stone">
                     Stock
                     <Input type="number" min={0} value={variantStock} onChange={setVariantStock} placeholder="0" className="w-20" />
                   </label>
@@ -685,13 +788,68 @@ export default function AdminProductsClient({
                   <ul className="space-y-1.5">
                     {form.variants.map((v) => (
                       <li key={v.id} className="flex items-center justify-between rounded-lg border border-stone/20 px-3.5 py-2">
-                        <span className="text-sm text-ink"><strong>{v.size}</strong> — Stock: {v.stock} — ${(v.price ?? 0).toFixed(2)}</span>
+                        <span className="text-sm text-ink"><strong>{v.color ? `${v.color} / ${v.size}` : v.size}</strong> — Stock: {v.stock} — ${(v.price ?? 0).toFixed(2)}</span>
                         <button type="button" onClick={() => removeVariant(v.id)} className="cursor-pointer text-xs font-medium text-clay transition-colors hover:text-red-700 focus:outline-none">Remove</button>
                       </li>
                     ))}
                   </ul>
                 ) : (
                   <p className="text-xs text-stone">No variants added yet.</p>
+                )}
+              </div>
+            </Card>
+
+            {/* Color names — rename a color across every variant and color image */}
+            <Card>
+              <CardHeader title="Color names" />
+              <div className="space-y-3 p-4">
+                <p className="text-xs text-stone">
+                  Rename a supplier color (e.g. “Black Zone2” → “Black”). Variants,
+                  images, and the storefront all follow the new name; CJ syncs keep
+                  working because the original color is stored separately.
+                </p>
+                {formColors.length > 0 ? (
+                  <ul className="space-y-1.5">
+                    {formColors.map((color) => {
+                      const rename = form.colorRenames.find(
+                        (r) => r.from.toLowerCase() === color.toLowerCase()
+                      );
+                      return (
+                        <li key={color.toLowerCase()} className="flex flex-wrap items-center gap-3 rounded-lg border border-stone/20 px-3.5 py-2">
+                          <span className="min-w-28 flex-1 text-sm font-medium text-ink">{color}</span>
+                          {rename ? (
+                            <>
+                              <span className="text-xs text-stone">→</span>
+                              <Input
+                                value={rename.to}
+                                onChange={(v) => updateColorRename(rename.id, v)}
+                                placeholder="New name…"
+                                className="w-36"
+                                ariaLabel={`New name for ${color}`}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeColorRename(rename.id)}
+                                className="cursor-pointer text-xs font-medium text-clay transition-colors hover:text-red-700 focus:outline-none"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => addColorRename(color)}
+                              className="cursor-pointer text-xs font-medium text-moss transition-colors hover:text-ink focus:outline-none"
+                            >
+                              Rename
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-stone">No colors yet — add a variant or color image first.</p>
                 )}
               </div>
             </Card>

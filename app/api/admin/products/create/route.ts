@@ -8,12 +8,20 @@ type AdminVariantInput = {
   stock?: number | string | null;
   price?: number | string | null;
   costPrice?: number | string | null;
+  /** Display color name shown in Admin and on the storefront. */
+  color?: string | null;
 };
 
 type AdminImageInput = {
   color: string;
   url: string;
 };
+
+function normalizedColor(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
 
 export async function POST(request: Request) {
   const { error } = await requireAdminApi();
@@ -116,6 +124,7 @@ export async function POST(request: Request) {
       variants: {
         create: ((body.variants ?? []) as AdminVariantInput[]).map((variant) => ({
           size: variant.size,
+          color: normalizedColor(variant.color),
           stock: Number(variant.stock) || 0,
           price: Number(variant.price) || 0,
           costPrice: variant.costPrice != null && variant.costPrice !== "" ? Number(variant.costPrice) : null,

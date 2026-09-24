@@ -137,7 +137,10 @@ model Collection {
 model ProductVariant {
   id    String  @id @default(cuid())
   size  String
-  color String? // extracted from CJ variantProperty, e.g. "Red"
+  color String? // Admin-facing color name (editable in Admin → Products)
+  // Original CJ color name, set on import. Kept separately so a later CJ sync
+  // can still match the variant after the admin renames the display color.
+  sourceColor String?
   sku   String? // CJ variant SKU (variantSku from product/sku/getSkuList)
 
   stock       Int     @default(0)
@@ -149,6 +152,7 @@ model ProductVariant {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, size, color])
+  @@index([productId, sourceColor])
   @@map("ProductVariant")
 }
 

@@ -1,4 +1,5 @@
 import { cjGet } from "@/lib/cj";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { syncSingleProductStock } from "@/lib/cj-stock-sync";
@@ -383,12 +384,18 @@ export async function syncVariants(
 
       const color = extractColorFromVariant(variant);
 
-      // Upsert the variant — create if not exists, update cjVariantId if exists.
+      // Match by CJ variant id first, then by the original CJ color, and only
+      // then by the current display color (manual products / legacy rows). The
+      // size is included in every branch so a full (size × color) grid can
+      // never collapse two rows into one.
+      const colorMatch: Prisma.ProductVariantWhereInput[] = color
+        ? [{ sourceColor: color }, { color }]
+        : [{ color: null }];
       const existingVariant = await prisma.productVariant.findFirst({
         where: {
           productId,
           size,
-          color: color ?? null,
+          OR: [{ cjVariantId: vid }, ...colorMatch],
         },
       });
 
@@ -399,26 +406,46 @@ export async function syncVariants(
             cjVariantId: vid,
             price: variant.variantSellPrice ?? existingVariant.price,
             sku: variant.variantSku ?? existingVariant.sku,
+            // `color` stays untouched: an admin may have renamed it in
+            // Admin → Products. sourceColor tracks CJ's original name.
+            sourceColor: color,
           },
         });
       } else {
-        await prisma.productVariant.create({
+        const created = await prisma.productVariant.create({
           data: {
             productId,
             size,
             color,
+            sourceColor: color,
             cjVariantId: vid,
             sku: variant.variantSku ?? null,
             stock: 0,
             price: variant.variantSellPrice ?? null,
           },
         });
+        // Sync color-specific images from the CJ variant (if CJ provides them).
+        // Use the local display color so a renamed variant's images stay linked.
+        const variantImageUrls = extractVariantImageUrls(variant);
+        imagesSynced += await syncVariantImages(
+          productId,
+          created.color,
+          variantImageUrls
+        );
+        variantsSynced++;
+        continue;
       }
       variantsSynced++;
 
       // Sync color-specific images from the CJ variant (if CJ provides them).
+      // For existing rows use the current (possibly admin-renamed) display
+      // color so the images keep matching the storefront selection.
       const variantImageUrls = extractVariantImageUrls(variant);
-      imagesSynced += await syncVariantImages(productId, color, variantImageUrls);
+      imagesSynced += await syncVariantImages(
+        productId,
+        existingVariant.color,
+        variantImageUrls
+      );
     }
   } catch (error) {
     console.error(`Failed to sync variants for product ${pid}:`, error);
