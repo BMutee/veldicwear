@@ -179,9 +179,10 @@ export default function AdminProductsClient({
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [variantSize, setVariantSize] = useState("");
-  const [variantStock, setVariantStock] = useState("");
   const [variantPrice, setVariantPrice] = useState("");
   const [variantColor, setVariantColor] = useState("");
+  const [bulkPrice, setBulkPrice] = useState("");
+  const [bulkPercent, setBulkPercent] = useState("");
   const [imgColor, setImgColor] = useState("");
   const [imgUrl, setImgUrl] = useState("");
 
@@ -231,7 +232,6 @@ export default function AdminProductsClient({
     const size = variantSize.trim();
     if (!size) return;
     const color = variantColor.trim() || null;
-    const stock = Math.max(0, parseInt(variantStock) || 0);
     const price = Math.max(0, parseFloat(variantPrice) || 0);
     setForm((prev) => ({
       ...prev,
@@ -244,7 +244,7 @@ export default function AdminProductsClient({
           sourceColor: null,
           cjVariantId: null,
           sku: null,
-          stock,
+          stock: 0,
           price,
           costPrice: null,
         },
@@ -252,16 +252,36 @@ export default function AdminProductsClient({
     }));
     setVariantSize("");
     setVariantColor("");
-    setVariantStock("");
     setVariantPrice("");
   };
 
-  const setVariantField = (id: string, field: "stock" | "price", raw: string) => {
+  const setVariantPriceField = (id: string, raw: string) => {
     const parsed = Number(raw);
     const value = raw === "" || Number.isNaN(parsed) || parsed < 0 ? 0 : parsed;
     setForm((prev) => ({
       ...prev,
-      variants: prev.variants.map((v) => (v.id === id ? { ...v, [field]: value } : v)),
+      variants: prev.variants.map((v) => (v.id === id ? { ...v, price: value } : v)),
+    }));
+  };
+
+  const applyBulkPrice = () => {
+    const parsed = Number(bulkPrice);
+    if (Number.isNaN(parsed) || parsed < 0) return;
+    setForm((prev) => ({
+      ...prev,
+      variants: prev.variants.map((v) => ({ ...v, price: parsed })),
+    }));
+  };
+
+  const applyBulkPercent = () => {
+    const parsed = Number(bulkPercent);
+    if (Number.isNaN(parsed)) return;
+    setForm((prev) => ({
+      ...prev,
+      variants: prev.variants.map((v) => ({
+        ...v,
+        price: Math.max(0, Math.round(((v.price ?? 0) * (1 + parsed / 100)) * 100) / 100),
+      })),
     }));
   };
 
@@ -786,27 +806,33 @@ export default function AdminProductsClient({
                     />
                   </label>
                   <label className="space-y-1 text-xs font-medium text-stone">
-                    Stock
-                    <Input type="number" min={0} value={variantStock} onChange={setVariantStock} placeholder="0" className="w-20" />
-                  </label>
-                  <label className="space-y-1 text-xs font-medium text-stone">
                     Price
                     <Input type="number" step="0.01" min={0} value={variantPrice} onChange={setVariantPrice} placeholder="0.00" className="w-24" />
                   </label>
                   <Button variant="secondary" type="button" onClick={addVariant}>Add</Button>
                 </div>
+                {form.variants.length > 1 && (
+                  <div className="flex flex-wrap items-end gap-3 rounded-lg bg-bone/60 px-3 py-2.5">
+                    <label className="space-y-1 text-xs font-medium text-stone">
+                      Set all prices to $
+                      <Input type="number" step="0.01" min={0} value={bulkPrice} onChange={setBulkPrice} placeholder="0.00" className="w-24" ariaLabel="Set all variant prices" />
+                    </label>
+                    <Button variant="secondary" type="button" onClick={applyBulkPrice}>Apply to all</Button>
+                    <label className="space-y-1 text-xs font-medium text-stone">
+                      Adjust all by %
+                      <Input type="number" step="1" value={bulkPercent} onChange={setBulkPercent} placeholder="e.g. 10 or -10" className="w-24" ariaLabel="Adjust all variant prices by percent" />
+                    </label>
+                    <Button variant="secondary" type="button" onClick={applyBulkPercent}>Apply %</Button>
+                  </div>
+                )}
                 {form.variants.length > 0 ? (
                   <ul className="space-y-1.5">
                     {form.variants.map((v) => (
                       <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone/20 px-3.5 py-2">
                         <span className="min-w-32 flex-1 text-sm text-ink"><strong>{v.color ? `${v.color} / ${v.size}` : v.size}</strong></span>
                         <label className="flex items-center gap-1 text-xs font-medium text-stone">
-                          Stock
-                          <Input type="number" min={0} value={String(v.stock)} onChange={(raw) => setVariantField(v.id, "stock", raw)} className="w-20" ariaLabel={`Stock for ${v.color ? `${v.color} ${v.size}` : v.size}`} />
-                        </label>
-                        <label className="flex items-center gap-1 text-xs font-medium text-stone">
                           Price $
-                          <Input type="number" step="0.01" min={0} value={String(v.price ?? 0)} onChange={(raw) => setVariantField(v.id, "price", raw)} className="w-24" ariaLabel={`Price for ${v.color ? `${v.color} ${v.size}` : v.size}`} />
+                          <Input type="number" step="0.01" min={0} value={String(v.price ?? 0)} onChange={(raw) => setVariantPriceField(v.id, raw)} className="w-24" ariaLabel={`Price for ${v.color ? `${v.color} ${v.size}` : v.size}`} />
                         </label>
                         <button type="button" onClick={() => removeVariant(v.id)} className="cursor-pointer text-xs font-medium text-clay transition-colors hover:text-red-700 focus:outline-none">Remove</button>
                       </li>
