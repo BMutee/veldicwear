@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import AddToCartButton from "./AddToCartButton";
 import SizeSelector from "./SizeSelector";
@@ -11,6 +11,10 @@ import EmailGateOffer from "./EmailGateOffer";
 import SizeChart from "./SizeChart";
 import type { SizeChartData } from "@/lib/size-chart";
 import { normalizeImageSrc } from "@/lib/image";
+import {
+  buildProductGallery,
+  resolveActiveGalleryImage,
+} from "@/lib/product-gallery";
 import {
   resolveVariantPrice,
   summarizeProductPrice,
@@ -155,6 +159,8 @@ export default function ProductClient({
   const [selectedColor, setSelectedColor] = useState("");
   const [activeImage, setActiveImage] = useState(product.image);
   const [quantity, setQuantity] = useState(1);
+  /** The thumbnail strip, so a color change can reveal the photo it selects. */
+  const galleryRef = useRef<HTMLDivElement>(null);
   // USD-stored price rendered in the viewer's currency (same math as checkout).
   const { toDisplay, fmt } = useViewerCurrency();
 
@@ -196,6 +202,16 @@ export default function ProductClient({
 
   const maxQty = Math.min(selectedVariant?.stock ?? 99, 10);
 
+  // ── Gallery ───────────────────────────────────────────────────────────────
+  // The page previews EVERY image the product has — the photos of every color —
+  // whatever the shopper has picked. Selecting a color only swaps which photo
+  // leads the preview; it never hides another color's photos from the strip.
+  // Ordering and duplicate collapsing live in lib/product-gallery.ts.
+  const gallery = buildProductGallery(product.image, productImages);
+
+  const activeGalleryImage = resolveActiveGalleryImage(gallery, activeImage);
+  const mainImage = activeGalleryImage?.url || product.image;
+
   const handleColorSelect = (color: string) => {
     setSelectedColor(color);
     // Clear the size if it isn't offered in the new color.
@@ -203,19 +219,31 @@ export default function ProductClient({
       (variant) => variant.color === color && variant.size === selectedSize,
     );
     if (selectedSize && !stillOffered) setSelectedSize("");
+    // Show off this color: its first photo leads the preview. The strip still
+    // lists every color's images, so nothing is lost by picking one.
     const matchingImage = productImages.find((img) => img.color === color);
     if (matchingImage?.url) setActiveImage(matchingImage.url);
   };
 
-  const colorImages =
-    selectedColor && productImages.length > 0
-      ? productImages.filter((img) => img.color === selectedColor)
-      : productImages;
+  // An imported gallery runs to 30+ photos, so the picked color's photo can sit
+  // outside the visible strip. Reveal it by scrolling the strip itself — never
+  // the page, or choosing a color would yank the shopper up the page.
+  useEffect(() => {
+    const strip = galleryRef.current;
+    const active = strip?.querySelector<HTMLElement>(
+      '[data-gallery-active="true"]',
+    );
+    if (!strip || !active) return;
 
-  const thumbnails =
-    colorImages.length > 0 ? colorImages.map((img) => img.url) : [activeImage];
-
-  const mainImage = activeImage || thumbnails[0];
+    const left = active.offsetLeft;
+    const right = left + active.offsetWidth;
+    if (left < strip.scrollLeft || right > strip.scrollLeft + strip.clientWidth) {
+      strip.scrollTo({
+        left: left - strip.clientWidth / 2 + active.offsetWidth / 2,
+        behavior: "smooth",
+      });
+    }
+  }, [mainImage]);
 
   const accordionData: AccordionItem[] = [
     {
@@ -255,29 +283,42 @@ export default function ProductClient({
           />
         </div>
 
-        {/* Thumbnail strip */}
-        {thumbnails.length > 1 && (
-          <div className="mt-3 flex gap-3">
-            {thumbnails.map((url, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveImage(url)}
-                className={`relative aspect-[4/5] w-[80px] overflow-hidden border transition-colors duration-150 cursor-pointer ${
-                  url === mainImage
-                    ? "border-moss"
-                    : "border-stone/10 hover:border-moss/60"
-                }`}
-                aria-label={`View image ${index + 1}`}
-              >
-                <Image
-                  src={normalizeImageSrc(url)}
-                  alt={`${product.name} - image ${index + 1}`}
-                  fill
-                  sizes="80px"
-                  className="object-cover"
-                />
-              </button>
-            ))}
+        {/* Thumbnail strip — every image the product has, every color */}
+        {gallery.length > 1 && (
+          <div
+            ref={galleryRef}
+            className="relative mt-3 flex gap-3 overflow-x-auto pb-1"
+          >
+            {gallery.map((img, index) => {
+              const isActive = img.key === activeGalleryImage?.key;
+              return (
+                <button
+                  key={img.key}
+                  type="button"
+                  onClick={() => setActiveImage(img.url)}
+                  data-gallery-active={isActive ? "true" : "false"}
+                  aria-current={isActive}
+                  className={`relative aspect-[4/5] w-[80px] shrink-0 overflow-hidden border transition-colors duration-150 cursor-pointer ${
+                    isActive
+                      ? "border-moss"
+                      : "border-stone/10 hover:border-moss/60"
+                  }`}
+                  aria-label={`View image ${index + 1} of ${gallery.length}${
+                    img.color ? ` (${img.color})` : ""
+                  }`}
+                >
+                  <Image
+                    src={normalizeImageSrc(img.url)}
+                    alt={`${product.name} - image ${index + 1}${
+                      img.color ? ` (${img.color})` : ""
+                    }`}
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                  />
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
