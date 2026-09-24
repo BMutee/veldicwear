@@ -181,60 +181,94 @@ export async function PUT(request: Request) {
   }
 
   // ── Update product with variant & image replacement ──
-  const product = await prisma.product.update({
-    where: { id: body.id },
-    data: {
-      name: body.name.trim(),
-      description: body.description,
-      image: mainImage,
-      price: Number(body.price),
-      compareAtPrice: body.compareAtPrice ? Number(body.compareAtPrice) : null,
-      stock: totalStock,
-      sku: body.sku || null,
-      barcode: body.barcode || null,
-      trackInventory: body.trackInventory ?? true,
-      // Always false — products must never sell past zero stock.
-      sellOutOfStock: false,
-      weight: body.weight ? Number(body.weight) : null,
-      weightUnit: body.weightUnit || "kg",
-      featured: body.featured ?? false,
-      active: body.active ?? true,
-      collectionId: body.collectionId || null,
-      ...(body.sizeChart !== undefined
-        ? { sizeChart: sizeChartJson ?? Prisma.DbNull }
-        : {}),
-      variants: {
-        deleteMany: { productId: body.id },
-        create: renamedVariants.map((variant) => {
-          // Carry over the row identity + CJ linkage the client sent so edits
-          // keep updating the same variant instead of dropping its sync keys.
-          const id = typeof variant.id === "string" && variant.id.trim() ? variant.id.trim() : undefined;
-          return {
-            ...(id ? { id } : {}),
-            size: variant.size,
-            color: normalizedColor(variant.color),
-            sourceColor: normalizedColor(variant.sourceColor),
-            cjVariantId: normalizedColor(variant.cjVariantId),
-            sku: normalizedColor(variant.sku),
-            stock: Number(variant.stock) || 0,
-            price: Number(variant.price) || 0,
-            costPrice: variant.costPrice != null && variant.costPrice !== "" ? Number(variant.costPrice) : null,
-          };
-        }),
-      },
-      images: {
-        deleteMany: { productId: body.id },
-        create: renamedImages.map((img) => ({
-          color: normalizedColor(img.color),
-          url: img.url,
-        })),
-      },
-    },
-    include: {
-      variants: true,
-      images: true,
-    },
-  });
+  // Sequential top-level statements (NOT an interactive $transaction — those
+  // intermittently fail to BEGIN on Neon's pooled connections, and a nested
+  // deleteMany+create with the same ids can trip the PK/unique constraint
+  // depending on statement ordering). Deletes run first, then the product
+  // fields are updated, then fresh variant/image rows are created — with CJ
+  // linkage (sourceColor/cjVariantId/sku) and display colors carried over so
+  // re-syncs keep matching. Fresh ids are intentional: this replaces the rows.
+  try {
+    const variantCreates = renamedVariants.map((variant) => ({
+      size: variant.size,
+      color: normalizedColor(variant.color),
+      sourceColor: normalizedColor(variant.sourceColor),
+      cjVariantId: normalizedColor(variant.cjVariantId),
+      sku: normalizedColor(variant.sku),
+      stock: Number(variant.stock) || 0,
+      price: Number(variant.price) || 0,
+      costPrice: variant.costPrice != null && variant.costPrice !== "" ? Number(variant.costPrice) : null,
+    }));
+    const imageCreates = renamedImages.map((img) => ({
+      color: normalizedColor(img.color),
+      url: img.url,
+    }));
 
-  return NextResponse.json(product);
+    await prisma.productVariant.deleteMany({ where: { productId: body.id } });
+    await prisma.productImage.deleteMany({ where: { productId: body.id } });
+
+    await prisma.product.update({
+      where: { id: body.id },
+      data: {
+        name: body.name.trim(),
+        description: body.description,
+        image: mainImage,
+        price: Number(body.price),
+        compareAtPrice: body.compareAtPrice ? Number(body.compareAtPrice) : null,
+        stock: totalStock,
+        sku: body.sku || null,
+        barcode: body.barcode || null,
+        trackInventory: body.trackInventory ?? true,
+        // Always false — products must never sell past zero stock.
+        sellOutOfStock: false,
+        weight: body.weight ? Number(body.weight) : null,
+        weightUnit: body.weightUnit || "kg",
+        featured: body.featured ?? false,
+        active: body.active ?? true,
+        collectionId: body.collectionId || null,
+        ...(body.sizeChart !== undefined
+          ? { sizeChart: sizeChartJson ?? Prisma.DbNull }
+          : {}),
+      },
+    });
+
+    if (variantCreates.length > 0) {
+      await prisma.productVariant.createMany({
+        data: variantCreates.map((v) => ({ ...v, productId: body.id as string })),
+      });
+    }
+    if (imageCreates.length > 0) {
+      await prisma.productImage.createMany({
+        data: imageCreates.map((img) => ({ ...img, productId: body.id as string })),
+      });
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: body.id },
+      include: { variants: true, images: true },
+    });
+    if (!product) {
+      return NextResponse.json({ error: "Product not found. It may have been deleted." }, { status: 404 });
+    }
+
+    return NextResponse.json(product);
+  } catch (err) {
+    const code = (err as { code?: string } | null)?.code;
+    if (code === "P2002") {
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          details: [
+            "Two variants have the same size and color. Merge or rename the duplicates, then save again.",
+          ],
+        },
+        { status: 400 }
+      );
+    }
+    if (code === "P2025") {
+      return NextResponse.json({ error: "Product not found. It may have been deleted." }, { status: 404 });
+    }
+    console.error("Error updating product:", err);
+    return NextResponse.json({ error: "Failed to update product. Please try again." }, { status: 500 });
+  }
 }

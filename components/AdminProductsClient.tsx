@@ -400,6 +400,7 @@ export default function AdminProductsClient({
       active: form.active,
       collectionId: null,
       variants: form.variants.map((v) => ({
+        id: v.id,
         size: v.size,
         stock: v.stock,
         price: v.price,
@@ -507,6 +508,7 @@ export default function AdminProductsClient({
     featured: product.featured,
     active: product.active,
     variants: product.variants.map((v) => ({
+      id: v.id,
       size: v.size,
       stock: v.stock,
       price: v.price,
