@@ -10,6 +10,7 @@ import WishlistButton from "./WishlistButton";
 import StarRating from "./StarRating";
 import { addToCart } from "@/lib/cart";
 import { normalizeImageSrc } from "@/lib/image";
+import { summarizeProductPrice } from "@/lib/product-price";
 import { useViewerCurrency } from "@/lib/use-viewer-currency";
 
 const container = {
@@ -126,27 +127,24 @@ export default function ProductGrid({ products }: { products: ProductGridItem[] 
       className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
     >
       {products.map((product) => {
-        const variantPrices = (product.variants ?? [])
-          .map((v) => v.price)
-          .filter((p): p is number => typeof p === "number");
-        const minPrice =
-          variantPrices.length > 0 ? Math.min(...variantPrices) : product.price;
-        const maxPrice =
-          variantPrices.length > 0 ? Math.max(...variantPrices) : product.price;
-        const hasVariants = variantPrices.length > 0;
-        const isSinglePrice = minPrice === maxPrice;
+        // Same rule as the product page (lib/product-price.ts) so a card can
+        // never advertise "From $X" while the product page shows something else.
+        const { minPrice, hasPriceRange } = summarizeProductPrice(
+          product.price,
+          product.variants,
+        );
 
-        let priceDisplay = fmt(toDisplay(product.price));
-        if (hasVariants) {
-          if (isSinglePrice) {
-            priceDisplay = fmt(toDisplay(minPrice));
-          } else {
-            priceDisplay = `From ${fmt(toDisplay(minPrice))}`;
-          }
-        }
+        // Unpriced variants are ignored, so a single survivor is NOT a range.
+        const priceDisplay = hasPriceRange
+          ? `From ${fmt(toDisplay(minPrice))}`
+          : fmt(toDisplay(minPrice));
 
-        const hasDiscount =
-          product.compareAtPrice && product.compareAtPrice > product.price;
+        // Compare against the price actually shown: Product.price can be 0 on
+        // CJ-imported products, which used to light up the strikethrough for
+        // every product regardless of a real markdown.
+        const hasDiscount = Boolean(
+          product.compareAtPrice && product.compareAtPrice > minPrice,
+        );
 
         return (
           <motion.div

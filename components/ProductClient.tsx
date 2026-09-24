@@ -11,6 +11,10 @@ import EmailGateOffer from "./EmailGateOffer";
 import SizeChart from "./SizeChart";
 import type { SizeChartData } from "@/lib/size-chart";
 import { normalizeImageSrc } from "@/lib/image";
+import {
+  resolveVariantPrice,
+  summarizeProductPrice,
+} from "@/lib/product-price";
 import { useViewerCurrency } from "@/lib/use-viewer-currency";
 
 type Variant = {
@@ -173,19 +177,18 @@ export default function ProductClient({
       (!hasColorData || !selectedColor || variant.color === selectedColor),
   );
 
-  const variantPrices = sizes.map((variant) => variant.price);
-  const minVariantPrice =
-    variantPrices.length > 0 ? Math.min(...variantPrices) : product.price;
-  const maxVariantPrice =
-    variantPrices.length > 0 ? Math.max(...variantPrices) : product.price;
-  const hasPriceRange =
-    variantPrices.length > 1 && minVariantPrice !== maxVariantPrice;
+  // Same rule as the product card (lib/product-price.ts) so the page always
+  // advertises the same price / "From" prefix as the card the shopper clicked.
+  const { minPrice: startingPrice, hasPriceRange } = summarizeProductPrice(
+    product.price,
+    sizes,
+  );
 
   const displayPrice = selectedVariant
-    ? selectedVariant.price
-    : product.price;
-  // Match the product card ("From $X"): before a variant is picked and prices
-  // differ, prefix the lowest price with "From".
+    ? resolveVariantPrice(selectedVariant.price, startingPrice)
+    : startingPrice;
+  // Before a variant is picked and prices differ, prefix the lowest price with
+  // "From" — exactly like the product card ("From $X").
   const showFromPrefix = !selectedVariant && hasPriceRange;
 
   const hasDiscount =

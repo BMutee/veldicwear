@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 import ProductClient from "@/components/ProductClient";
 import ProductGrid from "@/components/ProductGrid";
 import Newsletter from "@/components/Newsletter";
+import {
+  resolveVariantPrice,
+  summarizeProductPrice,
+} from "@/lib/product-price";
 import type { SizeChartData } from "@/lib/size-chart";
 
 export default async function ProductPage({
@@ -24,14 +28,12 @@ export default async function ProductPage({
     notFound();
   }
 
-  // Find lowest variant price for initial display
-  const variantPrices = product.variants.map(
-    (variant: { price: number | null }) => (variant.price ?? product.price),
+  // Lowest priced variant drives the price shown before a size is picked — via
+  // the same helper the product card uses, so card and page cannot diverge.
+  const { minPrice: startingPrice } = summarizeProductPrice(
+    product.price,
+    product.variants,
   );
-  const startingPrice =
-    variantPrices.length > 0
-      ? Math.min(...variantPrices)
-      : product.price;
 
   // Fetch related products (excluding current)
   const relatedProducts = await prisma.product.findMany({
@@ -66,7 +68,7 @@ export default async function ProductPage({
             size: variant.size,
             color: variant.color ?? undefined,
             stock: variant.stock,
-            price: variant.price ?? product.price,
+            price: resolveVariantPrice(variant.price, startingPrice),
           }))}
           productImages={product.images.map((img: { id: string; color: string | null; url: string }) => ({
             id: img.id,
