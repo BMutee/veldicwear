@@ -14,6 +14,7 @@ import {
   toStripeUnitAmount,
 } from "@/lib/checkout-currency";
 import { resolveRequestBaseUrl } from "@/lib/base-url";
+import { matchCartVariant } from "@/lib/variant-selection";
 
 type ProductWithVariants = {
   id: string;
@@ -74,15 +75,26 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Product "${item.id}" not found.` }, { status: 400 });
       }
 
-      const variant = dbProduct.variants.find(
-        (v) => v.size === item.size && (item.color == null || v.color === item.color),
-      );
-      if (!variant) {
+      // Color is part of a variant's identity, so a line for a colored size is
+      // rejected when it has no color instead of silently resolving to whichever
+      // variant matched the size first — that used to ship the wrong color.
+      const match = matchCartVariant(dbProduct.variants, item.size, item.color);
+      if (!match.ok) {
+        const available = match.availableColors.length
+          ? ` Available colors: ${match.availableColors.join(", ")}.`
+          : "";
         return NextResponse.json(
-          { error: `Variant (Size: ${item.size}${item.color ? `, Color: ${item.color}` : ""}) not found for "${dbProduct.name}".` },
+          {
+            error:
+              match.reason === "color-required"
+                ? `Please choose a color for "${dbProduct.name}" (Size: ${item.size}).${available}`
+                : `Variant (Size: ${item.size}${item.color ? `, Color: ${item.color}` : ""}) not found for "${dbProduct.name}".${available}`,
+          },
           { status: 400 },
         );
       }
+
+      const variant = match.variant;
 
       if (variant.stock < item.quantity) {
         return NextResponse.json(

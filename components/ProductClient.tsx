@@ -15,6 +15,11 @@ import {
   resolveVariantPrice,
   summarizeProductPrice,
 } from "@/lib/product-price";
+import {
+  isSelectionComplete,
+  listProductColors,
+  resolveSelectedVariant,
+} from "@/lib/variant-selection";
 import { useViewerCurrency } from "@/lib/use-viewer-currency";
 
 type Variant = {
@@ -153,13 +158,12 @@ export default function ProductClient({
   // USD-stored price rendered in the viewer's currency (same math as checkout).
   const { toDisplay, fmt } = useViewerCurrency();
 
-  const availableColors = sizes.reduce((acc, variant) => {
-    if (variant.color && !acc.includes(variant.color)) {
-      acc.push(variant.color);
-    }
-    return acc;
-  }, [] as string[]);
+  const availableColors = listProductColors(sizes);
   const hasColorData = availableColors.length > 0;
+  // A product that offers colors is only identified once a color is chosen —
+  // the "Select a color" gate below enforces it (see lib/variant-selection.ts).
+  const colorSelected = Boolean(selectedColor);
+  const selectionComplete = isSelectionComplete(sizes, selectedSize, selectedColor);
 
   // Sizes shown depend on the selected color (each color may offer a
   // different size run). Before a color is picked, show the union of sizes.
@@ -171,11 +175,7 @@ export default function ProductClient({
     ),
   );
 
-  const selectedVariant = sizes.find(
-    (variant) =>
-      variant.size === selectedSize &&
-      (!hasColorData || !selectedColor || variant.color === selectedColor),
-  );
+  const selectedVariant = resolveSelectedVariant(sizes, selectedSize, selectedColor);
 
   // Same rule as the product card (lib/product-price.ts) so the page always
   // advertises the same price / "From" prefix as the card the shopper clicked.
@@ -321,6 +321,7 @@ export default function ProductClient({
                   <button
                     key={color}
                     onClick={() => handleColorSelect(color)}
+                    aria-pressed={isSelected}
                     className={`px-4 py-2.5 font-sans text-sm font-medium transition-all duration-150 cursor-pointer ${
                       isSelected
                         ? "border border-moss bg-moss text-white"
@@ -332,6 +333,15 @@ export default function ProductClient({
                 );
               })}
             </div>
+            <p
+              className={`mt-3 font-sans text-sm ${
+                colorSelected ? "text-moss" : "text-stone"
+              }`}
+            >
+              {colorSelected
+                ? `Selected: ${selectedColor}`
+                : "Choose a color — required"}
+            </p>
           </div>
         )}
 
@@ -363,6 +373,10 @@ export default function ProductClient({
                 {selectedVariant.stock} in stock
               </p>
             )
+          ) : hasColorData && !colorSelected ? (
+            <p className="font-sans text-xs text-stone">
+              Select a color to check availability
+            </p>
           ) : (
             <p className="font-sans text-xs text-stone">
               Select a size to check availability
@@ -386,9 +400,11 @@ export default function ProductClient({
               product={product}
               size={selectedSize}
               color={hasColorData ? selectedColor || undefined : undefined}
+              // Products that offer colors must have one chosen first.
+              colorRequired={hasColorData}
               variantStock={selectedVariant?.stock ?? 0}
               quantity={quantity}
-              disabled={!selectedSize || (selectedVariant?.stock ?? 0) <= 0}
+              disabled={!selectionComplete || (selectedVariant?.stock ?? 0) <= 0}
             />
           </div>
         </div>

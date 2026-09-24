@@ -14,6 +14,11 @@ type Props = {
   };
   size: string;
   color?: string;
+  /**
+   * The product offers colors, so "Add to cart" stays disabled until one is
+   * chosen (products without colors only need a size).
+   */
+  colorRequired?: boolean;
   variantStock: number;
   quantity: number;
   disabled?: boolean;
@@ -23,15 +28,24 @@ export default function AddToCartButton({
   product,
   size,
   color,
+  colorRequired,
   variantStock,
   quantity,
   disabled,
 }: Props) {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"error" | "success" | "">("");
+  // A product that offers colors cannot be added until one is picked.
+  const colorMissing = Boolean(colorRequired) && !color;
 
   function handleAddToCart() {
     setMessage("");
+
+    if (colorMissing) {
+      setMessageType("error");
+      setMessage("Please select a color.");
+      return;
+    }
 
     if (!size) {
       setMessageType("error");
@@ -70,7 +84,9 @@ export default function AddToCartButton({
             : "bg-moss text-white hover:bg-moss-hover"
         }`}
       >
-        {!size
+        {colorMissing
+          ? "Select a color"
+          : !size
           ? "Select a size"
           : disabled
           ? "Out of stock"

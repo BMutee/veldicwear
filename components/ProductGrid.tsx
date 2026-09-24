@@ -88,7 +88,8 @@ export default function ProductGrid({ products }: { products: ProductGridItem[] 
 
     const variants = product.variants || [];
 
-    // If no variants or multiple variants, navigate to product page for size selection
+    // Anything the shopper still has to choose between (more than one variant)
+    // is resolved on the product page — the card cannot know the color/size.
     if (variants.length !== 1) {
       router.push(`/product/${product.id}`);
       return;
@@ -99,6 +100,9 @@ export default function ProductGrid({ products }: { products: ProductGridItem[] 
       router.push(`/product/${product.id}`);
       return;
     }
+    // Only one variant exists, so there is nothing to choose — but the colour
+    // must still travel with the line, otherwise checkout/fulfilment cannot
+    // tell which variant was bought.
     const result = addToCart(
       {
         id: product.id,
@@ -110,6 +114,8 @@ export default function ProductGrid({ products }: { products: ProductGridItem[] 
       },
       variant.size,
       variant.stock,
+      1,
+      variant.color ?? undefined,
     );
 
     if (!result.success) {
