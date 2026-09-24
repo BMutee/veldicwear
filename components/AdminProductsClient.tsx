@@ -256,6 +256,15 @@ export default function AdminProductsClient({
     setVariantPrice("");
   };
 
+  const setVariantField = (id: string, field: "stock" | "price", raw: string) => {
+    const parsed = Number(raw);
+    const value = raw === "" || Number.isNaN(parsed) || parsed < 0 ? 0 : parsed;
+    setForm((prev) => ({
+      ...prev,
+      variants: prev.variants.map((v) => (v.id === id ? { ...v, [field]: value } : v)),
+    }));
+  };
+
   const removeVariant = (id: string) => {
     setForm((prev) => ({ ...prev, variants: prev.variants.filter((v) => v.id !== id) }));
   };
@@ -789,8 +798,16 @@ export default function AdminProductsClient({
                 {form.variants.length > 0 ? (
                   <ul className="space-y-1.5">
                     {form.variants.map((v) => (
-                      <li key={v.id} className="flex items-center justify-between rounded-lg border border-stone/20 px-3.5 py-2">
-                        <span className="text-sm text-ink"><strong>{v.color ? `${v.color} / ${v.size}` : v.size}</strong> — Stock: {v.stock} — ${(v.price ?? 0).toFixed(2)}</span>
+                      <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone/20 px-3.5 py-2">
+                        <span className="min-w-32 flex-1 text-sm text-ink"><strong>{v.color ? `${v.color} / ${v.size}` : v.size}</strong></span>
+                        <label className="flex items-center gap-1 text-xs font-medium text-stone">
+                          Stock
+                          <Input type="number" min={0} value={String(v.stock)} onChange={(raw) => setVariantField(v.id, "stock", raw)} className="w-20" ariaLabel={`Stock for ${v.color ? `${v.color} ${v.size}` : v.size}`} />
+                        </label>
+                        <label className="flex items-center gap-1 text-xs font-medium text-stone">
+                          Price $
+                          <Input type="number" step="0.01" min={0} value={String(v.price ?? 0)} onChange={(raw) => setVariantField(v.id, "price", raw)} className="w-24" ariaLabel={`Price for ${v.color ? `${v.color} ${v.size}` : v.size}`} />
+                        </label>
                         <button type="button" onClick={() => removeVariant(v.id)} className="cursor-pointer text-xs font-medium text-clay transition-colors hover:text-red-700 focus:outline-none">Remove</button>
                       </li>
                     ))}
