@@ -13,7 +13,7 @@ type AdminVariantInput = {
 };
 
 type AdminImageInput = {
-  color: string;
+  color?: string | null;
   url: string;
 };
 
@@ -69,7 +69,8 @@ export async function POST(request: Request) {
   if (body.images && Array.isArray(body.images)) {
     for (let i = 0; i < body.images.length; i++) {
       const img = body.images[i];
-      if (!img.color) errors.push("Image " + (i + 1) + ": color is required.");
+      if (img.color !== null && img.color !== undefined && img.color !== "" && typeof img.color !== "string")
+        errors.push("Image " + (i + 1) + ": color must be text.");
       if (!img.url) errors.push("Image " + (i + 1) + ": URL is required.");
     }
   }
@@ -132,7 +133,7 @@ export async function POST(request: Request) {
       },
       images: {
         create: ((body.images ?? []) as AdminImageInput[]).map((img) => ({
-          color: img.color,
+          color: normalizedColor(img.color),
           url: img.url,
         })),
       },
