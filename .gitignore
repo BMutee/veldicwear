@@ -40,3 +40,8 @@ theme/
 .agents/
 .continue/
 skills-lock.json
+# Vercel CLI link artifacts + env files (tracked .env.example stays tracked —
+# git only applies ignore rules to untracked files)
+.vercel
+.env*
+!.env.example
