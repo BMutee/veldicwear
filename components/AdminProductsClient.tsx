@@ -347,6 +347,45 @@ export default function AdminProductsClient({
     }));
   }
 
+  /**
+   * Update the sizes column list and keep every row's `values` array in sync
+   * with it.
+   *
+   * `values` is a positional string[] (index N holds the measurement for
+   * sizes[N]). If the array is shorter than the parsed size list, the extra
+   * inputs render empty but have no slot backing them — and because
+   * `Array.prototype.map` never visits indices past the original length,
+   * `updateChartValue` could not append a value, so typing appeared to do
+   * nothing until the product was saved and reopened (which rebuilds the
+   * array from the stored chart). Padding here guarantees every rendered
+   * column is editable immediately.
+   *
+   * Rows are only ever grown, never shrunk: serializeSizeChart() iterates
+   * `for (i < sizes.length)`, so surplus entries are ignored on save, while
+   * keeping them means deleting a size and typing it back restores its
+   * measurements instead of wiping them.
+   */
+  function setSizesText(sizesText: string) {
+    setForm((prev) => {
+      const sizes = parseSizesText(sizesText);
+      return {
+        ...prev,
+        sizeChart: {
+          ...prev.sizeChart,
+          sizesText,
+          rows: prev.sizeChart.rows.map((row) =>
+            row.values.length >= sizes.length
+              ? row
+              : {
+                  ...row,
+                  values: sizes.map((_, i) => row.values[i] ?? ""),
+                },
+          ),
+        },
+      };
+    });
+  }
+
   function updateChartRow(
     rowIndex: number,
     patch: Partial<SizeChartForm["rows"][number]>,
@@ -367,14 +406,20 @@ export default function AdminProductsClient({
       ...prev,
       sizeChart: {
         ...prev.sizeChart,
-        rows: prev.sizeChart.rows.map((row, i) =>
-          i === rowIndex
-            ? {
-                ...row,
-                values: row.values.map((v, ci) => (ci === colIndex ? value : v)),
-              }
-            : row,
-        ),
+        rows: prev.sizeChart.rows.map((row, i) => {
+          if (i !== rowIndex) return row;
+          // `Array.prototype.map` does not visit indices beyond the array's
+          // current length, so a short values array would silently drop the
+          // typed value. Grow it first to guarantee the slot exists.
+          const values =
+            colIndex < row.values.length
+              ? row.values
+              : Array.from({ length: colIndex + 1 }, (_, ci) => row.values[ci] ?? "");
+          return {
+            ...row,
+            values: values.map((v, ci) => (ci === colIndex ? value : v)),
+          };
+        }),
       },
     }));
   }
@@ -960,7 +1005,7 @@ export default function AdminProductsClient({
                     Sizes (columns, comma-separated)
                     <Input
                       value={form.sizeChart.sizesText}
-                      onChange={(v) => setSizeChartField("sizesText", v)}
+                      onChange={setSizesText}
                       placeholder="S, M, L, XL, 2XL"
                     />
                   </label>
