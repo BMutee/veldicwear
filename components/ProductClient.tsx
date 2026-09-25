@@ -11,6 +11,7 @@ import EmailGateOffer from "./EmailGateOffer";
 import SizeChart from "./SizeChart";
 import type { SizeChartData } from "@/lib/size-chart";
 import { normalizeImageSrc } from "@/lib/image";
+import { htmlToPlainText } from "@/lib/html-text";
 import {
   buildProductGallery,
   resolveActiveGalleryImage,
@@ -98,10 +99,9 @@ function Accordion({ data }: { data: AccordionItem[] }) {
               }`}
             >
               {typeof item.content === "string" ? (
-                <div
-                  className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: item.content }}
-                />
+                <p className="whitespace-pre-line font-sans text-sm leading-relaxed text-stone">
+                  {htmlToPlainText(item.content)}
+                </p>
               ) : (
                 item.content
               )}

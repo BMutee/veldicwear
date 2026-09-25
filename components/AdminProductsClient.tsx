@@ -25,6 +25,7 @@ import {
   sizeChartToForm,
   type SizeChartForm,
 } from "@/lib/size-chart";
+import { htmlToPlainText } from "@/lib/html-text";
 
 type ProductVariant = {
   id: string;
@@ -125,7 +126,9 @@ export const emptyForm: ProductForm = {
 export function productToForm(product: Product): ProductForm {
   return {
     name: product.name,
-    description: product.description,
+    // Descriptions are stored as plain text; supplier HTML (CJ always ships
+    // rich HTML) is converted so the textarea never shows raw markup.
+    description: htmlToPlainText(product.description),
     image: product.image,
     price: product.price,
     compareAtPrice: product.compareAtPrice,
@@ -524,7 +527,8 @@ export default function AdminProductsClient({
   const togglePayload = (product: Product, overrides: Partial<Product>) => ({
     id: product.id,
     name: product.name,
-    description: product.description,
+    // Plain text, so an inline toggle also cleans up a legacy HTML description.
+    description: htmlToPlainText(product.description),
     image: product.image,
     price: product.price,
     compareAtPrice: product.compareAtPrice,
@@ -734,7 +738,10 @@ export default function AdminProductsClient({
               </Field>
             </div>
 
-            <Field label="Description">
+            <Field
+              label="Description"
+              hint="Plain text — line breaks are kept, HTML tags are not."
+            >
               <Textarea value={form.description} onChange={(v) => setForm((prev) => ({ ...prev, description: v }))} rows={4} required />
             </Field>
 

@@ -1,7 +1,7 @@
 import { cjGet } from "@/lib/cj";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { htmlToPlainText } from "@/lib/html-text";
 import { syncSingleProductStock } from "@/lib/cj-stock-sync";
 
 /**
@@ -75,13 +75,16 @@ function toNumber(value: unknown): number {
 
 /**
  * Build the Product.description value from CJ's real description fields.
- * CJ returns rich HTML (only when features=["enable_description"] is passed),
- * so it is sanitized with the same sanitizeHtml() used for CMS rich text.
- * Falls back to the legacy placeholder only when CJ provides no description.
+ * CJ returns rich HTML (only when features=["enable_description"] is passed);
+ * descriptions are stored as plain text, so the markup is converted with the
+ * shared htmlToPlainText() used by the admin editor and the product routes.
+ * Falls back to the legacy placeholder when CJ supplies no readable text
+ * (missing, blank, or an image-only description).
  */
 function buildDescription(productData: CJProductDetail): string {
   const raw = productData.descriptionEn || productData.description || "";
-  if (raw.trim()) return sanitizeHtml(raw);
+  const plain = raw.trim() ? htmlToPlainText(raw) : "";
+  if (plain) return plain;
   return `Imported from CJ Dropshipping: ${productData.categoryName ?? ""}`;
 }
 

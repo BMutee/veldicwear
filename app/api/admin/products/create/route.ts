@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin-guard-api";
+import { htmlToPlainText } from "@/lib/html-text";
 
 type AdminVariantInput = {
   size: string;
@@ -35,7 +36,9 @@ export async function POST(request: Request) {
   if (!body.name || typeof body.name !== "string" || body.name.trim().length === 0) {
     errors.push("Name is required.");
   }
-  if (!body.description || typeof body.description !== "string") {
+  if (typeof body.description !== "string") {
+    errors.push("Description is required.");
+  } else if (htmlToPlainText(body.description) === "") {
     errors.push("Description is required.");
   }
   if (body.price === undefined || body.price === null || isNaN(Number(body.price))) {
@@ -104,7 +107,7 @@ export async function POST(request: Request) {
   const product = await prisma.product.create({
     data: {
       name: body.name.trim(),
-      description: body.description,
+      description: htmlToPlainText(body.description),
       image: mainImage,
       price: Number(body.price),
       compareAtPrice: body.compareAtPrice ? Number(body.compareAtPrice) : null,

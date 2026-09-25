@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin-guard-api";
+import { htmlToPlainText } from "@/lib/html-text";
 
 type AdminVariantInput = {
   size: string;
@@ -71,9 +72,6 @@ export async function PUT(request: Request) {
   if (!body.name || typeof body.name !== "string" || body.name.trim().length === 0) {
     errors.push("Name is required.");
   }
-  if (!body.description || typeof body.description !== "string") {
-    errors.push("Description is required.");
-  }
   if (body.price === undefined || body.price === null || isNaN(Number(body.price))) {
     errors.push("Price is required and must be a number.");
   }
@@ -136,6 +134,11 @@ export async function PUT(request: Request) {
     (typeof body.sizeChart !== "object" || Array.isArray(body.sizeChart))
   ) {
     errors.push("Size chart must be an object.");
+  }
+  const description =
+    typeof body.description === "string" ? htmlToPlainText(body.description) : "";
+  if (typeof body.description !== "string" || !description) {
+    errors.push("Description is required.");
   }
 
   if (errors.length > 0) {
@@ -211,7 +214,8 @@ export async function PUT(request: Request) {
       where: { id: body.id },
       data: {
         name: body.name.trim(),
-        description: body.description,
+        // Stored as plain text — supplier HTML is converted on the way in.
+        description,
         image: mainImage,
         price: Number(body.price),
         compareAtPrice: body.compareAtPrice ? Number(body.compareAtPrice) : null,
