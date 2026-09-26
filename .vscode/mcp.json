@@ -12,6 +12,11 @@
       "type": "http",
       "url": "https://21st.dev/api/mcp",
       "headers": { "x-api-key": "${input:21st-api-key}" }
+    },
+    "dart": {
+      "type": "stdio",
+      "command": "dart",
+      "args": ["mcp-server"]
     }
   }
 }
