@@ -7,7 +7,6 @@ import SizeSelector from "./SizeSelector";
 import WishlistButton from "./WishlistButton";
 import ReviewSection from "./ReviewSection";
 import DeliveryEstimate from "./DeliveryEstimate";
-import EmailGateOffer from "./EmailGateOffer";
 import SizeChart from "./SizeChart";
 import type { SizeChartData } from "@/lib/size-chart";
 import { normalizeImageSrc } from "@/lib/image";
@@ -347,9 +346,6 @@ export default function ProductClient({
             </span>
           )}
         </div>
-
-        {/* Email gate — discounted price unlocked by subscribing */}
-        <EmailGateOffer price={displayPrice} />
 
         {/* Color selector */}
         {hasColorData && (
