@@ -3,13 +3,21 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import BlockRenderer from "@/components/blocks/BlockRenderer";
 
-export async function generateStaticParams() {
-  const pages: { slug: string }[] = await prisma.cmsPage.findMany({
-    where: { published: true },
-    select: { slug: true },
-  });
-  return pages.map((p: { slug: string }) => ({ slug: p.slug }));
-}
+// Rendered on demand — deliberately NOT prerendered.
+//
+// This route used to export generateStaticParams() so published CMS pages were
+// built as static HTML. That made a live database a hard requirement of
+// `next build`: Next.js calls generateStaticParams while "Collecting page
+// data", so any build machine without DATABASE_URL (or with an unreachable or
+// auto-suspended Postgres) failed the entire deploy with "Failed to collect
+// page data for /[slug]" before a single page shipped.
+//
+// Nothing revalidates these pages, so a statically built CMS page also ignored
+// admin edits until the next deploy. Rendering on demand fixes both: the build
+// no longer needs a database, and a published edit is live immediately. This
+// matches the sibling storefront routes (app/page.tsx, app/search/page.tsx),
+// which are force-dynamic for the same reason.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
