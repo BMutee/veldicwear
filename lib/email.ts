@@ -6,6 +6,7 @@ import {
   getReturnOpsPlaybook,
   isReturnReason,
 } from "@/lib/returns";
+import { resolveBaseUrl } from "@/lib/base-url";
 
 /**
  * Customer-supplied text (return notes, reasons) is echoed into HTML emails, so
@@ -23,6 +24,31 @@ function escapeHtml(value: string): string {
 
 function returnReasonLabel(reason: string): string {
   return RETURN_REASONS.find((entry) => entry.value === reason)?.label ?? reason;
+}
+
+/**
+ * The logo that goes at the top of every customer email.
+ *
+ * Deliberately a PNG, not the site's `/Logo.webp`: Outlook's Word rendering
+ * engine cannot display WebP at all, so a WebP logo is an invisible logo for a
+ * large share of customers. It is a 600px-wide white-flattened copy generated
+ * from the same source (see the header of scripts/make-email-logo.ts).
+ *
+ * The `alt` text matters more than it looks: Gmail, Outlook and Apple Mail all
+ * block remote images by default, and the alt is what the customer sees until
+ * they allow images. "Veldic Wear" is the brand, so that is the alt.
+ */
+function emailLogo(siteUrl: string): string {
+  return `<div style="padding: 0 0 24px;">
+        <a href="${siteUrl}" style="text-decoration: none;">
+          <img
+            src="${siteUrl}/email-logo.png"
+            alt="Veldic Wear"
+            width="600"
+            style="display: block; width: 600px; max-width: 100%; height: auto; border: 0;"
+          />
+        </a>
+      </div>`;
 }
 
 const DEO_MAIL_API_KEY = process.env.DEO_MAIL_API_KEY ?? "";
@@ -105,6 +131,7 @@ export async function sendOrderShippedEmail(options: {
   items: Array<{ name: string; size: string; color?: string | null; quantity: number; price: number }>;
 }) {
   const { to, orderNumber, trackingNumber, trackingCarrier, items } = options;
+  const siteUrl = resolveBaseUrl();
 
   const itemRows = items
     .map(
@@ -118,8 +145,9 @@ export async function sendOrderShippedEmail(options: {
     : "";
 
   const html = `
-    <div style="font-family: Arial, sans-serif; color: #111;">
-      <h1>Your Order Has Shipped!</h1>
+    <div style="font-family: Arial, sans-serif; color: #111; max-width: 600px;">
+      ${emailLogo(siteUrl)}
+      <h1 style="font-size: 20px; margin-bottom: 16px;">Your Order Has Shipped!</h1>
       <p>Great news! Your order <strong>${orderNumber}</strong> is on its way.</p>
       ${trackingHtml}
       <h2>Order summary</h2>
@@ -157,7 +185,8 @@ export async function sendOrderConfirmationEmail(options: {
   items: Array<{ name: string; size: string; color?: string | null; quantity: number; price: number }>;
 }) {
   const { to, orderId, orderNumber, orderTotal, items, trackingToken } = options;
-  const trackingUrl = `${process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/track-order?token=${encodeURIComponent(trackingToken)}`;
+  const siteUrl = resolveBaseUrl();
+  const trackingUrl = `${siteUrl}/track-order?token=${encodeURIComponent(trackingToken)}`;
 
   const itemRows = items
     .map(
@@ -167,8 +196,9 @@ export async function sendOrderConfirmationEmail(options: {
     .join("");
 
   const html = `
-    <div style="font-family: Arial, sans-serif; color: #111;">
-      <h1>Order Confirmation</h1>
+    <div style="font-family: Arial, sans-serif; color: #111; max-width: 600px;">
+      ${emailLogo(siteUrl)}
+      <h1 style="font-size: 20px; margin-bottom: 16px;">Order Confirmation</h1>
       <p>Thank you for your order. Your order <strong>${orderNumber}</strong> has been received.</p>
       <p>Stripe payment ID: <strong>${orderId}</strong></p>
       <h2>Order summary</h2>
@@ -201,14 +231,21 @@ export async function sendOrderConfirmationEmail(options: {
 
 export async function sendWelcomeEmail(options: { to: string }) {
   const { to } = options;
-  const siteUrl =
-    process.env.BETTER_AUTH_URL ??
-    process.env.NEXT_PUBLIC_BASE_URL ??
-    "http://localhost:3000";
+  const siteUrl = resolveBaseUrl();
   const shopUrl = `${siteUrl}/collections`;
 
   const html = `
     <div style="font-family: Arial, sans-serif; color: #1B2737; max-width: 600px; margin: 0 auto; background: #F3F7FC;">
+      <div style="background: #ffffff; padding: 24px; text-align: center; border-bottom: 1px solid #E2E8F0;">
+        <a href="${siteUrl}" style="text-decoration: none;">
+          <img
+            src="${siteUrl}/email-logo.png"
+            alt="Veldic Wear"
+            width="600"
+            style="display: block; width: 600px; max-width: 100%; height: auto; border: 0; margin: 0 auto;"
+          />
+        </a>
+      </div>
       <div style="background: #2563EB; padding: 32px 24px; text-align: center;">
         <h1 style="color: #FFFFFF; font-size: 24px; margin: 0; letter-spacing: 2px;">VELDIC WEAR</h1>
       </div>
@@ -293,8 +330,9 @@ export async function sendReturnRequestEmail(options: {
     : "";
 
   const html = `
-    <div style="font-family: Arial, sans-serif; color: #111;">
-      <h1>New return request</h1>
+    <div style="font-family: Arial, sans-serif; color: #111; max-width: 600px;">
+      ${emailLogo(resolveBaseUrl())}
+      <h1 style="font-size: 20px; margin-bottom: 16px;">New return request</h1>
       <p>A customer started a return from the website. Nothing has been shipped back yet — reply with the return instructions and the address.</p>
       <table style="border-collapse: collapse; margin-top: 16px;">
         <tbody>
@@ -355,8 +393,8 @@ export async function sendReturnRequestConfirmationEmail(options: {
   items: Array<{ name: string; size: string; color?: string | null; quantity: number }>;
 }) {
   const { to, orderNumber, reference, reason, itemCount, items } = options;
-  const siteUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const siteUrl = resolveBaseUrl();
+  const logo = emailLogo(siteUrl);
 
   const itemRows = items
     .map(
@@ -367,6 +405,7 @@ export async function sendReturnRequestConfirmationEmail(options: {
 
   const html = `
     <div style="font-family: Arial, sans-serif; color: #111;">
+      ${logo}
       <h1>We've got your return request</h1>
       <p>Thanks for letting us know. Nothing to do for a few days — please <strong>don't</strong> post anything back until we email you the return address.</p>
       <table style="border-collapse: collapse; margin-top: 16px;">
@@ -416,8 +455,7 @@ export async function sendContactMessageReplyEmail(options: {
   body: string;
 }) {
   const { to, customerName, originalSubject, originalMessage, body } = options;
-  const siteUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const siteUrl = resolveBaseUrl();
 
   // "Re:" is added once — replying to an already-"Re:"-prefixed subject must not
   // stack up into "Re: Re: …".
@@ -429,6 +467,7 @@ export async function sendContactMessageReplyEmail(options: {
 
   const html = `
     <div style="font-family: Arial, sans-serif; color: #111; max-width: 600px;">
+      ${emailLogo(siteUrl)}
       <h1 style="font-size: 20px; margin-bottom: 16px;">Hi ${escapeHtml(firstName)},</h1>
       <div style="line-height: 1.6;">${bodyHtml}</div>
       <p style="margin-top: 24px; font-size: 13px; color: #555;">
@@ -483,14 +522,14 @@ export async function sendProactiveContactEmail(options: {
   body: string;
 }) {
   const { to, customerName, subject, body } = options;
-  const siteUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const siteUrl = resolveBaseUrl();
 
   const bodyHtml = escapeHtml(body).replace(/\r?\n/g, "<br />");
   const firstName = customerName.trim().split(/\s+/)[0] || customerName.trim();
 
   const html = `
     <div style="font-family: Arial, sans-serif; color: #111; max-width: 600px;">
+      ${emailLogo(siteUrl)}
       <h1 style="font-size: 20px; margin-bottom: 16px;">Hi ${escapeHtml(firstName)},</h1>
       <div style="line-height: 1.6;">${bodyHtml}</div>
       <p style="margin-top: 24px; font-size: 13px; color: #555;">

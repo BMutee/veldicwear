@@ -3,6 +3,7 @@ import { escapeHtml } from "@/lib/sanitize";
 import { sendDeoMail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limiter";
 import { upsertThreadForInbound } from "@/lib/message-threads";
+import { resolveBaseUrl } from "@/lib/base-url";
 
 const CONTACT_EMAIL_TO = (process.env.CONTACT_EMAIL_TO ?? "info@veldicwear.com").toLowerCase();
 const CONTACT_EMAIL_FROM = (process.env.EMAIL_FROM ?? "info@veldicwear.com").toLowerCase();
@@ -40,11 +41,25 @@ export async function POST(request: NextRequest) {
     }
 
     const safeSubject = String(subject).trim().slice(0, 200);
+    const siteUrl = resolveBaseUrl();
+
+    // The admin copy of the contact notification is the first thing an admin
+    // sees from this address, so it carries the logo like every other template.
+    // Rendered as a table row because this template is table-based.
+    const logoRow = `<tr>
+        <td style="padding: 0 0 16px;">
+          <a href="${siteUrl}" style="text-decoration: none;">
+            <img src="${siteUrl}/email-logo.png" alt="Veldic Wear" width="600"
+              style="display: block; width: 600px; max-width: 100%; height: auto; border: 0;" />
+          </a>
+        </td>
+      </tr>`;
 
     const html = `
       <div style="font-family: Arial, sans-serif; color: #111; max-width: 600px;">
         <h1 style="font-size: 20px; margin-bottom: 16px;">New Contact Form Submission</h1>
         <table style="border-collapse: collapse; width: 100%;">
+          ${logoRow}
           <tr><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 100px;">Name</td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(String(name).trim())}</td></tr>
           <tr><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Email</td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(visitorEmail)}</td></tr>
           <tr><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Subject</td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(safeSubject)}</td></tr>
