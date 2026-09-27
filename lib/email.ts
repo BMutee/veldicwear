@@ -1,3 +1,23 @@
+import { RETURN_REASONS, RETURN_WINDOW_DAYS, SUPPORT_EMAIL } from "@/lib/returns";
+
+/**
+ * Customer-supplied text (return notes, reasons) is echoed into HTML emails, so
+ * it is escaped before it reaches a template. Anything that comes from our own
+ * catalog (product names, sizes) is not.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function returnReasonLabel(reason: string): string {
+  return RETURN_REASONS.find((entry) => entry.value === reason)?.label ?? reason;
+}
+
 const DEO_MAIL_API_KEY = process.env.DEO_MAIL_API_KEY ?? "";
 const DEO_MAIL_API_URL = "https://api.deomail.com/v1/send";
 // DeoMail only authorizes the exact lowercase sender identity
@@ -211,6 +231,129 @@ export async function sendWelcomeEmail(options: { to: string }) {
   return sendDeoMail({
     to: [to],
     subject: "Welcome to Veldic Wear — you're in!",
+    html,
+  });
+}
+
+/**
+ * Notify the support inbox about a return started from the /returns portal.
+ *
+ * There is no Return table, so this email IS the record: it has to carry
+ * everything a human needs to action the request without opening the database.
+ * `to` defaults to the support inbox and the customer's address goes on
+ * replyTo, so hitting Reply in the inbox answers the customer directly.
+ */
+export async function sendReturnRequestEmail(options: {
+  /** Where the request lands. Defaults to the support inbox. */
+  to?: string;
+  customerEmail: string;
+  orderNumber: string;
+  reference: string;
+  reason: string;
+  note: string;
+  items: Array<{ name: string; size: string; color?: string | null; quantity: number; price: number }>;
+}) {
+  const { customerEmail, orderNumber, reference, reason, note, items } = options;
+  const to = options.to ?? SUPPORT_EMAIL;
+
+  const itemRows = items
+    .map(
+      (item) =>
+        `<tr><td style="padding: 8px; border: 1px solid #ddd">${item.name}</td><td style="padding: 8px; border: 1px solid #ddd">${item.size}</td><td style="padding: 8px; border: 1px solid #ddd">${item.color ?? "—"}</td><td style="padding: 8px; border: 1px solid #ddd">${item.quantity}</td><td style="padding: 8px; border: 1px solid #ddd">$${(item.price * item.quantity).toFixed(2)}</td></tr>`
+    )
+    .join("");
+
+  const noteBlock = note
+    ? `<p style="margin-top: 16px;"><strong>Customer note:</strong><br />${escapeHtml(note).replace(/\n/g, "<br />")}</p>`
+    : "";
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; color: #111;">
+      <h1>New return request</h1>
+      <p>A customer started a return from the website. Nothing has been shipped back yet — reply with the return instructions and the address.</p>
+      <table style="border-collapse: collapse; margin-top: 16px;">
+        <tbody>
+          <tr><td style="padding: 4px 16px 4px 0;"><strong>Reference</strong></td><td style="padding: 4px 0;">${reference}</td></tr>
+          <tr><td style="padding: 4px 16px 4px 0;"><strong>Order</strong></td><td style="padding: 4px 0;">${orderNumber}</td></tr>
+          <tr><td style="padding: 4px 16px 4px 0;"><strong>Customer email</strong></td><td style="padding: 4px 0;">${escapeHtml(customerEmail)}</td></tr>
+          <tr><td style="padding: 4px 16px 4px 0;"><strong>Reason</strong></td><td style="padding: 4px 0;">${escapeHtml(returnReasonLabel(reason))}</td></tr>
+        </tbody>
+      </table>
+      <h2 style="margin-top: 24px;">Items to refund on arrival</h2>
+      <table style="border-collapse: collapse; width: 100%;">
+        <thead>
+          <tr>
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: left">Product</th>
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: left">Size</th>
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: left">Color</th>
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: left">Qty</th>
+            <th style="padding: 8px; border: 1px solid #ddd; text-align: left">Total</th>
+          </tr>
+        </thead>
+
+        <tbody>${itemRows}</tbody>
+      </table>
+      ${noteBlock}
+      <p style="margin-top: 24px; color: #555;">Requested inside the ${RETURN_WINDOW_DAYS}-day window. Refund to the original payment method once the parcel is received and inspected.</p>
+    </div>
+  `;
+
+  return sendDeoMail({
+    to: [to],
+    subject: `Return request ${reference} — order ${orderNumber}`,
+    html,
+    replyTo: customerEmail,
+  });
+}
+
+/** Tell the customer their request landed, and what happens next. */
+export async function sendReturnRequestConfirmationEmail(options: {
+  to: string;
+  orderNumber: string;
+  reference: string;
+  reason: string;
+  itemCount: number;
+  items: Array<{ name: string; size: string; color?: string | null; quantity: number }>;
+}) {
+  const { to, orderNumber, reference, reason, itemCount, items } = options;
+  const siteUrl =
+    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+
+  const itemRows = items
+    .map(
+      (item) =>
+        `<li style="margin: 4px 0;">${item.name} — size ${item.size}${item.color ? `, color ${item.color}` : ""} &times; ${item.quantity}</li>`
+    )
+    .join("");
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; color: #111;">
+      <h1>We've got your return request</h1>
+      <p>Thanks for letting us know. Nothing to do for a few days — please <strong>don't</strong> post anything back until we email you the return address.</p>
+      <table style="border-collapse: collapse; margin-top: 16px;">
+        <tbody>
+          <tr><td style="padding: 4px 16px 4px 0;"><strong>Reference</strong></td><td style="padding: 4px 0;">${reference}</td></tr>
+          <tr><td style="padding: 4px 16px 4px 0;"><strong>Order</strong></td><td style="padding: 4px 0;">${orderNumber}</td></tr>
+          <tr><td style="padding: 4px 16px 4px 0;"><strong>Reason</strong></td><td style="padding: 4px 0;">${escapeHtml(returnReasonLabel(reason))}</td></tr>
+          <tr><td style="padding: 4px 16px 4px 0;"><strong>Items</strong></td><td style="padding: 4px 0;">${itemCount}</td></tr>
+        </tbody>
+      </table>
+      <h2 style="margin-top: 24px;">What you told us you're sending back</h2>
+      <ul>${itemRows}</ul>
+      <h2 style="margin-top: 24px;">What happens next</h2>
+      <ol>
+        <li>We email you a prepaid label and the return address.</li>
+        <li>You send the items back unworn, with the tags still attached, within ${RETURN_WINDOW_DAYS} days of delivery.</li>
+        <li>We inspect them and refund the item price to your original payment method, then email you the refund confirmation.</li>
+      </ol>
+      <p>Quote reference <strong>${reference}</strong> in any reply — it goes straight to the person handling your return.</p>
+      <p><a href="${siteUrl}/returns-refund-policy">Read the full Return &amp; Refund Policy</a></p>
+    </div>
+  `;
+
+  return sendDeoMail({
+    to: [to],
+    subject: `We have your return request ${reference} (order ${orderNumber})`,
     html,
   });
 }

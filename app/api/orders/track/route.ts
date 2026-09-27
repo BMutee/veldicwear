@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { verifyOrderTrackingToken } from "@/lib/order-tracking";
 import { checkRateLimit } from "@/lib/rate-limiter";
+import { clientIpFrom, verifyOrderCredentials } from "@/lib/order-lookup";
 
 /**
  * Shared shape for the public tracking page. No customer PII leaves this
@@ -49,16 +49,17 @@ export async function POST(request: NextRequest) {
  * `ORD-<timestamp>-<random>` pattern and can be sprayed) — the checkout email
  * is required as the second factor. Both halves are rate limited per IP, the
  * response is identical (plain 404) whether the number or the email was wrong,
- * and the email itself is never returned in any response. Order numbers are
- * also trimmed/case-insensitive here because customers retype them by hand.
+ * and the email itself is never returned in any response.
+ *
+ * The credential check itself lives in lib/order-lookup.ts so the returns portal
+ * cannot drift into a weaker version of these defences.
  */
 export async function GET(request: NextRequest) {
   try {
-    const ip =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      request.headers.get("x-real-ip")?.trim() ||
-      "unknown";
-    const limit = checkRateLimit(`order-lookup:${ip}`, { maxAttempts: 10, windowSeconds: 600 });
+    const limit = checkRateLimit(`order-lookup:${clientIpFrom(request)}`, {
+      maxAttempts: 10,
+      windowSeconds: 600,
+    });
     if (!limit.allowed) {
       return NextResponse.json(
         { error: "Too many lookups. Please try again in a few minutes." },
@@ -67,38 +68,19 @@ export async function GET(request: NextRequest) {
     }
 
     const params = request.nextUrl.searchParams;
-    const rawNumber = params.get("orderNumber") ?? "";
-    const rawEmail = params.get("email") ?? "";
-    const orderNumber = rawNumber.trim().toUpperCase().slice(0, 64);
-    const email = rawEmail.trim().toLowerCase().slice(0, 254);
+    const verified = await verifyOrderCredentials(
+      params.get("orderNumber"),
+      params.get("email")
+    );
+    if (!verified) return NextResponse.json({ error: "Order not found." }, { status: 404 });
 
-    if (!orderNumber || !email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      return NextResponse.json({ error: "Order not found." }, { status: 404 });
-    }
-
-    const order = await prisma.order.findFirst({
-      where: {
-        OR: [{ orderNumber }, { orderNumber: rawNumber.trim().slice(0, 64) }],
-      },
-      select: { ...PUBLIC_TRACKING_SELECT, email: true },
+    const order = await prisma.order.findUnique({
+      where: { id: verified.id },
+      select: PUBLIC_TRACKING_SELECT,
     });
+    if (!order) return NextResponse.json({ error: "Order not found." }, { status: 404 });
 
-    // One generic answer for "no such number" and "wrong email": telling the
-    // two apart would let anyone probe which order numbers exist. The email
-    // compare runs even when the number missed so the timing stays flat.
-    const expected = Buffer.from(order?.email?.trim().toLowerCase() ?? "");
-    const supplied = Buffer.from(email);
-    const matched =
-      expected.length > 0 &&
-      supplied.length === expected.length &&
-      timingSafeEqual(supplied, expected);
-
-    if (!order || !matched) {
-      return NextResponse.json({ error: "Order not found." }, { status: 404 });
-    }
-
-    const { email: _email, ...publicOrder } = order;
-    return NextResponse.json({ order: publicOrder });
+    return NextResponse.json({ order });
   } catch {
     return NextResponse.json({ error: "Unable to retrieve this order." }, { status: 500 });
   }

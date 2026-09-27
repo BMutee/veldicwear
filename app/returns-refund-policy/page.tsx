@@ -161,7 +161,18 @@ export default function ReturnsRefundPolicyPage() {
             </h2>
             <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
               <p>
-                Email{" "}
+                The quickest route is the{" "}
+                <Link
+                  href="/returns"
+                  className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"
+                >
+                  returns page
+                </Link>
+                : enter your order number and the email on the order, choose the items, and we&rsquo;ll email you
+                a return address and label.
+              </p>
+              <p>
+                Prefer email? Write to{" "}
                 <a
                   href={`mailto:${SUPPORT_EMAIL}`}
                   className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"

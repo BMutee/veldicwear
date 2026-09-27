@@ -405,6 +405,7 @@ const SECTION_DEFAULTS: Record<string, { label: string; defaultContent: unknown 
       supportLinks: [
         { label: "Contact", href: "/contact" },
         { label: "FAQ", href: "/faq" },
+        { label: "Start a Return", href: "/returns" },
         { label: "Shipping & Returns", href: "/shipping" },
       ],
       companyLinks: [
