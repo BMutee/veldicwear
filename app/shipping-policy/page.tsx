@@ -21,16 +21,16 @@ type ShippingDestination = {
 const SHIPPING_DESTINATIONS: ShippingDestination[] = [
   {
     region: "Canada",
-    detail: "FREE standard shipping, no minimum.",
+    detail: "FREE standard shipping, no minimum \u2014 limited-time offer.",
   },
   {
     region: "United States",
-    detail: "FREE standard shipping, no minimum.",
+    detail: "FREE standard shipping, no minimum \u2014 limited-time offer.",
     extra: "US prices include import duties \u2014 nothing to pay on delivery.",
   },
   {
     region: "Rest of World",
-    detail: "FREE standard shipping, no minimum, to every destination we serve.",
+    detail: "FREE standard shipping, no minimum, to every destination we serve \u2014 limited-time offer.",
     extra: "Delivery time depends on the country and customs clearance.",
   },
 ];
