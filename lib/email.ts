@@ -396,3 +396,74 @@ export async function sendReturnRequestConfirmationEmail(options: {
     html,
   });
 }
+
+/**
+ * Answer a contact-form customer from Admin → Messages.
+ *
+ * The reply leaves from the same sender identity as every other store email and
+ * puts the support inbox on `replyTo`, so if the customer answers again the mail
+ * lands back with us rather than bouncing.
+ *
+ * The admin's body is plain text from a textarea: it is escaped, then newlines
+ * become <br> so the paragraph structure survives. The original message is
+ * quoted underneath so the customer can see what is being answered.
+ */
+export async function sendContactMessageReplyEmail(options: {
+  to: string;
+  customerName: string;
+  originalSubject: string;
+  originalMessage: string;
+  body: string;
+}) {
+  const { to, customerName, originalSubject, originalMessage, body } = options;
+  const siteUrl =
+    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+
+  // "Re:" is added once — replying to an already-"Re:"-prefixed subject must not
+  // stack up into "Re: Re: …".
+  const subject = /^re:/i.test(originalSubject) ? originalSubject : `Re: ${originalSubject}`;
+
+  const bodyHtml = escapeHtml(body).replace(/\r?\n/g, "<br />");
+  const quotedHtml = escapeHtml(originalMessage).replace(/\r?\n/g, "<br />");
+  const firstName = customerName.trim().split(/\s+/)[0] || customerName.trim();
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; color: #111; max-width: 600px;">
+      <h1 style="font-size: 20px; margin-bottom: 16px;">Hi ${escapeHtml(firstName)},</h1>
+      <div style="line-height: 1.6;">${bodyHtml}</div>
+      <p style="margin-top: 24px; font-size: 13px; color: #555;">
+        Just reply to this email and it comes straight back to our support inbox — we're happy to help.
+      </p>
+      <div style="margin-top: 24px; padding: 12px; border-left: 4px solid #ddd; background: #f9f9f9;">
+        <p style="margin: 0 0 8px; font-size: 12px; color: #555;">
+          On ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} you wrote:
+        </p>
+        <p style="margin: 0 0 8px; font-size: 13px;"><strong>${escapeHtml(subject)}</strong></p>
+        <p style="margin: 0; line-height: 1.5; color: #333;">${quotedHtml}</p>
+      </div>
+      <p style="margin-top: 24px;">— Veldic Wear Support</p>
+      <p style="margin-top: 16px; font-size: 12px; color: #777;">
+        <a href="${siteUrl}" style="color: #777;">veldicwear.com</a>
+      </p>
+    </div>
+  `;
+
+  const text = [
+    `Hi ${firstName},`,
+    "",
+    body,
+    "",
+    "Just reply to this email and it comes straight back to our support inbox — we're happy to help.",
+    "",
+    "— Veldic Wear Support",
+  ].join("\n");
+
+  return sendDeoMail({
+    to: [to],
+    subject,
+    replyTo: SUPPORT_EMAIL,
+    html,
+    text,
+  });
+}
+

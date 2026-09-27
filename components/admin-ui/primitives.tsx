@@ -225,6 +225,7 @@ export function Textarea({
   placeholder,
   required,
   disabled,
+  maxLength,
   className = "",
   ariaLabel,
 }: {
@@ -234,6 +235,7 @@ export function Textarea({
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
+  maxLength?: number;
   className?: string;
   ariaLabel?: string;
 }) {
@@ -243,6 +245,7 @@ export function Textarea({
       rows={rows}
       required={required}
       disabled={disabled}
+      maxLength={maxLength}
       placeholder={placeholder}
       aria-label={ariaLabel}
       onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value)}

@@ -398,17 +398,39 @@ model Review {
 }
 
 model ContactMessage {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   email     String
   subject   String
   message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  read      Boolean   @default(false)
+  repliedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  replies ContactMessageReply[]
 
   @@index([createdAt])
   @@index([read, createdAt])
   @@map("ContactMessage")
+}
+
+/**
+ * A reply an admin sent from /admin/messages instead of bouncing out to a mail
+ * client. Persisted so the thread is visible to the next person who opens the
+ * message — otherwise nothing records that the customer was ever answered.
+ */
+model ContactMessageReply {
+  id        String   @id @default(cuid())
+  messageId String
+  body      String
+  adminId   String?
+  adminName String?
+  createdAt DateTime @default(now())
+
+  message ContactMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId, createdAt])
+  @@map("ContactMessageReply")
 }
 
 model CmsPage {

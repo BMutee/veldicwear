@@ -2,13 +2,22 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  AlertBanner,
   Badge,
   Button,
   Card,
   PageHeader,
   SearchInput,
   Spinner,
+  Textarea,
 } from "@/components/admin-ui/primitives";
+
+export type ContactMessageReply = {
+  id: string;
+  body: string;
+  adminName: string | null;
+  createdAt: string;
+};
 
 export type ContactMessage = {
   id: string;
@@ -17,8 +26,13 @@ export type ContactMessage = {
   subject: string;
   message: string;
   read: boolean;
+  repliedAt: string | null;
+  replies: ContactMessageReply[];
   createdAt: string;
 };
+
+/** Mirrors MAX_BODY_LENGTH in app/api/admin/messages/[id]/reply/route.ts. */
+const MAX_REPLY_LENGTH = 5000;
 
 export default function AdminMessagesClient() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -27,6 +41,10 @@ export default function AdminMessagesClient() {
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [replyBody, setReplyBody] = useState("");
+  const [sending, setSending] = useState(false);
+  const [replyError, setReplyError] = useState<string | null>(null);
+  const [replySent, setReplySent] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -75,8 +93,12 @@ export default function AdminMessagesClient() {
         body: JSON.stringify({ read }),
       });
       if (!res.ok) throw new Error("update failed");
-      const updated = (await res.json()) as ContactMessage;
-      setMessages((prev) => prev.map((m) => (m.id === id ? updated : m)));
+      const updated = (await res.json()) as Partial<ContactMessage>;
+      // Merged, not replaced: the PATCH response is a bare row with no `replies`,
+      // so swapping the whole object in would drop the thread from the pane.
+      setMessages((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, ...updated } : m)),
+      );
     } finally {
       setActionId(null);
     }
@@ -97,7 +119,53 @@ export default function AdminMessagesClient() {
 
   const openMessage = (m: ContactMessage) => {
     setSelectedId(m.id);
+    // A half-written reply belongs to the message that was open when it was
+    // typed — clear it so it can't be sent to the wrong customer.
+    setReplyBody("");
+    setReplyError(null);
+    setReplySent(false);
     if (!m.read) void setRead(m.id, true);
+  };
+
+  const sendReply = async () => {
+    if (!selected) return;
+    const body = replyBody.trim();
+    if (!body || sending) return;
+
+    setSending(true);
+    setReplyError(null);
+    try {
+      const res = await fetch(`/api/admin/messages/${selected.id}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setReplyError(data?.error ?? "We couldn't send that reply. Please try again.");
+        return;
+      }
+      const reply = (data?.reply ?? null) as ContactMessageReply | null;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === selected.id
+            ? {
+                ...m,
+                read: true,
+                repliedAt: reply?.createdAt ?? new Date().toISOString(),
+                // Guard against a null replies array so the thread render stays safe.
+                replies: reply ? [...(m.replies ?? []), reply] : (m.replies ?? []),
+              }
+            : m,
+        ),
+      );
+      setReplyBody("");
+      setReplySent(true);
+    } catch {
+      setReplyError("We couldn't send that reply. Please try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -173,11 +241,18 @@ export default function AdminMessagesClient() {
                       </span>
                     </div>
                     <p className="mt-0.5 truncate text-xs text-stone">{m.email}</p>
-                    <p
-                      className={`mt-1 truncate text-sm ${m.read ? "text-stone" : "font-semibold text-ink"}`}
-                    >
-                      {m.subject}
-                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <p
+                        className={`min-w-0 flex-1 truncate text-sm ${m.read ? "text-stone" : "font-semibold text-ink"}`}
+                      >
+                        {m.subject}
+                      </p>
+                      {m.repliedAt && (
+                        <span className="shrink-0 rounded-full bg-clay/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-clay">
+                          Replied
+                        </span>
+                      )}
+                    </div>
                   </button>
                 </li>
               ))}
@@ -195,9 +270,12 @@ export default function AdminMessagesClient() {
               <div className="border-b border-stone/20 px-5 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="font-display text-lg font-bold text-ink">{selected.subject}</h2>
-                  <Badge tone={selected.read ? "neutral" : "success"}>
-                    {selected.read ? "Read" : "Unread"}
-                  </Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {selected.repliedAt && <Badge tone="accent">Replied</Badge>}
+                    <Badge tone={selected.read ? "neutral" : "success"}>
+                      {selected.read ? "Read" : "Unread"}
+                    </Badge>
+                  </div>
                 </div>
                 <p className="mt-2 text-sm text-ink">
                   {selected.name}{" "}
@@ -221,13 +299,99 @@ export default function AdminMessagesClient() {
               <p className="whitespace-pre-wrap px-5 py-4 text-sm leading-6 text-ink">
                 {selected.message}
               </p>
+
+              {/* ── Sent replies ── */}
+              {selected.replies.length > 0 && (
+                <div className="border-t border-stone/20 px-5 py-4">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-stone">
+                    Your replies
+                  </h3>
+                  <ul className="mt-3 space-y-3">
+                    {selected.replies.map((r) => (
+                      <li
+                        key={r.id}
+                        className="rounded-lg border border-moss/20 bg-moss/5 px-4 py-3"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-xs font-semibold text-moss">
+                            {r.adminName ?? "Admin"}
+                          </p>
+                          <p className="text-xs text-stone">
+                            {new Date(r.createdAt).toLocaleString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                        <p className="mt-1.5 whitespace-pre-wrap text-sm leading-6 text-ink">
+                          {r.body}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* ── Reply composer ── */}
+              <div className="border-t border-stone/20 px-5 py-4">
+                <label htmlFor="reply-body" className="block text-sm font-medium text-ink">
+                  Reply to {selected.name}
+                </label>
+                <p className="mt-0.5 text-xs text-stone">
+                  Sent from our support address to {selected.email}. If they reply, it lands back
+                  in this inbox.
+                </p>
+                <Textarea
+                  value={replyBody}
+                  onChange={(v) => {
+                    setReplyBody(v);
+                    if (replySent) setReplySent(false);
+                    if (replyError) setReplyError(null);
+                  }}
+                  rows={6}
+                  maxLength={MAX_REPLY_LENGTH}
+                  disabled={sending}
+                  placeholder="Type your reply…"
+                  ariaLabel={`Reply to ${selected.name}`}
+                  className="mt-2 resize-y"
+                />
+                {replyError && (
+                  <div className="mt-3">
+                    <AlertBanner kind="error" onDismiss={() => setReplyError(null)}>
+                      {replyError}
+                    </AlertBanner>
+                  </div>
+                )}
+                {replySent && !replyError && (
+                  <div className="mt-3">
+                    <AlertBanner kind="success" onDismiss={() => setReplySent(false)}>
+                      Reply sent to {selected.email}.
+                    </AlertBanner>
+                  </div>
+                )}
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    loading={sending}
+                    disabled={sending || replyBody.trim().length === 0}
+                    onClick={() => void sendReply()}
+                  >
+                    {sending ? "Sending…" : "Send reply"}
+                  </Button>
+                  <a
+                    href={`mailto:${selected.email}?subject=${encodeURIComponent(`Re: ${selected.subject}`)}`}
+                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-ink shadow-sm ring-1 ring-stone/30 transition-colors duration-200 hover:text-moss hover:ring-moss focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/50"
+                  >
+                    Open in mail app
+                  </a>
+                </div>
+              </div>
+
               <div className="flex flex-wrap items-center gap-2 border-t border-stone/20 px-5 py-4">
-                <a
-                  href={`mailto:${selected.email}?subject=${encodeURIComponent(`Re: ${selected.subject}`)}`}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-moss px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-[#37472C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss/50"
-                >
-                  Reply by email
-                </a>
                 <Button
                   variant="secondary"
                   size="sm"

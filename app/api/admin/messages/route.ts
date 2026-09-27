@@ -13,6 +13,16 @@ export async function GET(request: Request) {
     where: unreadOnly ? { read: false } : undefined,
     orderBy: { createdAt: "desc" },
     take: 200,
+    // `repliedAt` drives the "Replied" badge; `replies` is the thread the detail
+    // pane shows under the original message. Replies are capped per message so a
+    // long thread can't balloon the list response.
+    include: {
+      replies: {
+        orderBy: { createdAt: "asc" },
+        take: 20,
+        select: { id: true, body: true, adminName: true, createdAt: true },
+      },
+    },
   });
 
   return NextResponse.json(messages);
