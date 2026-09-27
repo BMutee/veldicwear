@@ -1,29 +1,26 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/admin-guard-api";
+import { listThreads, type InboxFilter } from "@/lib/message-threads";
 
+const FILTERS: InboxFilter[] = ["open", "unread", "archived", "all"];
+
+/**
+ * The admin inbox: conversations, newest activity first.
+ *
+ *   GET /api/admin/messages?filter=open|unread|archived|all&search=…
+ */
 export async function GET(request: Request) {
   const { error } = await requireAdminApi();
   if (error) return error;
 
   const url = new URL(request.url);
-  const unreadOnly = url.searchParams.get("unread") === "true";
+  const rawFilter = url.searchParams.get("filter") ?? "open";
+  const filter: InboxFilter = FILTERS.includes(rawFilter as InboxFilter)
+    ? (rawFilter as InboxFilter)
+    : "open";
+  const search = url.searchParams.get("search") ?? undefined;
 
-  const messages = await prisma.contactMessage.findMany({
-    where: unreadOnly ? { read: false } : undefined,
-    orderBy: { createdAt: "desc" },
-    take: 200,
-    // `repliedAt` drives the "Replied" badge; `replies` is the thread the detail
-    // pane shows under the original message. Replies are capped per message so a
-    // long thread can't balloon the list response.
-    include: {
-      replies: {
-        orderBy: { createdAt: "asc" },
-        take: 20,
-        select: { id: true, body: true, adminName: true, createdAt: true },
-      },
-    },
-  });
+  const threads = await listThreads({ filter, search });
 
-  return NextResponse.json(messages);
+  return NextResponse.json(threads);
 }

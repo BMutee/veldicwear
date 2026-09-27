@@ -12,6 +12,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { MESSAGES_CHANGED_EVENT } from "@/components/admin/messages/types";
 
 type NavItem = { label: string; href: string; icon: string; exact?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
@@ -51,6 +52,51 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 const COLLAPSE_KEY = "veldic.admin.collapsed";
+
+/**
+ * Unread badge on the Messages link.
+ *
+ * Fetched from /api/admin/messages/summary rather than the inbox itself, so the
+ * count is correct on every admin page. It re-reads whenever the inbox reports a
+ * change via MESSAGES_CHANGED_EVENT, and slowly while the tab is visible so a
+ * customer writing in from the storefront shows up without a manual refresh.
+ */
+const BADGE_POLL_MS = 60000;
+
+function useUnreadMessages(): number {
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const read = () => {
+      fetch("/api/admin/messages/summary")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((json) => {
+          if (!cancelled && typeof json?.unreadCount === "number") {
+            setUnread(json.unreadCount);
+          }
+        })
+        .catch(() => {});
+    };
+
+    read();
+    const onChanged = () => read();
+    window.addEventListener(MESSAGES_CHANGED_EVENT, onChanged);
+
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") read();
+    }, BADGE_POLL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      window.removeEventListener(MESSAGES_CHANGED_EVENT, onChanged);
+    };
+  }, []);
+
+  return unread;
+}
 
 function NavIcon({ path }: { path: string }) {
   return (
@@ -125,6 +171,8 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     };
   }, [mobileOpen]);
 
+  const unreadMessages = useUnreadMessages();
+
   const isActive = (item: NavItem) =>
     item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
@@ -153,7 +201,19 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                   >
                     <NavIcon path={item.icon} />
                     {!collapsed && <span className="truncate">{item.label}</span>}
-                    {active && !collapsed && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-clay" aria-hidden="true" />}
+                    {item.href === "/admin/messages" && unreadMessages > 0 && (
+                      <span
+                        aria-label={`${unreadMessages} unread`}
+                        className={`ml-auto flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-clay px-1.5 text-[11px] font-bold text-white ${
+                          collapsed ? "absolute right-1 top-1 h-4 min-w-[1rem] px-1" : ""
+                        }`}
+                      >
+                        {unreadMessages > 99 ? "99+" : unreadMessages}
+                      </span>
+                    )}
+                    {active && !collapsed && !(item.href === "/admin/messages" && unreadMessages > 0) && (
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-clay" aria-hidden="true" />
+                    )}
                   </Link>
                 </li>
               );

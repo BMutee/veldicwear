@@ -1,4 +1,4 @@
--- Admin → Messages: answer a customer from inside the inbox instead of
+-- Admin -> Messages: answer a customer from inside the inbox instead of
 -- bouncing out to a mail client. ContactMessage gains repliedAt (drives the
 -- "Replied" badge in the list) and a child ContactMessageReply table holds the
 -- thread, so the next person to open the message can see it was answered.

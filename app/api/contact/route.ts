@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { escapeHtml } from "@/lib/sanitize";
-import { prisma } from "@/lib/prisma";
 import { sendDeoMail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limiter";
+import { upsertThreadForInbound } from "@/lib/message-threads";
 
 const CONTACT_EMAIL_TO = (process.env.CONTACT_EMAIL_TO ?? "info@veldicwear.com").toLowerCase();
 const CONTACT_EMAIL_FROM = (process.env.EMAIL_FROM ?? "info@veldicwear.com").toLowerCase();
@@ -74,15 +74,15 @@ export async function POST(request: NextRequest) {
     });
 
     // Persist every submission so no message is ever lost if email fails
-    // or lands in spam — the inbox lives at /admin/messages.
-    const saved = await prisma.contactMessage.create({
-      data: {
-        name: String(name).trim().slice(0, 200),
-        email: visitorEmail.slice(0, 320),
-        subject: safeSubject,
-        message: String(message).trim().slice(0, 5000),
-      },
-      select: { id: true },
+    // or lands in spam — the inbox lives at /admin/messages. The message is
+    // appended to that customer's existing thread (one row per email), so
+    // repeat contact reads as a single conversation rather than a new inbox
+    // entry every time.
+    const { thread, message: saved } = await upsertThreadForInbound({
+      email: visitorEmail,
+      name: String(name).trim(),
+      subject: safeSubject,
+      message: String(message).trim().slice(0, 5000),
     });
 
     console.log("[contact] email sent", {
@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
       from: CONTACT_EMAIL_FROM,
       replyTo: visitorEmail,
       id: (result as { id?: string })?.id ?? null,
+      threadId: thread.id,
       messageId: saved.id,
     });
 

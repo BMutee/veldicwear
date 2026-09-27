@@ -9,17 +9,21 @@ const MAX_BODY_LENGTH = 5000;
 const SUBJECT_MAX_LENGTH = 200;
 
 /**
- * The cap is per admin rather than per message, so a stuck client or a
+ * The cap is per admin rather than per thread, so a stuck client or a
  * double-click loop can't mail the same customer over and over.
  */
 const REPLY_LIMIT = { maxAttempts: 30, windowSeconds: 600 } as const;
 
 /**
- * Answer a contact-form message from Admin → Messages.
+ * Answer a conversation from Admin -> Messages.
  *
  * The mail is sent BEFORE anything is written. If DeoMail rejects the send, no
- * reply row and no `repliedAt` are stored — the inbox must never claim a
+ * reply row and no `lastReplyAt` are stored — the inbox must never claim a
  * customer was answered when the mail never left the building.
+ *
+ * `inReplyToMessageId` is optional: it links the reply to the specific message
+ * it answers for display, but a follow-up sent days later belongs to the thread
+ * without answering any one message.
  */
 export async function POST(
   request: Request,
@@ -37,12 +41,12 @@ export async function POST(
 
   const { id } = await params;
 
-  const message = await prisma.contactMessage.findUnique({
+  const thread = await prisma.messageThread.findUnique({
     where: { id },
-    select: { id: true, name: true, email: true, subject: true, message: true },
+    select: { id: true, email: true, customerName: true, subject: true },
   });
-  if (!message) {
-    return NextResponse.json({ error: "Message not found." }, { status: 404 });
+  if (!thread) {
+    return NextResponse.json({ error: "Thread not found." }, { status: 404 });
   }
 
   const payload = await request.json().catch(() => ({}));
@@ -58,12 +62,20 @@ export async function POST(
     );
   }
 
+  // The latest customer message is quoted in the outgoing mail so the customer
+  // can see what is being answered.
+  const latestInbound = await prisma.contactMessage.findFirst({
+    where: { threadId: id },
+    orderBy: { createdAt: "desc" },
+    select: { message: true },
+  });
+
   try {
     await sendContactMessageReplyEmail({
-      to: message.email,
-      customerName: message.name,
-      originalSubject: message.subject.slice(0, SUBJECT_MAX_LENGTH),
-      originalMessage: message.message,
+      to: thread.email,
+      customerName: thread.customerName,
+      originalSubject: thread.subject.slice(0, SUBJECT_MAX_LENGTH),
+      originalMessage: latestInbound?.message ?? "",
       body: replyBody,
     });
   } catch (err) {
@@ -74,28 +86,37 @@ export async function POST(
     );
   }
 
-  // The reply also marks the message read — answering it is the read receipt.
+  const inReplyToMessageId =
+    typeof payload?.inReplyToMessageId === "string" && payload.inReplyToMessageId
+      ? payload.inReplyToMessageId
+      : null;
+
+  // Replying to an archived conversation is normal (a customer wrote again
+  // after you filed it), so the send reopens the thread rather than replying
+  // into an archive.
   const [reply] = await prisma.$transaction([
     prisma.contactMessageReply.create({
       data: {
-        messageId: message.id,
+        threadId: thread.id,
+        messageId: inReplyToMessageId,
         body: replyBody,
         adminId: user.id,
         adminName: user.name ?? null,
       },
     }),
-    prisma.contactMessage.update({
-      where: { id: message.id },
-      data: { repliedAt: new Date(), read: true },
+    prisma.messageThread.update({
+      where: { id: thread.id },
+      data: { lastReplyAt: new Date(), status: "open" },
     }),
   ]);
 
   console.log("[admin/messages] reply sent", {
-    messageId: message.id,
-    to: message.email,
+    threadId: thread.id,
+    to: thread.email,
     adminId: user.id,
     replyId: reply.id,
   });
 
   return NextResponse.json({ reply }, { status: 201 });
 }
+

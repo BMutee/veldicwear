@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ChangeEvent, ReactNode } from "react";
+import type { ChangeEvent, ReactNode, Ref } from "react";
 import { Modal } from "./Modal";
 
 /* ══════════════════════════════════════════════════════════════
@@ -228,6 +228,7 @@ export function Textarea({
   maxLength,
   className = "",
   ariaLabel,
+  inputRef,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -238,9 +239,12 @@ export function Textarea({
   maxLength?: number;
   className?: string;
   ariaLabel?: string;
+  /** Escape hatch for callers that need the element, e.g. auto-growing the box. */
+  inputRef?: Ref<HTMLTextAreaElement>;
 }) {
   return (
     <textarea
+      ref={inputRef}
       value={value}
       rows={rows}
       required={required}

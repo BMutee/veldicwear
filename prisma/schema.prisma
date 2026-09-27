@@ -397,6 +397,38 @@ model Review {
   @@map("Review")
 }
 
+/**
+ * A customer conversation — the unit the admin inbox lists.
+ *
+ * The contact form writes one ContactMessage per SUBMISSION, so a customer who
+ * writes three times about one issue used to show up as three unrelated inbox
+ * rows with no shared history. Every submission now lands in a thread keyed by
+ * the lowercased email address, which is what makes this behave like a
+ * messenger: one row per person, with their whole history on it.
+ */
+model MessageThread {
+  id             String    @id @default(cuid())
+  email          String    @unique // lowercased — the thread key
+  customerName   String
+  subject        String
+  status         String    @default("open") // open | archived
+  unreadCount    Int       @default(0) // inbound messages not yet opened by an admin
+  lastReplyAt    DateTime? // drives the "Replied" state on the thread
+  assignedToId   String? // admin user id; no FK — mirrors ContactMessageReply
+  assignedToName String?
+  lastMessageAt  DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  messages ContactMessage[]
+  replies  ContactMessageReply[]
+  notes    MessageNote[]
+
+  @@index([status, lastMessageAt])
+  @@index([lastMessageAt])
+  @@map("MessageThread")
+}
+
 model ContactMessage {
   id        String    @id @default(cuid())
   name      String
@@ -407,10 +439,16 @@ model ContactMessage {
   repliedAt DateTime?
   createdAt DateTime  @default(now())
 
+  // Nullable only so the migration can backfill before the FK is relied on;
+  // app code reads/writes this on every path and treats it as always present.
+  threadId String?
+  thread   MessageThread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
   replies ContactMessageReply[]
 
   @@index([createdAt])
   @@index([read, createdAt])
+  @@index([threadId, createdAt])
   @@map("ContactMessage")
 }
 
@@ -421,16 +459,48 @@ model ContactMessage {
  */
 model ContactMessageReply {
   id        String   @id @default(cuid())
-  messageId String
+  messageId String?
   body      String
   adminId   String?
   adminName String?
   createdAt DateTime @default(now())
 
-  message ContactMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  // `threadId` is the conversation this belongs to. `messageId` is the specific
+  // inbound message it answers and is optional: a follow-up sent days later
+  // belongs to the thread without answering any one message.
+  threadId String?
+  thread   MessageThread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  message  ContactMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@index([messageId, createdAt])
+  @@index([threadId, createdAt])
   @@map("ContactMessageReply")
+}
+
+/** An internal note on a thread. Never emailed to the customer. */
+model MessageNote {
+  id        String   @id @default(cuid())
+  threadId  String
+  body      String
+  adminId   String?
+  adminName String?
+  createdAt DateTime @default(now())
+
+  thread MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+  @@map("MessageNote")
+}
+
+/** A saved reply an admin can drop into the composer. */
+model CannedResponse {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("CannedResponse")
 }
 
 model CmsPage {
