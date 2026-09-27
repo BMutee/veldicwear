@@ -106,11 +106,13 @@ export async function checkSingleCjTracking(
           items: order.items.map((item: {
             name: string;
             size: string;
+            color?: string | null;
             quantity: number;
             price: number;
           }) => ({
             name: item.name,
             size: item.size,
+            color: item.color ?? undefined,
             quantity: item.quantity,
             price: item.price,
           })),

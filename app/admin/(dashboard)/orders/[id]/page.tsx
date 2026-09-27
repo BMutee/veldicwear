@@ -8,6 +8,7 @@ type OrderItem = {
   id: string;
   name: string;
   size: string;
+  color: string | null;
   quantity: number;
   price: number;
   costPrice: number | null;
@@ -458,6 +459,7 @@ export default function AdminOrderDetailPage() {
               <tr className="border-b border-stone/20 bg-white">
                 <th className="text-left px-6 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Product</th>
                 <th className="text-left px-6 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Size</th>
+                <th className="text-left px-6 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Color</th>
                 <th className="text-right px-6 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Qty</th>
                 <th className="text-right px-6 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Price</th>
                 <th className="text-right px-6 py-3 font-semibold text-stone font-display text-xs uppercase tracking-wider">Total</th>
@@ -468,6 +470,7 @@ export default function AdminOrderDetailPage() {
                 <tr key={item.id} className="hover:bg-white">
                   <td className="px-6 py-3 font-medium text-ink font-body">{item.name}</td>
                   <td className="px-6 py-3 text-stone font-body">{item.size}</td>
+                  <td className="px-6 py-3 text-stone font-body">{item.color ?? "—"}</td>
                   <td className="px-6 py-3 text-right text-stone font-body">{item.quantity}</td>
                   <td className="px-6 py-3 text-right text-stone font-body">${item.price.toFixed(2)}</td>
                   <td className="px-6 py-3 text-right font-medium text-ink font-body">${(item.price * item.quantity).toFixed(2)}</td>
@@ -476,17 +479,17 @@ export default function AdminOrderDetailPage() {
             </tbody>
             <tfoot>
               <tr className="border-t border-stone/20 bg-white">
-                <td colSpan={3} />
+                <td colSpan={4} />
                 <td className="px-6 py-3 text-right text-sm text-stone font-body">Subtotal</td>
                 <td className="px-6 py-3 text-right font-medium text-ink font-body">${subtotal.toFixed(2)}</td>
               </tr>
               <tr className="bg-white">
-                <td colSpan={3} />
+                <td colSpan={4} />
                 <td className="px-6 py-3 text-right text-sm text-stone font-body">Shipping Protection</td>
                 <td className="px-6 py-3 text-right font-medium text-ink font-body">{order.hasShippingProtection ? "$0.98" : "$0.00"}</td>
               </tr>
               <tr className="bg-white border-t border-stone/20">
-                <td colSpan={3} />
+                <td colSpan={4} />
                 <td className="px-6 py-3 text-right font-semibold text-ink font-body">Total</td>
                 <td className="px-6 py-3 text-right font-bold text-ink font-body">${order.total.toFixed(2)}</td>
               </tr>
@@ -521,7 +524,7 @@ export default function AdminOrderDetailPage() {
                     return (
                       <div key={item.id} className="flex items-center justify-between text-sm font-body border-b border-stone/20 pb-2 last:border-0">
                         <div className="flex-1">
-                          <p className="font-medium text-ink">{item.name} <span className="text-stone">({item.size} × {item.quantity})</span></p>
+                          <p className="font-medium text-ink">{item.name} <span className="text-stone">({item.size}{item.color ? `, ${item.color}` : ""} × {item.quantity})</span></p>
                           <p className="text-xs text-stone">
                             Cost: ${(item.costPrice ?? 0).toFixed(2)} &middot; Sell: ${item.price.toFixed(2)} &middot; Margin: {marginPct >= 0 ? "+" : ""}{marginPct.toFixed(0)}%
                           </p>
@@ -542,7 +545,7 @@ export default function AdminOrderDetailPage() {
                       <ul className="mt-1 text-xs text-amber-700 font-body space-y-0.5">
                         {itemsWithoutCost.map((item) => (
                           <li key={item.id}>
-                            {item.name} ({item.size} × {item.quantity}) — ${(item.price * item.quantity).toFixed(2)} revenue, cost unknown
+                            {item.name} ({item.size}{item.color ? `, ${item.color}` : ""} × {item.quantity}) — ${(item.price * item.quantity).toFixed(2)} revenue, cost unknown
                           </li>
                         ))}
                       </ul>

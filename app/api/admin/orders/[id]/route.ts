@@ -121,6 +121,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         items: order.items.map((item) => ({
           name: item.name,
           size: item.size,
+          color: item.color ?? undefined,
           quantity: item.quantity,
           price: item.price,
         })),

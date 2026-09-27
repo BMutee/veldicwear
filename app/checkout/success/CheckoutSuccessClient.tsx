@@ -9,6 +9,7 @@ import DeliveryEstimate from "@/components/DeliveryEstimate";
 type OrderItem = {
   name: string;
   size: string;
+  color?: string | null;
   quantity: number;
   price: number;
 };
@@ -166,7 +167,8 @@ export default function CheckoutSuccessClient() {
                 <div className="min-w-0 flex-1">
                   <p className="font-sans font-medium text-[#1B2737] truncate">{item.name}</p>
                   <p className="mt-0.5 font-sans text-xs text-[#5B6B85]">
-                    Size: {item.size} &times; {item.quantity}
+                    Size: {item.size}
+                    {item.color ? `, Color: ${item.color}` : ""} &times; {item.quantity}
                   </p>
                 </div>
                 <p className="ml-4 font-sans font-semibold text-[#1B2737]">

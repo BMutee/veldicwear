@@ -8,6 +8,8 @@ import { checkRateLimit } from "@/lib/rate-limiter";
  * Shared shape for the public tracking page. No customer PII leaves this
  * endpoint — in particular no email, phone or street address — so a tracking
  * link (or an order number + matching email) is safe to view in any browser.
+ * Color is included so the page shows the exact variant ordered, same as the
+ * order confirmation email.
  */
 const PUBLIC_TRACKING_SELECT = {
   orderNumber: true,
@@ -18,7 +20,7 @@ const PUBLIC_TRACKING_SELECT = {
   // (or copy it) and see which carrier holds the parcel.
   trackingNumber: true,
   trackingCarrier: true,
-  items: { select: { name: true, size: true, quantity: true } },
+  items: { select: { name: true, size: true, color: true, quantity: true } },
 } as const;
 
 export async function POST(request: NextRequest) {

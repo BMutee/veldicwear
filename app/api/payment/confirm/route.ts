@@ -69,9 +69,10 @@ export async function POST(request: NextRequest) {
           orderNumber: result.orderNumber,
           orderTotal: result.orderTotal,
           trackingToken,
-          items: result.items.map((item: { name: string; size: string; quantity: number; price: number }) => ({
+          items: result.items.map((item: { name: string; size: string; color?: string | null; quantity: number; price: number }) => ({
             name: item.name,
             size: item.size,
+            color: item.color ?? undefined,
             quantity: item.quantity,
             price: item.price,
           })),
@@ -106,9 +107,10 @@ export async function POST(request: NextRequest) {
         status: result.order.status,
         hasShippingProtection: result.order.hasShippingProtection,
         createdAt: result.order.createdAt,
-        items: result.items.map((item: { name: string; size: string; quantity: number; price: number }) => ({
+        items: result.items.map((item: { name: string; size: string; color?: string | null; quantity: number; price: number }) => ({
           name: item.name,
           size: item.size,
+          color: item.color ?? null,
           quantity: item.quantity,
           price: item.price,
         })),

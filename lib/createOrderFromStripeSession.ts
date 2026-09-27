@@ -76,12 +76,14 @@ export async function createOrderFromStripeSession(
       items: order.items.map((oi: {
         name: string;
         size: string;
+        color: string | null;
         quantity: number;
         price: number;
         productId: string;
       }) => ({
         name: oi.name,
         size: oi.size,
+        color: oi.color,
         quantity: oi.quantity,
         price: oi.price,
         productId: oi.productId,

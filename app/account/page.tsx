@@ -15,6 +15,7 @@ type Order = {
     id: string;
     name: string;
     size: string;
+    color?: string | null;
     quantity: number;
     price: number;
   }[];
@@ -188,7 +189,8 @@ export default function AccountPage() {
                             {item.name}
                           </p>
                           <p className="font-sans text-xs text-[#5B6B85]">
-                            Size {item.size} &times; {item.quantity}
+                            Size {item.size}
+                            {item.color ? `, Color: ${item.color}` : ""} &times; {item.quantity}
                           </p>
                         </div>
                         <p className="font-sans font-semibold text-[#1B2737]">

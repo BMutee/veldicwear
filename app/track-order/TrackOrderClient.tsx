@@ -12,7 +12,9 @@ type TrackingOrder = {
   trackingNumber: string | null;
   trackingCarrier: string | null;
   // Must match /api/orders/track, which selects the Order.items relation.
-  items: { name: string; size: string; quantity: number }[];
+  // Color included: the tracking page must show the exact variant ordered
+  // (name + size + color + quantity), same as the confirmation email.
+  items: { name: string; size: string; color?: string | null; quantity: number }[];
 };
 
 /**
@@ -518,7 +520,8 @@ export default function TrackOrderClient() {
                   <li key={`${item.name}-${item.size}-${index}`} className="flex items-baseline justify-between gap-3">
                     <span className="min-w-0 flex-1 truncate">{item.name}</span>
                     <span className="shrink-0 text-[#78716C]">
-                      Size {item.size} &times; {item.quantity}
+                      Size {item.size}
+                      {item.color ? `, Color: ${item.color}` : ""} &times; {item.quantity}
                     </span>
                   </li>
                 ))}
