@@ -55,6 +55,7 @@ export default function ReturnsRefundPolicyPage() {
               ["#overview", "Overview"],
               ["#eligibility", "Return Eligibility"],
               ["#start-return", "How to Start a Return"],
+              ["#eco-option", "Keep-It Eco Option (Partial Refund)"],
               ["#return-shipping", "Return Shipping Costs"],
               ["#refunds", "Refunds"],
               ["#faulty", "Wrong, Faulty, or Damaged Items"],
@@ -188,6 +189,42 @@ export default function ReturnsRefundPolicyPage() {
               </p>
             </div>
           </section>
+
+          {/* Keep-It Eco Option */}
+          <section id="eco-option">
+            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
+              Keep-It Eco Option (Partial Refund)
+            </h2>
+            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
+              <p>
+                To minimize carbon emissions associated with reverse transit and make returns frictionless, we offer a{" "}
+                <strong className="text-[#1C1917]">Keep-It Eco Option</strong> for items that do not fit or where you
+                simply changed your mind:
+              </p>
+              <ul className="list-inside space-y-2">
+                <li className="flex gap-3">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
+                  <span>
+                    <strong className="text-[#1C1917]">Instant partial refund:</strong> Keep the item (or gift/donate
+                    it) and receive a 50% refund back to your original payment method immediately &mdash; no postage,
+                    no package drop-offs, and no waiting.
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
+                  <span>
+                    <strong className="text-[#1C1917]">Replacement discount:</strong> Alternatively, choose an exchange
+                    in your desired size or style at a substantially reduced replacement rate.
+                  </span>
+                </li>
+              </ul>
+              <p>
+                When you initiate a return on our portal or reply to our support team, let us know if you prefer this
+                option and we will issue your resolution on the spot.
+              </p>
+            </div>
+          </section>
+
           {/* Return Shipping Costs */}
           <section id="return-shipping">
             <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">

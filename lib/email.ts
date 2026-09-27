@@ -1,4 +1,11 @@
-import { RETURN_REASONS, RETURN_WINDOW_DAYS, SUPPORT_EMAIL } from "@/lib/returns";
+import {
+  RETURN_REASONS,
+  RETURN_WINDOW_DAYS,
+  SUPPORT_EMAIL,
+  RETURN_SHIPPING_ADDRESS,
+  getReturnOpsPlaybook,
+  isReturnReason,
+} from "@/lib/returns";
 
 /**
  * Customer-supplied text (return notes, reasons) is echoed into HTML emails, so
@@ -267,6 +274,24 @@ export async function sendReturnRequestEmail(options: {
     ? `<p style="margin-top: 16px;"><strong>Customer note:</strong><br />${escapeHtml(note).replace(/\n/g, "<br />")}</p>`
     : "";
 
+  const validatedReason = isReturnReason(reason) ? reason : "other";
+  const playbook = getReturnOpsPlaybook(validatedReason, orderNumber);
+
+  const playbookSteps = playbook.actionSteps
+    .map((step) => `<li style="margin: 4px 0;">${escapeHtml(step)}</li>`)
+    .join("");
+
+  const playbookLinks = playbook.quickLinks
+    .map(
+      (link) =>
+        `<a href="${link.url}" target="_blank" rel="noopener noreferrer" style="color: #2563EB; text-decoration: underline; margin-right: 16px;">${escapeHtml(link.label)} &rarr;</a>`
+    )
+    .join("");
+
+  const returnAddressBlock = RETURN_SHIPPING_ADDRESS
+    ? `<p style="margin-top: 8px;"><strong>Configured Domestic Return Address:</strong><br /><code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${escapeHtml(RETURN_SHIPPING_ADDRESS)}</code></p>`
+    : "";
+
   const html = `
     <div style="font-family: Arial, sans-serif; color: #111;">
       <h1>New return request</h1>
@@ -294,6 +319,20 @@ export async function sendReturnRequestEmail(options: {
         <tbody>${itemRows}</tbody>
       </table>
       ${noteBlock}
+
+      <!-- Dropshipping Fulfillment & Action Guide -->
+      <div style="margin-top: 28px; padding: 16px; background: #FFFBEB; border-left: 4px solid #CA8A04; border-radius: 4px;">
+        <h3 style="margin: 0 0 8px; color: #92400E; font-size: 15px;">Fulfillment Ops Guide: ${escapeHtml(playbook.title)}</h3>
+        <p style="margin: 0 0 10px; font-size: 13px; color: #78350F;">${escapeHtml(playbook.summary)}</p>
+        <ol style="margin: 0 0 12px; padding-left: 20px; font-size: 13px; color: #78350F; line-height: 1.5;">
+          ${playbookSteps}
+        </ol>
+        ${returnAddressBlock}
+        <div style="margin-top: 12px; font-size: 13px;">
+          ${playbookLinks}
+        </div>
+      </div>
+
       <p style="margin-top: 24px; color: #555;">Requested inside the ${RETURN_WINDOW_DAYS}-day window. Refund to the original payment method once the parcel is received and inspected.</p>
     </div>
   `;

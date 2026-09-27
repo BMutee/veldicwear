@@ -19,6 +19,13 @@ export const RETURN_WINDOW_DAYS = 30;
 /** Support inbox. The seeded contact address, overridable per deployment. */
 export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL ?? "info@veldicwear.com";
 
+/**
+ * Optional domestic return address. If set, this address is used in admin
+ * playbooks and customer return communications when items must be shipped back.
+ */
+export const RETURN_SHIPPING_ADDRESS =
+  process.env.RETURN_SHIPPING_ADDRESS ?? "";
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const RETURN_REASONS = [
@@ -137,3 +144,46 @@ export function makeReturnReference(): string {
 export function normaliseReturnNote(note: unknown): string {
   return typeof note === "string" ? note.trim().slice(0, 1000) : "";
 }
+
+/**
+ * Dropshipping return handling guide for admin notification emails.
+ * Tailors operational advice based on whether the issue is supplier-fault
+ * (eligible for 100% dispute resolution on CJ Dropshipping) or customer remorse/sizing
+ * (where shipping back to overseas warehouses is not accepted or cost-prohibitive).
+ */
+export function getReturnOpsPlaybook(reason: ReturnReason, orderNumber: string) {
+  const isSupplierFault = reason === "not-as-described";
+
+  if (isSupplierFault) {
+    return {
+      title: "Supplier / Item Quality Issue (CJ Dispute Eligible)",
+      summary:
+        "CJ Dropshipping accepts disputes for defective, damaged, or wrong items with photo proof within their dispute window. Do not pay for return shipping to China.",
+      actionSteps: [
+        "Ask the customer to reply with clear photos of the defect, product tags, and the shipping parcel label.",
+        "Go to the CJ Dropshipping Dispute Center (https://cjdropshipping.com/my-cj/dispute.html) and open a dispute with the customer's photos.",
+        "Select Reship or Full Refund on CJ.",
+        "Tell the customer to keep, recycle, or donate the item. Once CJ approves (or right away for VIP support), issue the refund in your Stripe Dashboard.",
+      ],
+      quickLinks: [
+        { label: "CJ Dispute Center", url: "https://cjdropshipping.com/my-cj/dispute.html" },
+        { label: "Stripe Dashboard", url: `https://dashboard.stripe.com/search?query=${encodeURIComponent(orderNumber)}` },
+      ],
+    };
+  }
+
+  return {
+    title: "Buyer Sizing or Preference (Dropshipping Handling)",
+    summary:
+      "CJ does not accept returns to overseas warehouses for buyer remorse or size errors. Offer the Keep-It Eco Option (50% partial refund) to protect margins and avoid costly return shipping.",
+    actionSteps: [
+      "Recommend Option 1 (Best Practice): Offer the customer a 50% partial refund via Stripe to keep the item or gift it to a friend.",
+      "Recommend Option 2 (Size Exchange): Offer to send the right size for a discounted replacement fee or free if feasible.",
+      "Option 3 (Return for Full Refund): If the customer insists, provide your domestic returns address (RETURN_SHIPPING_ADDRESS). Do not direct them to ship to China.",
+    ],
+    quickLinks: [
+      { label: "Stripe Dashboard", url: `https://dashboard.stripe.com/search?query=${encodeURIComponent(orderNumber)}` },
+    ],
+  };
+}
+
