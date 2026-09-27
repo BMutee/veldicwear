@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin-guard-api";
 import { listThreads, type InboxFilter } from "@/lib/message-threads";
 
-const FILTERS: InboxFilter[] = ["open", "unread", "archived", "all"];
+const FILTERS: InboxFilter[] = ["open", "unread", "sent", "archived", "all"];
 
 /**
- * The admin inbox: conversations, newest activity first.
+ * The admin mailbox: conversations, newest activity first.
  *
- *   GET /api/admin/messages?filter=open|unread|archived|all&search=…
+ *   GET /api/admin/messages?filter=open|unread|sent|archived|all&search=…
+ *
+ * `open` is the default because "Inbox" is where an admin lands.
  */
 export async function GET(request: Request) {
   const { error } = await requireAdminApi();

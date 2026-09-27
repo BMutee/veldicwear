@@ -467,3 +467,58 @@ export async function sendContactMessageReplyEmail(options: {
   });
 }
 
+
+/**
+ * Start a conversation from the admin composer.
+ *
+ * Unlike a reply there is no prior customer message to quote, so the subject is
+ * used verbatim and the "you wrote" block is omitted — quoting nothing would be
+ * stranger than saying nothing. `replyTo` is still the support inbox so a
+ * response comes back to us rather than bouncing.
+ */
+export async function sendProactiveContactEmail(options: {
+  to: string;
+  customerName: string;
+  subject: string;
+  body: string;
+}) {
+  const { to, customerName, subject, body } = options;
+  const siteUrl =
+    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+
+  const bodyHtml = escapeHtml(body).replace(/\r?\n/g, "<br />");
+  const firstName = customerName.trim().split(/\s+/)[0] || customerName.trim();
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; color: #111; max-width: 600px;">
+      <h1 style="font-size: 20px; margin-bottom: 16px;">Hi ${escapeHtml(firstName)},</h1>
+      <div style="line-height: 1.6;">${bodyHtml}</div>
+      <p style="margin-top: 24px; font-size: 13px; color: #555;">
+        Just reply to this email and it comes straight back to our support inbox &mdash; we're happy to help.
+      </p>
+      <p style="margin-top: 24px;">&mdash; Veldic Wear Support</p>
+      <p style="margin-top: 16px; font-size: 12px; color: #777;">
+        <a href="${siteUrl}" style="color: #777;">veldicwear.com</a>
+      </p>
+    </div>
+  `;
+
+  const text = [
+    `Hi ${firstName},`,
+    "",
+    body,
+    "",
+    "Just reply to this email and it comes straight back to our support inbox — we're happy to help.",
+    "",
+    "— Veldic Wear Support",
+  ].join("\n");
+
+  return sendDeoMail({
+    to: [to],
+    subject,
+    replyTo: SUPPORT_EMAIL,
+    html,
+    text,
+  });
+}
+

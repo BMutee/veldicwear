@@ -413,6 +413,10 @@ model MessageThread {
   subject        String
   status         String    @default("open") // open | archived
   unreadCount    Int       @default(0) // inbound messages not yet opened by an admin
+  // True when an admin started the conversation from the composer rather than
+  // the customer writing in first. Drives the "Sent" folder — otherwise a
+  // proactive email has nowhere to live in the mailbox.
+  startedByAdmin Boolean   @default(false)
   lastReplyAt    DateTime? // drives the "Replied" state on the thread
   assignedToId   String? // admin user id; no FK — mirrors ContactMessageReply
   assignedToName String?
@@ -425,6 +429,7 @@ model MessageThread {
   notes    MessageNote[]
 
   @@index([status, lastMessageAt])
+  @@index([startedByAdmin, lastMessageAt])
   @@index([lastMessageAt])
   @@map("MessageThread")
 }

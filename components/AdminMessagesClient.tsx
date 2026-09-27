@@ -1,16 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card, PageHeader, SearchInput, Tabs } from "@/components/admin-ui/primitives";
+import { Button, Card, PageHeader, SearchInput } from "@/components/admin-ui/primitives";
 import { useToast } from "@/components/admin-ui/toast";
 import CannedRepliesModal from "@/components/admin/messages/CannedRepliesModal";
+import ComposePanel from "@/components/admin/messages/ComposePanel";
 import ConversationPane from "@/components/admin/messages/ConversationPane";
+import FolderRail from "@/components/admin/messages/FolderRail";
 import ThreadList from "@/components/admin/messages/ThreadList";
 import {
+  EMPTY_DRAFT,
   MESSAGES_CHANGED_EVENT,
   notifyMessagesChanged,
   type Assignee,
   type CannedResponse,
+  type ComposeDraft,
   type InboxFilter,
   type MessageThread,
 } from "@/components/admin/messages/types";
@@ -19,13 +23,6 @@ export type { MessageThread } from "@/components/admin/messages/types";
 
 /** How often to pull new mail while the tab is visible. */
 const POLL_MS = 15000;
-
-const FILTER_TABS: { id: InboxFilter; label: string }[] = [
-  { id: "open", label: "Open" },
-  { id: "unread", label: "Unread" },
-  { id: "archived", label: "Archived" },
-  { id: "all", label: "All" },
-];
 
 /**
  * Admin inbox.
@@ -51,6 +48,9 @@ export default function AdminMessagesClient() {
   const [assignees, setAssignees] = useState<Assignee[]>([]);
   const [canned, setCanned] = useState<CannedResponse[]>([]);
   const [cannedOpen, setCannedOpen] = useState(false);
+  const [composing, setComposing] = useState(false);
+  const [draft, setDraft] = useState<ComposeDraft>(EMPTY_DRAFT);
+  const [sendingNew, setSendingNew] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
@@ -213,6 +213,37 @@ export default function AdminMessagesClient() {
   );
 
 
+  const sendNewMessage = useCallback(async () => {
+    if (sendingNew) return;
+    setSendingNew(true);
+    try {
+      const res = await fetch("/api/admin/messages/compose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast("error", data?.error ?? "We couldn't send that message.");
+        return;
+      }
+      // The new conversation belongs in Sent, but the admin is sitting in
+      // whatever folder they were reading — move them there so the message they
+      // just sent is the one on screen, not a toast they have to trust.
+      setComposing(false);
+      setDraft(EMPTY_DRAFT);
+      setFilter("sent");
+      await load({ quiet: true });
+      setSelectedId(data.thread.id);
+      notifyMessagesChanged();
+      toast("success", `Message sent to ${draft.to}.`);
+    } catch {
+      toast("error", "We couldn't send that message.");
+    } finally {
+      setSendingNew(false);
+    }
+  }, [draft, sendingNew, load, toast]);
+
   const removeThread = useCallback(async () => {
     if (!selected) return;
     const ok = window.confirm(
@@ -261,6 +292,14 @@ export default function AdminMessagesClient() {
 
   const unreadTotal = threads.reduce((sum, t) => sum + t.unreadCount, 0);
 
+  // Folder counts come from the loaded view, so they reflect what is on screen
+  // rather than a second round trip — good enough for a rail of five folders.
+  const folderCounts = {
+    unread: unreadTotal,
+    open: threads.filter((t) => t.status === "open").length,
+    sent: threads.filter((t) => t.startedByAdmin).length,
+  };
+
 
   return (
     <div className="space-y-6" onKeyDown={onKeyDown}>
@@ -274,26 +313,42 @@ export default function AdminMessagesClient() {
               }${refreshing ? " · refreshing" : ""}`
         }
         action={
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="Search name, email or text…"
-            className="w-full max-w-xs"
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search name, email or text…"
+              className="w-full max-w-xs"
+            />
+            <Button variant="primary" onClick={() => setComposing(true)}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Compose
+            </Button>
+          </div>
         }
       />
 
-      <Tabs
-        tabs={FILTER_TABS}
-        active={filter}
-        onChange={(id) => {
-          setFilter(id as InboxFilter);
-          setSelectedId(null);
-        }}
-      />
+      {/* Mailbox: folders · list · reading pane */}
+      <div className="grid gap-4 lg:grid-cols-[11rem_minmax(0,4fr)_minmax(0,7fr)] lg:gap-6">
+        <FolderRail
+          active={filter}
+          counts={folderCounts}
+          onChange={(next) => {
+            setFilter(next);
+            setSelectedId(null);
+          }}
+        />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)]">
-        <Card className="overflow-hidden lg:max-h-[calc(100vh-16rem)] lg:overflow-y-auto">
+        <Card className="overflow-hidden lg:max-h-[calc(100vh-15rem)] lg:overflow-y-auto">
           <ThreadList
             threads={threads}
             selectedId={selectedId}
@@ -302,7 +357,7 @@ export default function AdminMessagesClient() {
           />
         </Card>
 
-        <Card className="overflow-hidden lg:sticky lg:top-6 lg:max-h-[calc(100vh-16rem)]">
+        <Card className="overflow-hidden lg:sticky lg:top-6 lg:max-h-[calc(100vh-15rem)]">
           {selected ? (
             <ConversationPane
               thread={selected}
@@ -315,7 +370,7 @@ export default function AdminMessagesClient() {
                 void patchThread(
                   selected.id,
                   { status: selected.status === "archived" ? "open" : "archived" },
-                  selected.status === "archived" ? "Moved back to Open." : "Conversation archived.",
+                  selected.status === "archived" ? "Moved back to Inbox." : "Conversation archived.",
                 )
               }
               onDelete={() => void removeThread()}
@@ -328,10 +383,34 @@ export default function AdminMessagesClient() {
               <p className="mt-1 text-sm text-stone">
                 Use the arrow keys to move through the list. Opening a conversation marks it read.
               </p>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="mx-auto mt-4"
+                onClick={() => setComposing(true)}
+              >
+                Start a new conversation
+              </Button>
             </div>
           )}
         </Card>
       </div>
+
+      {composing && (
+        <ComposePanel
+          draft={draft}
+          sending={sendingNew}
+          onChange={setDraft}
+          onClose={() => {
+            // A send already cleared the draft; only discard an in-flight one.
+            if (!sendingNew) {
+              setComposing(false);
+              setDraft(EMPTY_DRAFT);
+            }
+          }}
+          onSend={() => void sendNewMessage()}
+        />
+      )}
 
       {cannedOpen && (
         <CannedRepliesModal

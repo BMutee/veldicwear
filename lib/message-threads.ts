@@ -19,7 +19,7 @@ export function normaliseEmail(email: string): string {
 }
 
 export type ThreadStatus = "open" | "archived";
-export type InboxFilter = "open" | "unread" | "archived" | "all";
+export type InboxFilter = "open" | "unread" | "sent" | "archived" | "all";
 
 const MESSAGE_SELECT = {
   id: true,
@@ -61,8 +61,9 @@ const MAX_THREADS = 200;
 /**
  * List the inbox.
  *
- * `unread` is a view over the same rows, not a separate bucket, so a thread can
- * appear in both Open and Unread — matching how a mail client behaves.
+ * `unread` and `sent` are views over the same rows, not separate buckets, so a
+ * thread can appear in several folders at once — matching how a mail client
+ * behaves. `sent` holds conversations an admin started from the composer.
  */
 export async function listThreads(options: { filter: InboxFilter; search?: string }) {
   const { filter, search } = options;
@@ -70,8 +71,9 @@ export async function listThreads(options: { filter: InboxFilter; search?: strin
 
   const where: Record<string, unknown> = {};
   if (filter === "archived") where.status = "archived";
-  else if (filter !== "all") where.status = "open";
+  else if (filter !== "all" && filter !== "sent") where.status = "open";
   if (filter === "unread") where.unreadCount = { gt: 0 };
+  if (filter === "sent") where.startedByAdmin = true;
 
   if (q) {
     where.OR = [
@@ -151,3 +153,45 @@ export async function upsertThreadForInbound(input: {
 
   return { thread, message };
 }
+
+/**
+ * Start a conversation from the admin composer — the mail-client "New message".
+ *
+ * There is no customer message yet, so the thread is created (or reused, if that
+ * person already has one) and the first entry is an outbound one. `unreadCount`
+ * deliberately stays at 0: nobody is waiting on us, so this must not light up
+ * the badge or the Unread folder.
+ */
+export async function composeThreadForOutbound(input: {
+  email: string;
+  name: string;
+  subject: string;
+}) {
+  const email = normaliseEmail(input.email);
+  const name = input.name.trim() || email;
+  const subject = input.subject.trim();
+  const now = new Date();
+
+  return prisma.messageThread.upsert({
+    where: { email },
+    create: {
+      email,
+      customerName: name.slice(0, 200),
+      subject,
+      startedByAdmin: true,
+      lastMessageAt: now,
+      lastReplyAt: now,
+      unreadCount: 0,
+    },
+    update: {
+      // Keep the address fresh (a typo'd earlier address, a full name typed
+      // this time) but leave unreadCount alone: opening an old conversation to
+      // write to it must not mark the customer's own mail as read.
+      customerName: name.slice(0, 200),
+      subject,
+      lastMessageAt: now,
+      lastReplyAt: now,
+    },
+  });
+}
+

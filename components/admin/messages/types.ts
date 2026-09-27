@@ -40,6 +40,7 @@ export type MessageThread = {
   lastReplyAt: string | null;
   assignedToId: string | null;
   assignedToName: string | null;
+  startedByAdmin: boolean;
   lastMessageAt: string;
   createdAt: string;
   messages: ThreadMessage[];
@@ -74,7 +75,17 @@ export type CustomerContext = {
   lifetimeValue: number;
 };
 
-export type InboxFilter = "open" | "unread" | "archived" | "all";
+export type InboxFilter = "open" | "unread" | "sent" | "archived" | "all";
+
+/** A new, admin-initiated message — the mail-client "New message". */
+export type ComposeDraft = {
+  to: string;
+  name: string;
+  subject: string;
+  body: string;
+};
+
+export const EMPTY_DRAFT: ComposeDraft = { to: "", name: "", subject: "", body: "" };
 
 /** Mirrors MAX_BODY_LENGTH in app/api/admin/messages/[id]/reply/route.ts. */
 export const MAX_REPLY_LENGTH = 5000;
