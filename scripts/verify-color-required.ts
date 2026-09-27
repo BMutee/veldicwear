@@ -10,14 +10,20 @@
  *   2. Colorless products: unchanged — size alone is enough.
  *   3. Mixed data: a colorless variant for a size is still reachable without a
  *      color (no false rejections).
+ *   4. Lines that are already in an order resolve on size + color, with a
+ *      size-only fallback, so cost/margin reporting never picks a different
+ *      colorway's variant and a colorless legacy line still resolves.
  */
 import {
   colorsForSize,
+  findOrderItemVariant,
   isSelectionComplete,
   listProductColors,
   matchCartVariant,
+  normaliseItemSize,
   productHasColors,
   resolveSelectedVariant,
+  variantLineKey,
 } from "../lib/variant-selection";
 
 type Variant = { size: string; color?: string | null; stock: number };
@@ -98,9 +104,69 @@ check("colored M line still requires a color", matchCartVariant(mixed, "M", null
   availableColors: ["Black"],
 });
 
+// ── Already-ordered lines: the lookup must never reject ──────────────────────
+const priced: Array<Variant & { costPrice: number | null }> = [
+  { size: "M", color: "Black", stock: 10, costPrice: 12 },
+  { size: "M", color: "Blue", stock: 4, costPrice: 19 },
+  { size: "L", color: "Black", stock: 7, costPrice: 11 },
+];
+
+console.log("\nOrder-line lookup (cost price / margin reporting)");
+check(
+  "M + Blue → Blue's cost, not the first M",
+  findOrderItemVariant(priced, "M", "Blue")?.costPrice,
+  19,
+);
+check("M + Black → Black's cost", findOrderItemVariant(priced, "M", "Black")?.costPrice, 12);
+check(
+  "M + no color (legacy order) → still resolves",
+  findOrderItemVariant(priced, "M", null)?.color,
+  "Black",
+);
+check(
+  "M + retired color → resolves instead of rejecting",
+  findOrderItemVariant(priced, "M", "Red")?.color,
+  "Black",
+);
+check("unknown size → no variant", findOrderItemVariant(priced, "XXL", "Black"), undefined);
+check(
+  '"N/A" size (product without variants) → no variant',
+  findOrderItemVariant(priced, "N/A", null),
+  undefined,
+);
+check("colorless product still resolves on size", findOrderItemVariant(plain, "L", null)?.size, "L");
+check(
+  "a colorless size variant wins over a colored one",
+  findOrderItemVariant(mixed, "OS", null)?.size,
+  "OS",
+);
+
+console.log("\nLegacy compound OrderItem.size normalisation");
+check('"S, Color: Black Zone2" → "S"', normaliseItemSize("S, Color: Black Zone2"), "S");
+check('"Size: L" → "L"', normaliseItemSize("Size: L"), "L");
+check("a bare size is untouched", normaliseItemSize("M"), "M");
+check(
+  "legacy compound size still resolves to its variant",
+  findOrderItemVariant(
+    [{ size: "S", color: "Black Zone2", stock: 3, costPrice: 21 }],
+    "S, Color: Black Zone2",
+    null,
+  )?.costPrice,
+  21,
+);
+
+console.log("\nCart line key");
+check(
+  "same size, different color → different keys",
+  variantLineKey("p1", "M", "Black") === variantLineKey("p1", "M", "Blue"),
+  false,
+);
+check("null and undefined color agree", variantLineKey("p1", "M", null), variantLineKey("p1", "M", undefined));
+check("key shape", variantLineKey("p1", "M", "Blue"), "p1:M:Blue");
+
 console.log(
   failures === 0
-    ? "\n✅ Color is required exactly for products that offer colors."
+    ? "\n✅ Color is required exactly for products that offer colors, and ordered lines resolve on size + color."
     : `\n❌ ${failures} check(s) failed.`,
 );
 process.exit(failures === 0 ? 0 : 1);

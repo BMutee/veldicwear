@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { StatCard } from "@/components/admin-ui/StatCard";
 import { AreaChart, DonutChart, BarList, ChartLegend } from "@/components/admin-ui/charts";
+import { findOrderItemVariant } from "@/lib/variant-selection";
 import {
   PageHeader,
   Card,
@@ -80,8 +81,13 @@ export default async function AdminDashboardPage() {
   let missingCostItems = 0;
   for (const order of last30) {
     for (const item of order.items) {
-      const variant = item.product.variants.find(
-        (v: { size: string; costPrice: number | null }) => v.size === item.size
+      // Size + color, with a size-only fallback — matching on size alone could
+      // pick a different colorway's variant for a multi-color product and
+      // understate cost30 (or flag the item as "missing cost" wrongly).
+      const variant = findOrderItemVariant(
+        item.product.variants,
+        item.size,
+        item.color
       );
       const costPrice = variant?.costPrice ?? null;
       const itemRevenue = item.price * item.quantity;

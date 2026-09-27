@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { cjPost } from "@/lib/cj";
 import { toIso2CountryCode } from "@/lib/country-codes";
+import { normaliseItemSize } from "@/lib/variant-selection";
 
 /**
  * CJ Dropshipping order pipeline.
@@ -30,22 +31,6 @@ const CJ_ORIGIN_COUNTRY_CODE = "CN";
  */
 function isCjProductId(productId: string): boolean {
   return /^\d+$/.test(productId);
-}
-
-/**
- * Normalise an OrderItem.size into a bare size label.
- *
- * Orders created before the checkout's size/colour parsing was fixed stored a
- * compound value like "S, Color: Black Zone2" (or "Size: S"). Variants are
- * stored with a bare size, so strip the decoration before matching — otherwise
- * historical orders can never be matched back to a CJ variant id.
- */
-function normaliseItemSize(size: string): string {
-  return size
-    .replace(/^\s*Size:\s*/i, "")
-    .split(/,/)
-    .map((part) => part.trim())
-    .filter((part) => part && !/^Color:/i.test(part))[0] ?? size.trim();
 }
 
 type CJFreightRate = {

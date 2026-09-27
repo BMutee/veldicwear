@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { requireAdminApi } from "@/lib/admin-guard-api";
 import { sendOrderShippedEmail } from "@/lib/email";
+import { findOrderItemVariant } from "@/lib/variant-selection";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error } = await requireAdminApi();
@@ -42,8 +43,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       variants: Array<{ id: string; size: string; color: string | null; stock: number; price: number | null; costPrice: number | null; productId: string; cjVariantId: string | null }>;
     };
   }) => {
-    const matchingVariant = item.product?.variants?.find(
-      (v) => v.size === item.size
+    // Size + color, with a size-only fallback: a product whose variants differ
+    // only by color used to report whichever variant came first, so the Profit
+    // panel could show a different colorway's cost price.
+    const matchingVariant = findOrderItemVariant(
+      item.product?.variants ?? [],
+      item.size,
+      item.color
     );
     return {
       ...item,

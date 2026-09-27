@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { findOrderItemVariant, variantLineKey } from "@/lib/variant-selection";
 
 type ProductWithVariants = {
   id: string;
@@ -23,7 +24,7 @@ type ProductWithVariants = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const items: { id: string; size: string }[] = body.items ?? [];
+    const items: { id: string; size: string; color?: string | null }[] = body.items ?? [];
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ prices: [] });
@@ -43,10 +44,12 @@ export async function POST(request: NextRequest) {
       const dbProduct = productMap.get(item.id);
       if (!dbProduct) continue;
 
-      const variant = dbProduct.variants.find((v) => v.size === item.size);
+      // Size + color, with a size-only fallback so a cart line saved before
+      // colors existed still gets a price instead of dropping out of the sync.
+      const variant = findOrderItemVariant(dbProduct.variants, item.size, item.color);
       if (!variant) continue;
 
-      prices[`${item.id}:${item.size}`] = {
+      prices[variantLineKey(item.id, item.size, item.color)] = {
         price: variant.price ?? 0,
         variantStock: variant.stock,
       };

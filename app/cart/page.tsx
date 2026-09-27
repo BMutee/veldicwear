@@ -8,6 +8,7 @@ import { normalizeImageSrc } from "@/lib/image";
 import CouponInput from "@/components/CouponInput";
 import DeliveryEstimate from "@/components/DeliveryEstimate";
 import { useViewerCurrency } from "@/lib/use-viewer-currency";
+import { variantLineKey } from "@/lib/variant-selection";
 
 function Icon({ name, className = "h-5 w-5" }: { name: "minus" | "plus" | "trash" | "bag" | "arrow"; className?: string }) {
   const common = { className, fill: "none", stroke: "currentColor", strokeWidth: 1.8, viewBox: "0 0 24 24", "aria-hidden": true };
@@ -48,7 +49,13 @@ export default function CartPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: localCart.map((item) => ({ id: item.id, size: item.size })),
+          // Color must travel with the line: two colorways of the same size are
+          // different variants with their own price and stock.
+          items: localCart.map((item) => ({
+            id: item.id,
+            size: item.size,
+            color: item.color ?? null,
+          })),
         }),
       });
 
@@ -59,7 +66,7 @@ export default function CartPage() {
 
       const currentCart = getCart();
       const syncedCart = currentCart.map((item) => {
-        const key = `${item.id}:${item.size}`;
+        const key = variantLineKey(item.id, item.size, item.color);
         const server = serverPrices[key];
         if (server) {
           return { ...item, price: server.price, variantStock: server.variantStock };

@@ -105,3 +105,69 @@ export function matchCartVariant<T extends SelectableVariant>(
     ? { ok: true, variant: match }
     : { ok: false, reason: "not-found", availableColors };
 }
+
+/**
+ * Normalise an OrderItem.size into a bare size label.
+ *
+ * Orders created before the checkout's size/colour parsing was fixed stored a
+ * compound value like "S, Color: Black Zone2" (or "Size: S"), while variants
+ * store a bare size. Strip the decoration before matching, otherwise historical
+ * orders can never be resolved back to a variant.
+ */
+export function normaliseItemSize(size: string): string {
+  return (
+    size
+      .replace(/^\s*Size:\s*/i, "")
+      .split(/,/)
+      .map((part) => part.trim())
+      .filter((part) => part && !/^Color:/i.test(part))[0] ?? size.trim()
+  );
+}
+
+/**
+ * Best-effort variant lookup for a line that is ALREADY in an order (admin cost
+ * price / margin reporting, CJ fulfilment, cart price sync).
+ *
+ * Unlike matchCartVariant — which guards what the shopper is sending and must
+ * reject a colored line that forgot its color — this resolves what we stored,
+ * so it never rejects. It prefers size + color, then falls back to size alone so
+ * orders that predate colors, or whose color no longer exists in the catalog,
+ * still report a cost instead of "unknown". Matching on size alone used to hand
+ * a multi-color product whichever variant happened to come first, so the Profit
+ * panel could show a completely different colorway's cost price.
+ */
+export function findOrderItemVariant<T extends SelectableVariant>(
+  variants: T[],
+  size: string,
+  color: string | null | undefined,
+): T | undefined {
+  const bareSize = normaliseItemSize(size);
+  // "N/A" is what products without variants get stored as; there is no variant
+  // row to match and therefore no cost price to report.
+  if (!bareSize || bareSize === "N/A") return undefined;
+
+  const sizeVariants = variants.filter((variant) => variant.size === bareSize);
+  if (sizeVariants.length === 0) return undefined;
+
+  if (color) {
+    const byColor = sizeVariants.find((variant) => variant.color === color);
+    if (byColor) return byColor;
+  }
+
+  // No usable color on the line: a colorless variant is the safest answer,
+  // otherwise fall back to the first size match.
+  return sizeVariants.find((variant) => !variant.color) ?? sizeVariants[0];
+}
+
+/**
+ * Stable key identifying a cart line, shared by the cart page and
+ * /api/cart/prices. Must include the color, otherwise two colorways of the same
+ * size collapse onto one entry and both read the first one's price/stock.
+ */
+export function variantLineKey(
+  id: string,
+  size: string,
+  color: string | null | undefined,
+): string {
+  return `${id}:${size}:${color ?? ""}`;
+}
