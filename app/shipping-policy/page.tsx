@@ -129,7 +129,7 @@ export default function ShippingPolicyPage() {
                       {option.region}
                     </h3>
                     <p className="mt-3 font-display text-xl font-black uppercase tracking-tight text-[#CA8A04]">
-                      Free
+                      Free*
                     </p>
                     <p className="mt-3 font-sans text-sm leading-relaxed text-[#44403C]">{option.detail}</p>
                     {option.extra && (
@@ -138,6 +138,9 @@ export default function ShippingPolicyPage() {
                   </div>
                 ))}
               </div>
+              <p className="font-sans text-xs leading-5 text-[#78716C]">
+                *Limited-time offer &mdash; standard shipping is free while it lasts.
+              </p>
               <p className="font-sans text-sm text-[#78716C]">
                 Every delivery window is an estimate, not a guarantee &mdash; customs clearance and carrier delays can
                 extend it. The estimate that applies to your order is the one shown on the product page, in your cart
