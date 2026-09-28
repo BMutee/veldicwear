@@ -85,26 +85,13 @@ export default function TermsPage() {
           <p className="mt-3 font-sans text-sm text-[#78716C]">
             <strong className="text-[#1C1917]">Last updated:</strong> {LAST_UPDATED}
           </p>
-          <div className="mt-4 space-y-3">
-            <div className="rounded border border-[#CA8A04]/30 bg-[#CA8A04]/5 px-4 py-3">
-              <p className="font-sans text-xs leading-5 text-[#78716C]">
-                <strong className="text-[#CA8A04]">⚠ Disclaimer:</strong> These Terms are provided for
-                general informational purposes only and do not constitute legal advice. They have not been
-                reviewed by a qualified legal professional and may not comply in full with every applicable
-                law. You{" "}
-                <strong className="text-[#1C1917]">must</strong> have a qualified legal professional review and
-                finalize these Terms — and confirm they match how the business actually operates — before
-                relying on them to meet your legal obligations.
-              </p>
-            </div>
-            <div className="rounded border border-[#CA8A04]/20 bg-[#CA8A04]/5 px-4 py-3">
-              <p className="font-sans text-xs leading-5 text-[#78716C]">
-                <strong className="text-[#CA8A04]">ⓘ In plain terms:</strong> Order from us, and we carry the
-                risk until your parcel reaches you. If it&rsquo;s lost, damaged, or wrong, that&rsquo;s on us to
-                fix — there&rsquo;s no carrier claim for you to file. See{" "}
-                <strong className="text-[#1C1917]">Section 5</strong>.
-              </p>
-            </div>
+          <div className="mt-4 rounded border border-[#CA8A04]/20 bg-[#CA8A04]/5 px-4 py-3">
+            <p className="font-sans text-xs leading-5 text-[#78716C]">
+              <strong className="text-[#CA8A04]">ⓘ In plain terms:</strong> Order from us, and we carry the risk
+              until your parcel reaches you. If it&rsquo;s lost, damaged, or wrong, that&rsquo;s on us to fix —
+              there&rsquo;s no carrier claim for you to file. See{" "}
+              <strong className="text-[#1C1917]">Section 5</strong>.
+            </p>
           </div>
         </div>
 

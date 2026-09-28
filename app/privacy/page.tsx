@@ -192,27 +192,14 @@ export default function PrivacyPage() {
           <p className="mt-3 font-sans text-sm text-[#78716C]">
             <strong className="text-[#1C1917]">Last updated:</strong> {LAST_UPDATED}
           </p>
-          <div className="mt-4 space-y-3">
-            <div className="rounded border border-[#CA8A04]/30 bg-[#CA8A04]/5 px-4 py-3">
-              <p className="font-sans text-xs leading-5 text-[#78716C]">
-                <strong className="text-[#CA8A04]">⚠ Disclaimer:</strong> This Privacy Policy is provided for
-                general informational purposes only and does not constitute legal advice. It has not been reviewed by
-                a qualified legal professional and may not comply in full with every applicable law (including
-                GDPR, CCPA/CPRA, PIPEDA and provincial legislation). You{" "}
-                <strong className="text-[#1C1917]">must</strong> have a qualified legal professional review and
-                finalize this policy — and confirm it matches how the business actually operates — before relying on
-                it to meet your legal obligations.
-              </p>
-            </div>
-            <div className="rounded border border-[#CA8A04]/20 bg-[#CA8A04]/5 px-4 py-3">
-              <p className="font-sans text-xs leading-5 text-[#78716C]">
-                <strong className="text-[#CA8A04]">ⓘ In plain terms:</strong> We collect what we need to take
-                your order, ship it, and answer you when you need help. Your card details go straight to{" "}
-                <strong className="text-[#1C1917]">Stripe</strong> and never touch our servers. We do not sell
-                your personal information, and you can ask us to delete it at any time — see{" "}
-                <strong className="text-[#1C1917]">Section 9</strong>.
-              </p>
-            </div>
+          <div className="mt-4 rounded border border-[#CA8A04]/20 bg-[#CA8A04]/5 px-4 py-3">
+            <p className="font-sans text-xs leading-5 text-[#78716C]">
+              <strong className="text-[#CA8A04]">ⓘ In plain terms:</strong> We collect what we need to take your
+              order, ship it, and answer you when you need help. Your card details go straight to{" "}
+              <strong className="text-[#1C1917]">Stripe</strong> and never touch our servers. We do not sell your
+              personal information, and you can ask us to delete it at any time — see{" "}
+              <strong className="text-[#1C1917]">Section 9</strong>.
+            </p>
           </div>
         </div>
 
