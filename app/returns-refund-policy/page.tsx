@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { RETURN_WINDOW_DAYS } from "@/lib/returns";
+import { BUSINESS_INFO, BUSINESS_ADDRESS_LINE } from "@/lib/business-info";
 
 /**
  * Public Return & Refund Policy page.
@@ -8,17 +11,22 @@ import Link from "next/link";
  * app/[slug]/page.tsx, so this page owns the URL with no DB row.
  *
  * The terms here are written to agree with the other customer-facing promises:
- *   - 30-day return window and refund "within 30 days after we receive and
- *     inspect" (app/terms/page.tsx, section 5).
+ *   - Return window and refund timing — the window itself is imported from
+ *     lib/returns (RETURN_WINDOW_DAYS) so it can never drift from the /returns
+ *     portal, the emails, or app/terms.
  *   - Our fault = covered in full, 7-day damage report, 45/90-day lost-package
- *     window, one theft replacement per 12 months, duties-included US pricing
- *     (app/shipping-policy/page.tsx).
+ *     window, one theft replacement per 12 months (app/shipping-policy/page.tsx).
  *
  * The day counts kept here are POLICY deadlines (how long you have to tell us),
  * not delivery estimates — delivery windows live on the product page via
  * components/DeliveryEstimate.tsx.
  */
-const SUPPORT_EMAIL = "info@veldicwear.com";
+const TRADING_NAME = BUSINESS_INFO.name;
+
+export const metadata: Metadata = {
+  title: `Return & Refund Policy | ${TRADING_NAME}`,
+  description: `Request a return within ${RETURN_WINDOW_DAYS} days of delivery, unworn and with tags attached. Full refund to your original payment method.`,
+};
 
 export default function ReturnsRefundPolicyPage() {
   return (
@@ -37,10 +45,18 @@ export default function ReturnsRefundPolicyPage() {
           </p>
           <div className="mt-4 rounded border border-[#CA8A04]/20 bg-[#CA8A04]/5 px-4 py-3">
             <p className="font-sans text-xs leading-5 text-[#78716C]">
-              <strong className="text-[#CA8A04]">⚠ Draft:</strong> This Return &amp; Refund Policy was drafted
-              for development purposes. It does not constitute legal advice and may not comply with the consumer
-              protection laws that apply to you. Have a qualified legal professional review and finalize it before
-              making this page publicly accessible.
+              <strong className="text-[#CA8A04]">ⓘ In plain terms:</strong> You have{" "}
+              <strong className="text-[#1C1917]">{RETURN_WINDOW_DAYS} days from delivery</strong> to send an
+              item back, unworn with the tags attached, and we refund you to your original payment method. If
+              something arrives damaged, faulty or just wrong, that&rsquo;s on us and not a return &mdash; we
+              cover it in full.{" "}
+              <Link
+                href="/returns"
+                className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"
+              >
+                Start a return
+              </Link>
+              .
             </p>
           </div>
         </div>
@@ -84,9 +100,10 @@ export default function ReturnsRefundPolicyPage() {
             <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">Overview</h2>
             <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
               <p>
-                We want you to be happy with your Veldic Wear order. If something isn&rsquo;t right, you can request a
-                return within <strong className="text-[#1C1917]">30 days of delivery</strong> &mdash; and if a parcel
-                arrives damaged, faulty, or incorrect, we cover it in full.
+                We want you to be happy with your {TRADING_NAME} order. If something isn&rsquo;t right, you can
+                request a
+                return within <strong className="text-[#1C1917]">{RETURN_WINDOW_DAYS} days of delivery</strong>{" "}
+                &mdash; and if a parcel arrives damaged, faulty, or incorrect, we cover it in full.
               </p>
               <p>
                 This policy explains what can be returned, how to start a return, and how and when refunds are issued.
@@ -106,7 +123,8 @@ export default function ReturnsRefundPolicyPage() {
                 <li className="flex gap-3">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
                   <span>
-                    You contact us within <strong className="text-[#1C1917]">30 days of delivery</strong>.
+                    You contact us within{" "}
+                    <strong className="text-[#1C1917]">{RETURN_WINDOW_DAYS} days of delivery</strong>.
                   </span>
                 </li>
                 <li className="flex gap-3">
@@ -134,7 +152,7 @@ export default function ReturnsRefundPolicyPage() {
               <ul className="list-inside space-y-2">
                 <li className="flex gap-3">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>More than 30 days have passed since delivery.</span>
+                  <span>More than {RETURN_WINDOW_DAYS} days have passed since delivery.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
@@ -173,13 +191,13 @@ export default function ReturnsRefundPolicyPage() {
                 a return address and label.
               </p>
               <p>
-                Prefer email? Write to{" "}
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}`}
+                Prefer email? Use our{" "}
+                <Link
+                  href="/contact"
                   className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"
                 >
-                  {SUPPORT_EMAIL}
-                </a>{" "}
+                  contact form
+                </Link>{" "}
                 with your order number and the reason for the return. If an item arrived damaged, faulty, or incorrect,
                 attach a photo &mdash; it often lets us sort things out without a return at all.
               </p>
@@ -324,7 +342,7 @@ export default function ReturnsRefundPolicyPage() {
               </p>
               <p>
                 If tracking shows delivered but the parcel isn&rsquo;t there, check with your building and your
-                neighbours first, then email us within{" "}
+                neighbours first, then tell us within{" "}
                 <strong className="text-[#1C1917]">7 days of the delivery scan</strong>. Theft after delivery sits
                 outside what any carrier covers, but we&rsquo;ll replace one parcel per customer every 12 months.
               </p>
@@ -338,13 +356,11 @@ export default function ReturnsRefundPolicyPage() {
             </h2>
             <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
               <p>
-                <strong className="text-[#1C1917]">United States:</strong> import duties are included in our prices and
-                prepaid by us &mdash; you pay nothing on delivery.
-              </p>
-              <p>
-                <strong className="text-[#1C1917]">Other countries:</strong> import duties, taxes, and customs fees are
-                set by the destination country, are not included in your order total or shipping fee, and are the
-                recipient&rsquo;s responsibility. We are required to declare the full value of every shipment.
+                <strong className="text-[#1C1917]">All destinations:</strong> import duties, taxes, and
+                customs fees are set by the destination country, are not included in your order total or shipping
+                fee, and are the recipient&rsquo;s responsibility &mdash; you&rsquo;ll need to pay them before the
+                parcel is released. We are required to declare the full value of every shipment, which can also
+                affect the amount charged.
               </p>
               <p>
                 If a parcel is refused or returned to us because those charges weren&rsquo;t paid, the return shipping
@@ -359,7 +375,7 @@ export default function ReturnsRefundPolicyPage() {
             <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">Cancellations</h2>
             <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
               <p>
-                If you need to cancel or change an order, email us as soon as you can with your order number. We can
+                If you need to cancel or change an order, tell us as soon as you can with your order number. We can
                 usually make changes while your order is still being prepared; once it has shipped, please use the return
                 process above.
               </p>
@@ -375,17 +391,35 @@ export default function ReturnsRefundPolicyPage() {
             <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">Contact</h2>
             <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
               <p>
-                For a return, a refund, or anything else about your order, email us with your order number and
-                we&rsquo;ll help.
+                For a return, a refund, or anything else about your order, use our{" "}
+                <Link
+                  href="/contact"
+                  className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
+                >
+                  contact form
+                </Link>{" "}
+                with your order number and we&rsquo;ll help.
               </p>
               <div className="border border-[#1C1917]/10 bg-white p-5 font-sans text-sm">
-                <p className="text-[#78716C]">Email</p>
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}`}
-                  className="mt-1 inline-block font-display text-base font-bold tracking-wide text-[#1C1917] underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
-                >
-                  {SUPPORT_EMAIL}
-                </a>
+                <p className="text-[#1C1917]">
+                  <strong>{BUSINESS_INFO.legalName}</strong>
+                  <br />
+                  {BUSINESS_ADDRESS_LINE}
+                  <br />
+                  <a
+                    href={`mailto:${BUSINESS_INFO.email}`}
+                    className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"
+                  >
+                    {BUSINESS_INFO.email}
+                  </a>
+                  <br />
+                  <a
+                    href={`tel:${BUSINESS_INFO.phoneHref}`}
+                    className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"
+                  >
+                    {BUSINESS_INFO.phone}
+                  </a>
+                </p>
               </div>
               <p>
                 You can also reach us through our{" "}
@@ -420,7 +454,7 @@ export default function ReturnsRefundPolicyPage() {
             VELDIC WEAR
           </Link>
           <p className="mt-3 font-sans text-xs text-[#78716C]">
-            &copy; {new Date().getFullYear()} Veldic Wear. All rights reserved.
+            &copy; {new Date().getFullYear()} {TRADING_NAME}. All rights reserved.
           </p>
         </div>
       </div>

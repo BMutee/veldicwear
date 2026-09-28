@@ -16,7 +16,13 @@
 
 export const RETURN_WINDOW_DAYS = 30;
 
-/** Support inbox. The seeded contact address, overridable per deployment. */
+/** Support inbox — where customer mail about returns is delivered and where the
+ *  portal tells people to write. Overridable per deployment via SUPPORT_EMAIL.
+ *
+ *  This is the REPLY-TO / customer-facing address, NOT the sending identity:
+ *  outbound mail goes out from EMAIL_FROM (see lib/email.ts), which must stay a
+ *  domain the mail provider has authorized. Changing where replies land and
+ *  changing what we send as are two separate decisions. */
 export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL ?? "info@veldicwear.com";
 
 /**

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +9,7 @@ import { CartItem, getCart } from "@/lib/cart";
 import OrderSummary from "@/components/OrderSummary";
 import { EUR_ESTIMATE_DISCLAIMER } from "@/lib/currency-map";
 import { useViewerCurrency } from "@/lib/use-viewer-currency";
+import { BUSINESS_INFO, BUSINESS_ADDRESS_LINE } from "@/lib/business-info";
 
 const shippingSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -140,6 +142,65 @@ export default function CheckoutPage() {
                   <p className="font-sans text-sm text-[#DC2626]">{message}</p>
                 </div>
               )}
+
+              {/* Pre-contract disclosure.
+                  Alberta's Consumer Protection Act requires a seller to disclose
+                  its name, address, telephone number and email to the consumer
+                  before an internet sales contract over $50 is entered, together
+                  with a fair description of the goods, the total price broken
+                  down (including taxes, shipping and customs duties/brokerage),
+                  and the currency charged. Showing it here — above the form, so
+                  the customer reads it BEFORE placing the order — is what
+                  satisfies that duty. Keep it above the submit button. */}
+              <div className="mt-6 border border-[#1B2737]/15 bg-[#F3F7FC]/60 p-5">
+                <h2 className="font-display text-xs font-bold uppercase tracking-[0.15em] text-[#1B2737]">
+                  Seller information
+                </h2>
+                <dl className="mt-3 space-y-1.5 font-sans text-sm text-[#5B6B85]">
+                  <div className="flex flex-wrap gap-x-2">
+                    <dt className="font-semibold text-[#1B2737]">Seller:</dt>
+                    <dd>{BUSINESS_INFO.legalName}</dd>
+                  </div>
+                  <div className="flex flex-wrap gap-x-2">
+                    <dt className="font-semibold text-[#1B2737]">Address:</dt>
+                    <dd>{BUSINESS_ADDRESS_LINE}</dd>
+                  </div>
+                  <div className="flex flex-wrap gap-x-2">
+                    <dt className="font-semibold text-[#1B2737]">Phone:</dt>
+                    <dd>
+                      <a
+                        href={`tel:${BUSINESS_INFO.phoneHref}`}
+                        className="underline decoration-[#2563EB]/40 underline-offset-2 transition-colors duration-200 hover:text-[#1B2737] cursor-pointer"
+                      >
+                        {BUSINESS_INFO.phone}
+                      </a>
+                    </dd>
+                  </div>
+                  <div className="flex flex-wrap gap-x-2">
+                    <dt className="font-semibold text-[#1B2737]">Email:</dt>
+                    <dd>
+                      <a
+                        href={`mailto:${BUSINESS_INFO.email}`}
+                        className="underline decoration-[#2563EB]/40 underline-offset-2 transition-colors duration-200 hover:text-[#1B2737] cursor-pointer"
+                      >
+                        {BUSINESS_INFO.email}
+                      </a>
+                    </dd>
+                  </div>
+                </dl>
+                <p className="mt-3 font-sans text-xs leading-5 text-[#5B6B85]">
+                  Total price, taxes, shipping and any customs duties or brokerage fees are itemized in the order
+                  summary. You are charged in {vc.currency}. Import duties and taxes are not included in the order
+                  total for international destinations and are payable by you on delivery — see our{" "}
+                  <Link
+                    href="/shipping-policy"
+                    className="underline decoration-[#2563EB]/40 underline-offset-2 transition-colors duration-200 hover:text-[#1B2737] cursor-pointer"
+                  >
+                    Shipping Policy
+                  </Link>
+                  . A written copy of your order is provided by email within 15 days.
+                </p>
+              </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
                 {/* Name row */}

@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { BUSINESS_INFO, BUSINESS_ADDRESS_LINE } from "@/lib/business-info";
 
 /**
  * Public shipping policy page.
@@ -26,7 +28,7 @@ const SHIPPING_DESTINATIONS: ShippingDestination[] = [
   {
     region: "United States",
     detail: "FREE standard shipping, no minimum \u2014 limited-time offer.",
-    extra: "US prices include import duties \u2014 nothing to pay on delivery.",
+    extra: "Delivery time depends on customs clearance.",
   },
   {
     region: "Rest of World",
@@ -35,7 +37,13 @@ const SHIPPING_DESTINATIONS: ShippingDestination[] = [
   },
 ];
 
-const SUPPORT_EMAIL = "info@veldicwear.com";
+const TRADING_NAME = BUSINESS_INFO.name;
+
+export const metadata: Metadata = {
+  title: `Shipping Policy | ${TRADING_NAME}`,
+  description:
+    "Free standard shipping on every order, to every destination we serve. Delivery estimates, tracking, customs and duties, and who carries the risk in transit.",
+};
 
 export default function ShippingPolicyPage() {
   return (
@@ -177,15 +185,12 @@ export default function ShippingPolicyPage() {
             </h2>
             <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
               <p>
-                <strong className="text-[#1C1917]">United States:</strong> import duties are included in our US prices
-                and prepaid by us &mdash; you pay nothing on delivery.
-              </p>
-              <p>
-                <strong className="text-[#1C1917]">Other countries:</strong> orders may be subject to import duties,
-                taxes, and customs fees set by the destination country. These charges are not included in your order
-                total or shipping fee and are the responsibility of the recipient. We are required to declare the full
-                value of all shipments. If a package is refused due to unpaid duties, any return shipping and fees may
-                be deducted from your refund.
+                <strong className="text-[#1C1917]">All destinations:</strong> import duties, taxes, and
+                customs fees are set by the destination country. These charges are not included in your order total
+                or shipping fee and are the responsibility of the recipient &mdash; you&rsquo;ll need to pay them
+                before the parcel is released. We are required to declare the full value of all shipments, which can
+                also affect the amount charged. If a package is refused due to unpaid duties, any return shipping and
+                fees may be deducted from your refund.
               </p>
             </div>
           </section>
@@ -203,19 +208,19 @@ export default function ShippingPolicyPage() {
               <p>
                 Report damaged shipments within <strong className="text-[#1C1917]">7 days of delivery</strong> and lost
                 packages within <strong className="text-[#1C1917]">45 days of the order date</strong> &mdash; 90 days
-                outside Canada and the US, where customs clearance alone can run past the 45th day &mdash; by emailing{" "}
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}`}
+                outside Canada and the US, where customs clearance alone can run past the 45th day &mdash; through our{" "}
+                <Link
+                  href="/contact"
                   className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"
                 >
-                  {SUPPORT_EMAIL}
-                </a>{" "}
+                  contact form
+                </Link>{" "}
                 with your order number and photos where applicable. Wrong items, manufacturing defects, and anything
                 that&rsquo;s our fault are always covered in full.
               </p>
               <p>
                 If tracking shows delivered but the parcel isn&rsquo;t there, check with your building and your
-                neighbours first, then email us within{" "}
+                neighbours first, then tell us within{" "}
                 <strong className="text-[#1C1917]">7 days of the delivery scan</strong>. Theft after delivery sits
                 outside what any carrier covers, but we&rsquo;ll replace one parcel per customer every 12 months &mdash;
                 see our{" "}
@@ -239,7 +244,7 @@ export default function ShippingPolicyPage() {
               <p>
                 Please double-check your shipping details at checkout &mdash; we&rsquo;re unable to take responsibility
                 for orders shipped to an incorrect or incomplete address, or for delays caused by carriers. If you spot
-                an address mistake, email us right away and we&rsquo;ll fix it if the order hasn&rsquo;t shipped.
+                an address mistake, tell us right away and we&rsquo;ll fix it if the order hasn&rsquo;t shipped.
               </p>
             </div>
           </section>
@@ -248,15 +253,27 @@ export default function ShippingPolicyPage() {
           <section id="contact">
             <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">Contact</h2>
             <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <p>For all shipping inquiries:</p>
+              <p>For all shipping inquiries, email us, use our contact form, or call us.</p>
               <div className="border border-[#1C1917]/10 bg-white p-5 font-sans text-sm">
-                <p className="text-[#78716C]">Email</p>
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}`}
-                  className="mt-1 inline-block font-display text-base font-bold tracking-wide text-[#1C1917] underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
-                >
-                  {SUPPORT_EMAIL}
-                </a>
+                <p className="text-[#1C1917]">
+                  <strong>{BUSINESS_INFO.legalName}</strong>
+                  <br />
+                  {BUSINESS_ADDRESS_LINE}
+                  <br />
+                  <a
+                    href={`mailto:${BUSINESS_INFO.email}`}
+                    className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"
+                  >
+                    {BUSINESS_INFO.email}
+                  </a>
+                  <br />
+                  <a
+                    href={`tel:${BUSINESS_INFO.phoneHref}`}
+                    className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"
+                  >
+                    {BUSINESS_INFO.phone}
+                  </a>
+                </p>
               </div>
               <p>
                 You can also reach us through our{" "}
@@ -281,7 +298,7 @@ export default function ShippingPolicyPage() {
             VELDIC WEAR
           </Link>
           <p className="mt-3 font-sans text-xs text-[#78716C]">
-            &copy; {new Date().getFullYear()} Veldic Wear. All rights reserved.
+            &copy; {new Date().getFullYear()} {TRADING_NAME}. All rights reserved.
           </p>
         </div>
 

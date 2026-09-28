@@ -63,8 +63,11 @@ type AccordionItem = {
 const DEFAULT_DESCRIPTION =
   "Built for the ground you cover. Premium materials meet considered construction for a silhouette that moves with you — on the trail, in the city, or on the long way home.";
 
+/** Must agree with /shipping-policy: standard shipping is free on every order
+ *  with no minimum, so this must NOT quote a threshold. The return window is
+ *  imported from lib/returns elsewhere — keep this string qualitative. */
 const SHIPPING_RETURNS =
-  "Free standard shipping on all orders over $100. Express shipping available at checkout. Returns accepted within 30 days of delivery in unworn condition with original tags attached.";
+  "Free standard shipping on every order, to every destination we serve. Express shipping available at checkout. Returns accepted within 30 days of delivery in unworn condition with original tags attached.";
 
 function Accordion({ data }: { data: AccordionItem[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);

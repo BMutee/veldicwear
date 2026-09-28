@@ -1,4 +1,74 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { RETURN_WINDOW_DAYS } from "@/lib/returns";
+import {
+  BUSINESS_INFO,
+  BUSINESS_ADDRESS_LINE,
+  INTERNET_SALES_CONTRACT_THRESHOLD,
+} from "@/lib/business-info";
+
+/**
+ * Public Terms of Service.
+ *
+ * Static route (like /privacy, /shipping-policy, /returns-refund-policy) rather
+ * than a CMS page: the slug is owned by this file, so no DB row is required.
+ *
+ * The return window is imported from lib/returns rather than written as "30"
+ * because it is quoted on the /returns portal, the Return & Refund Policy and
+ * the confirmation emails, and those must never disagree. Shipping risk and the
+ * lost/stolen rules are summarised here but governed in full by the Shipping
+ * Policy and Return & Refund Policy, which this page links to.
+ */
+
+const TRADING_NAME = BUSINESS_INFO.name;
+
+/** Bump this whenever the copy below changes materially. */
+const LAST_UPDATED = "September 28, 2026";
+
+export const metadata: Metadata = {
+  title: `Terms of Service | ${TRADING_NAME}`,
+  description:
+    "The terms that govern your use of the Veldic Wear website and your purchases from it.",
+};
+
+const TABLE_OF_CONTENTS: [string, string][] = [
+  ["#use", "1. Use of the Site"],
+  ["#products", "2. Products & Availability"],
+  ["#pricing", "3. Pricing & Payment"],
+  ["#shipping-returns", "4. Shipping, Returns & Refunds"],
+  ["#shipping-risk", "5. Shipping Risk"],
+  ["#accounts", "6. Accounts & Accuracy of Information"],
+  ["#ip", "7. Intellectual Property"],
+  ["#third-party", "8. Third-Party Links & Tools"],
+  ["#liability", "9. Disclaimer & Limitation of Liability"],
+  ["#indemnity", "10. Indemnification"],
+  ["#governing", "11. Governing Law"],
+  ["#changes", "12. Changes to These Terms"],
+  ["#contact", "13. Contact"],
+];
+
+/** A numbered section: sticky-nav-friendly anchor + heading. */
+function Section({
+  id,
+  title,
+  children,
+}: {
+  id: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="scroll-mt-24">
+      <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
+        {title}
+      </h2>
+      <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
+        {children}
+      </div>
+    </section>
+  );
+}
+
 
 export default function TermsPage() {
   return (
@@ -13,15 +83,28 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="mt-3 font-sans text-sm text-[#78716C]">
-            <strong className="text-[#1C1917]">Last updated:</strong> July 21, 2026
+            <strong className="text-[#1C1917]">Last updated:</strong> {LAST_UPDATED}
           </p>
-          <div className="mt-4 rounded border border-[#CA8A04]/20 bg-[#CA8A04]/5 px-4 py-3">
-            <p className="font-sans text-xs leading-5 text-[#78716C]">
-              <strong className="text-[#CA8A04]">⚠ Disclaimer:</strong> This is a placeholder Terms of Service
-              document generated for development purposes. It does not constitute legal advice and may not comply with
-              applicable laws. You <strong className="text-[#1C1917]">must</strong> have a qualified legal professional
-              review and finalize your actual Terms of Service before launching or making this page publicly accessible.
-            </p>
+          <div className="mt-4 space-y-3">
+            <div className="rounded border border-[#CA8A04]/30 bg-[#CA8A04]/5 px-4 py-3">
+              <p className="font-sans text-xs leading-5 text-[#78716C]">
+                <strong className="text-[#CA8A04]">⚠ Disclaimer:</strong> These Terms are provided for
+                general informational purposes only and do not constitute legal advice. They have not been
+                reviewed by a qualified legal professional and may not comply in full with every applicable
+                law. You{" "}
+                <strong className="text-[#1C1917]">must</strong> have a qualified legal professional review and
+                finalize these Terms — and confirm they match how the business actually operates — before
+                relying on them to meet your legal obligations.
+              </p>
+            </div>
+            <div className="rounded border border-[#CA8A04]/20 bg-[#CA8A04]/5 px-4 py-3">
+              <p className="font-sans text-xs leading-5 text-[#78716C]">
+                <strong className="text-[#CA8A04]">ⓘ In plain terms:</strong> Order from us, and we carry the
+                risk until your parcel reaches you. If it&rsquo;s lost, damaged, or wrong, that&rsquo;s on us to
+                fix — there&rsquo;s no carrier claim for you to file. See{" "}
+                <strong className="text-[#1C1917]">Section 5</strong>.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -30,26 +113,14 @@ export default function TermsPage() {
           <h2 className="font-display text-sm font-bold uppercase tracking-[0.15em] text-[#1C1917]">
             Table of Contents
           </h2>
-          <ul className="mt-4 space-y-2">
-            {[
-              ["#acceptance", "1. Acceptance of Terms"],
-              ["#changes", "2. Changes to Terms"],
-              ["#account", "3. Account Registration"],
-              ["#orders", "4. Orders & Payment"],
-              ["#shipping", "5. Shipping & Returns"],
-              ["#intellectual", "6. Intellectual Property"],
-              ["#prohibited", "7. Prohibited Uses"],
-              ["#disclaimers", "8. Disclaimers & Limitation of Liability"],
-              ["#termination", "9. Termination"],
-              ["#governing", "10. Governing Law"],
-              ["#contact", "11. Contact Us"],
-            ].map(([href, label]) => (
+          <ul className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+            {TABLE_OF_CONTENTS.map(([href, label]) => (
               <li key={href}>
                 <a
                   href={href}
                   className="flex items-center gap-2 font-sans text-sm text-[#1C1917] underline decoration-[#CA8A04]/30 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
                 >
-                  <span className="h-1 w-1 rounded-full bg-[#CA8A04]" />
+                  <span className="h-1 w-1 shrink-0 rounded-full bg-[#CA8A04]" />
                   {label}
                 </a>
               </li>
@@ -59,309 +130,257 @@ export default function TermsPage() {
 
         {/* Sections */}
         <div className="mt-10 space-y-12">
-          {/* Section 1 */}
-          <section id="acceptance">
-            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
-              1. Acceptance of Terms
-            </h2>
-            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <p>
-                By accessing or using the Veldic Wear website (the &ldquo;Site&rdquo;), you agree to be bound by these
-                Terms of Service (&ldquo;Terms&rdquo;). If you do not agree with any part of these Terms, you must not
-                access or use the Site.
-              </p>
-              <p>
-                These Terms apply to all visitors, users, and customers who access or use the Site. If you are using the
-                Site on behalf of a business or other entity, you represent that you have the authority to bind that entity
-                to these Terms.
-              </p>
-            </div>
-          </section>
+          <Section id="use" title="1. Use of the Site">
+            <p>
+              This website is operated by {TRADING_NAME}. By visiting our site or purchasing something from us, you
+              agree to the following terms. Please read them carefully — if you don&rsquo;t agree with any part,
+              please don&rsquo;t use the site or our services.
+            </p>
+            <p>
+              By using this site, you confirm you are at least the age of majority in your province, state, or
+              country of residence, or have the consent of a parent or guardian. You may not use our products or
+              site for any unlawful purpose, to transmit malicious code, or to attempt to interfere with the
+              site&rsquo;s operation. A breach of these terms may result in termination of your access.
+            </p>
+          </Section>
 
-          {/* Section 2 */}
-          <section id="changes">
-            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
-              2. Changes to Terms
-            </h2>
-            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <p>
-                We reserve the right to modify or replace these Terms at any time. Changes will be effective immediately
-                upon posting to the Site. Your continued use of the Site after any changes constitutes acceptance of the
-                new Terms.
-              </p>
-              <p>
-                We will make reasonable efforts to notify you of material changes, such as by updating the &ldquo;Last
-                updated&rdquo; date at the top of this page. We encourage you to review these Terms periodically.
-              </p>
-            </div>
-          </section>
+          <Section id="products" title="2. Products & Availability">
+            <p>
+              Sizes can sell out, and availability is not guaranteed at all times. We reserve the right to limit
+              quantities, discontinue products, and refuse or cancel any order at our discretion — for example,
+              where we suspect fraud or reseller activity. If we cancel your order, you&rsquo;ll receive a full
+              refund.
+            </p>
+            <p>
+              We do our best to display colours, sizing and images accurately, but we can&rsquo;t guarantee your
+              screen shows them exactly as they are.
+            </p>
+          </Section>
 
-          {/* Section 3 */}
-          <section id="account">
-            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
-              3. Account Registration
-            </h2>
-            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <p>
-                When you create an account on our Site, you agree to provide accurate, current, and complete information.
-                You are responsible for maintaining the confidentiality of your account credentials and for all activities
-                that occur under your account.
-              </p>
-              <p>You agree not to:</p>
-              <ul className="list-inside space-y-2">
-                <li className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>Create an account using false or misleading information.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>Share your account credentials with any third party.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>Use another person&rsquo;s account without permission.</span>
-                </li>
-              </ul>
-              <p>
-                We reserve the right to suspend or terminate accounts that violate these Terms or applicable law.
-              </p>
-            </div>
-          </section>
+          <Section id="pricing" title="3. Pricing & Payment">
+            <p>
+              Prices are listed in the currency shown at checkout and may change at any time without notice. We
+              reserve the right to correct pricing errors, including on orders already placed — if a correction
+              affects your order, we&rsquo;ll contact you before proceeding or issue a full refund.
+            </p>
+            <p>
+              By providing payment information, you confirm you&rsquo;re authorized to use the payment method
+              provided. Payments are processed by Stripe; we never receive or store your full card number.
+            </p>
+          </Section>
 
-          {/* Section 4 */}
-          <section id="orders">
-            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
-              4. Orders & Payment
-            </h2>
-            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <p>
-                By placing an order through our Site, you agree to provide accurate payment and shipping information. All
-                orders are subject to availability and acceptance by Veldic Wear.
-              </p>
-              <p><strong className="text-[#1C1917]">Pricing:</strong> All prices are listed in the currency specified on the
-                Site and are subject to change without notice. We reserve the right to correct any pricing errors that may
-                occur.</p>
-              <p><strong className="text-[#1C1917]">Payment:</strong> Payments are processed securely through Stripe. By
-                providing your payment information, you authorize Stripe to charge the applicable amount. We do not store
-                your full payment card details.</p>
-              <p><strong className="text-[#1C1917]">Order Confirmation:</strong> Your receipt of an order confirmation does
-                not constitute our acceptance of the order. We reserve the right to cancel or refuse any order at our
-                discretion, including if we suspect fraud or inaccuracies.</p>
-            </div>
-          </section>
+          <Section id="shipping-returns" title="4. Shipping, Returns & Refunds">
+            <p>
+              Shipping and delivery are governed by our{" "}
+              <Link
+                href="/shipping-policy"
+                className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
+              >
+                Shipping Policy
+              </Link>
+              , and returns by our{" "}
+              <Link
+                href="/returns-refund-policy"
+                className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
+              >
+                Return &amp; Refund Policy
+              </Link>
+              . Those policies form part of these Terms; where this summary and those policies differ, the
+              policies govern.
+            </p>
+            <p>
+              In short: you can request a return within{" "}
+              <strong className="text-[#1C1917]">{RETURN_WINDOW_DAYS} days of delivery</strong>, unworn and with
+              the tags attached, and refunds are issued to your original payment method. You can{" "}
+              <Link
+                href="/returns"
+                className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
+              >
+                start a return online
+              </Link>
+              .
+            </p>
+            <p>
+              If an item is wrong, faulty, or damaged, that&rsquo;s our cost to fix and sits outside the
+              change-of-mind rules. Nothing in this section limits any rights you have under the consumer
+              protection laws that apply where you live.
+            </p>
+            <p>
+              <strong className="text-[#1C1917]">Your statutory cancellation rights:</strong> if you are buying from
+              us in Alberta and your order totals more than{" "}
+              {INTERNET_SALES_CONTRACT_THRESHOLD}, you have rights under Alberta&rsquo;s Consumer
+              Protection Act that these Terms cannot remove. You may be able to cancel an order under that Act, and
+              if you pay by credit card you can ask your card issuer to reverse the charge. If we do not refund you,
+              your card issuer is generally required to reverse it once you have told us in writing. We will give you
+              a written copy of your order within 15 days, and the time in which you may cancel is longer if we fail
+              to do that. Nothing here limits any other right or remedy available to you under applicable consumer
+              protection law.
+            </p>
+          </Section>
 
-          {/* Section 5 */}
-          <section id="shipping">
-            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
-              5. Shipping & Returns
-            </h2>
-            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <div className="rounded border border-[#CA8A04]/20 bg-[#CA8A04]/5 px-4 py-3">
-                <p className="font-sans text-xs leading-5 text-[#78716C]">
-                  <strong className="text-[#CA8A04]">ⓘ Estimate:</strong> The shipping timelines below are estimates, not
-                  guarantees. While we make every effort to meet these windows, Veldic Wear is not responsible for delays
-                  caused by carriers, customs processing, or other factors outside our reasonable control.
-                </p>
-              </div>
-              <p>
-                <strong className="text-[#1C1917]">Processing:</strong> Orders are typically processed within 1&ndash;4
-                business days. During this time, each item undergoes quality checking before being packed and handed to the
-                carrier.
-              </p>
-              <p>
-                <strong className="text-[#1C1917]">Transit:</strong> After processing, delivery takes approximately 3&ndash;6
-                days depending on the destination and shipping method selected at checkout.
-              </p>
-              <p>
-                <strong className="text-[#1C1917]">Total Delivery Window:</strong> From the moment you place your order to
-                delivery at your door, you can expect a total timeline of approximately <strong className="text-[#1C1917]">up to 10
-                days</strong>. This is an estimate, not a guarantee — carrier delays, customs clearance, and other
-                unforeseen circumstances may extend this window.
-              </p>
-              <p>
-                <strong className="text-[#1C1917]">Returns:</strong> We accept returns of unworn, unwashed, and unused items
-                within 30 days of delivery, subject to our Return Policy. Items must be in their original condition with
-                all tags attached. Customers are responsible for return shipping costs unless the item is defective or
-                incorrect.
-              </p>
-              <p>
-                To initiate a return, please contact us at the email address in Section 11. Refunds will be processed to
-                the original payment method within 30 days after we receive and inspect the returned item.
-              </p>
-            </div>
-          </section>
+          <Section id="shipping-risk" title="5. Shipping Risk">
+            <p>
+              Until your order reaches the delivery address, the risk of loss or damage in transit is ours. If a
+              parcel is lost or damaged on the way to you, we replace it or refund you under our{" "}
+              <Link
+                href="/returns-refund-policy"
+                className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
+              >
+                Return &amp; Refund Policy
+              </Link>{" "}
+              — there is no carrier claim for you to file.
+            </p>
+            <p>
+              We are also responsible for production errors, wrong items, and items damaged before carrier
+              handoff. Once a parcel has been delivered to the address you gave us, risk passes to you.
+            </p>
+            <p>
+              We nonetheless replace or credit one parcel reported stolen after delivery per customer in any
+              12-month period, on the terms set out in our Return &amp; Refund Policy; beyond that it is at our
+              discretion. Nothing in this section limits any rights you have under applicable consumer protection
+              law.
+            </p>
+          </Section>
 
-          {/* Section 6 */}
-          <section id="intellectual">
-            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
-              6. Intellectual Property
-            </h2>
-            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <p>
-                All content on the Site, including but not limited to text, graphics, logos, images, product designs,
-                taglines, and software (&ldquo;Content&rdquo;), is the property of Veldic Wear or its licensors and is
-                protected by applicable intellectual property laws.
-              </p>
-              <p>You may not:</p>
-              <ul className="list-inside space-y-2">
-                <li className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>Reproduce, distribute, modify, or create derivative works from the Content without our prior written consent.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>Use any of our trademarks, trade names, or branding without our express permission.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>Remove or alter any copyright, trademark, or other proprietary notices on the Content.</span>
-                </li>
-              </ul>
-            </div>
-          </section>
+          <Section id="accounts" title="6. Accounts & Accuracy of Information">
+            <p>
+              You&rsquo;re responsible for keeping your account information current and accurate, including your
+              shipping address, and for maintaining the confidentiality of your account. You agree that the
+              information you provide when ordering is complete and accurate.
+            </p>
+            <p>
+              We&rsquo;re unable to take responsibility for orders shipped to an incorrect or incomplete address.
+              If you spot a mistake, email us right away and we&rsquo;ll fix it if the order hasn&rsquo;t shipped.
+            </p>
+          </Section>
 
-          {/* Section 7 */}
-          <section id="prohibited">
-            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
-              7. Prohibited Uses
-            </h2>
-            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <p>You agree not to use the Site for any unlawful purpose or in violation of these Terms. Prohibited uses
-                include, but are not limited to:</p>
-              <ul className="list-inside space-y-2">
-                <li className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>Engaging in fraudulent, abusive, or deceptive activity.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>Attempting to gain unauthorized access to our systems or user accounts.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>Interfering with the proper functioning of the Site, including introducing malware or conducting
-                    denial-of-service attacks.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>Scraping or extracting data from the Site without our authorization.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#CA8A04]" />
-                  <span>Violating any applicable local, state, national, or international law.</span>
-                </li>
-              </ul>
-            </div>
-          </section>
+          <Section id="ip" title="7. Intellectual Property">
+            <p>
+              All content on this site — including designs, graphics, product artwork, logos, text, and images — is
+              the property of {TRADING_NAME} and is protected by copyright and trademark law. You may not
+              reproduce, copy, sell, or exploit any portion of the site or its content without our express written
+              permission.
+            </p>
+          </Section>
 
-          {/* Section 8 */}
-          <section id="disclaimers">
-            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
-              8. Disclaimers & Limitation of Liability
-            </h2>
-            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <p>
-                <strong className="text-[#1C1917]">Disclaimer of Warranties:</strong> The Site and all products, content,
-                and services provided through the Site are provided on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo;
-                basis, without any warranties of any kind, either express or implied, including but not limited to implied
-                warranties of merchantability, fitness for a particular purpose, or non-infringement.
-              </p>
-              <p>
-                We do not warrant that the Site will be uninterrupted, error-free, secure, or free of viruses or other
-                harmful components.
-              </p>
-              <p>
-                <strong className="text-[#1C1917]">Limitation of Liability:</strong> To the fullest extent permitted by
-                applicable law, in no event shall Veldic Wear, its officers, directors, employees, or agents be liable for
-                any indirect, incidental, special, consequential, or punitive damages arising out of or relating to your use
-                of the Site, including but not limited to lost profits, data loss, or business interruption, even if advised
-                of the possibility of such damages.
-              </p>
-              <p>
-                Some jurisdictions do not allow the exclusion of certain warranties or the limitation of liability for
-                certain damages. If you reside in such a jurisdiction, some of the above exclusions or limitations may not
-                apply to you.
-              </p>
-            </div>
-          </section>
+          <Section id="third-party" title="8. Third-Party Links & Tools">
+            <p>
+              The site may include links to third-party websites or make use of third-party tools. We are not
+              responsible for the content, accuracy, or practices of third parties, and your use of their sites or
+              tools is at your own risk. Please review their privacy policies and terms before you use them.
+            </p>
+            <p>
+              How we handle your personal information is set out in our{" "}
+              <Link
+                href="/privacy"
+                className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
+              >
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          </Section>
 
-          {/* Section 9 */}
-          <section id="termination">
-            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
-              9. Termination
-            </h2>
-            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <p>
-                We may terminate or suspend your access to the Site immediately, without prior notice or liability, for any
-                reason, including if you breach these Terms.
-              </p>
-              <p>
-                Upon termination, your right to use the Site will cease immediately. Provisions of these Terms that by their
-                nature should survive termination (including but not limited to intellectual property provisions,
-                disclaimers, and limitations of liability) shall survive.
-              </p>
-              <p>
-                If you wish to terminate your account, you may simply discontinue using the Site or contact us to request
-                account deletion.
-              </p>
-            </div>
-          </section>
+          <Section id="liability" title="9. Disclaimer & Limitation of Liability">
+            <p>
+              The site and our products are provided &ldquo;as is&rdquo; and &ldquo;as available.&rdquo; To the
+              fullest extent permitted by law, {TRADING_NAME} is not liable for any indirect, incidental, or
+              consequential damages arising from your use of the site or products, and our total liability for any
+              claim will not exceed the amount you paid for the product giving rise to the claim.
+            </p>
+            <p>
+              Nothing in these terms limits any rights you have under applicable consumer protection law, including
+              the rights described in our Return &amp; Refund Policy.
+            </p>
+          </Section>
 
-          {/* Section 10 */}
-          <section id="governing">
-            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
-              10. Governing Law
-            </h2>
-            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <p>
-                These Terms shall be governed by and construed in accordance with the laws of the Province of Alberta,
-                Canada, without regard to its conflict of law provisions.
-              </p>
-              <p>
-                Any disputes arising out of or relating to these Terms or your use of the Site shall be resolved exclusively
-                in the courts located in Edmonton, Alberta, Canada, and you consent to the personal jurisdiction of
-                those courts.
-              </p>
-              <div className="mt-4 border border-[#1C1917]/10 bg-white p-5 font-sans text-sm">
-                <p className="text-[#1C1917]">
-                  <strong>Business Address:</strong> 7720 38A Avenue NW, Edmonton, AB T6K 2M1, Canada
-                </p>
-              </div>
-            </div>
-          </section>
+          <Section id="indemnity" title="10. Indemnification">
+            <p>
+              You agree to indemnify and hold harmless {TRADING_NAME} and its owners, employees, and partners from
+              any claim arising out of your breach of these terms or your violation of any law or third-party right.
+            </p>
+          </Section>
 
-          {/* Section 11 */}
-          <section id="contact">
-            <h2 className="font-display text-2xl font-black uppercase tracking-tight text-[#1C1917]">
-              11. Contact Us
-            </h2>
-            <div className="mt-4 space-y-4 font-sans text-base leading-relaxed text-[#44403C]">
-              <p>
-                If you have any questions about these Terms, please{" "}
-                <Link
-                  href="/contact"
-                  className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
+          <Section id="governing" title="11. Governing Law">
+            <p>
+              These terms are governed by the laws of the Province of Alberta and the federal laws of Canada
+              applicable therein, without regard to conflict-of-law rules.
+            </p>
+            <p>
+              Any dispute arising out of or relating to these Terms or your use of the Site shall be resolved
+              exclusively in the courts located in Alberta, Canada, and you consent to the personal jurisdiction of
+              those courts. Nothing in this section prevents you from exercising any right or remedy available to you
+              under the consumer protection laws of your jurisdiction.
+            </p>
+          </Section>
+
+          <Section id="changes" title="12. Changes to These Terms">
+            <p>
+              We may update these Terms of Service at any time by posting the revised version on this page. Your
+              continued use of the site after changes are posted constitutes acceptance of those changes.
+            </p>
+            <p>
+              We encourage you to review this page periodically. If a change is material, we will let you know
+              before it takes effect.
+            </p>
+          </Section>
+
+          <Section id="contact" title="13. Contact">
+            <p>
+              Questions about these terms? Email us at{" "}
+              <a
+                href={`mailto:${BUSINESS_INFO.email}`}
+                className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"
+              >
+                {BUSINESS_INFO.email}
+              </a>
+              , use our{" "}
+              <Link
+                href="/contact"
+                className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] cursor-pointer"
+              >
+                contact form
+              </Link>
+              , or call {BUSINESS_INFO.phone}.
+            </p>
+            <div className="mt-4 border border-[#1C1917]/10 bg-white p-5 font-sans text-sm">
+              <p className="text-[#1C1917]">
+                <strong>{BUSINESS_INFO.legalName}</strong>
+                <br />
+                {BUSINESS_ADDRESS_LINE}
+                <br />
+                <a
+                  href={`mailto:${BUSINESS_INFO.email}`}
+                  className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"
                 >
-                  contact us through our website
-                </Link>
-                .
+                  {BUSINESS_INFO.email}
+                </a>
+                <br />
+                <a
+                  href={`tel:${BUSINESS_INFO.phoneHref}`}
+                  className="underline decoration-[#CA8A04]/40 underline-offset-2 transition-colors duration-200 hover:decoration-[#CA8A04] text-[#1C1917] cursor-pointer"
+                >
+                  {BUSINESS_INFO.phone}
+                </a>
               </p>
-              <div className="mt-4 border border-[#1C1917]/10 bg-white p-5 font-sans text-sm">
-                <p className="text-[#1C1917]">
-                  <strong>Address:</strong> 7720 38A Avenue NW, Edmonton, AB T6K 2M1, Canada
-                </p>
-              </div>
             </div>
-          </section>
+            <p className="pt-2 text-sm text-[#78716C]">
+              We aim to respond to all inquiries within 30 days.
+            </p>
+          </Section>
+
         </div>
 
         {/* Footer note */}
         <div className="mt-16 border-t border-[#1C1917]/15 pt-8 text-center">
-          <Link href="/" className="font-display text-lg font-bold tracking-[0.15em] text-[#1C1917] transition-colors duration-200 hover:text-[#CA8A04] cursor-pointer">
+          <Link
+            href="/"
+            className="font-display text-lg font-bold tracking-[0.15em] text-[#1C1917] transition-colors duration-200 hover:text-[#CA8A04] cursor-pointer"
+          >
             VELDIC WEAR
           </Link>
           <p className="mt-3 font-sans text-xs text-[#78716C]">
-            &copy; {new Date().getFullYear()} Veldic Wear. All rights reserved.
+            &copy; {new Date().getFullYear()} {TRADING_NAME}. All rights reserved.
           </p>
         </div>
       </div>

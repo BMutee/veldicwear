@@ -30,6 +30,8 @@ type LookupRequest =
  * The four steps a customer actually cares about. Terminal states
  * (cancelled / refunded / failed) deliberately step out of the timeline.
  */
+import { SUPPORT_EMAIL } from "@/lib/returns";
+
 const STEPS = ["Ordered", "Processing", "Shipped", "Delivered"] as const;
 
 /**
@@ -60,8 +62,6 @@ const STEP_FOR_STATUS: Record<string, number> = {
 };
 
 const TERMINAL_STATUSES = ["cancelled", "refunded", "failed"];
-
-const SUPPORT_EMAIL = "info@veldicwear.com";
 
 function statusKey(status: string) {
   return status.trim().toLowerCase();

@@ -5,6 +5,10 @@ import { checkRateLimit } from "@/lib/rate-limiter";
 import { upsertThreadForInbound } from "@/lib/message-threads";
 import { resolveBaseUrl } from "@/lib/base-url";
 
+// Where contact-form submissions are DELIVERED (the inbox that must be
+// monitored). Kept separate from the sender below: the reply address can be
+// changed freely, while the sending identity must stay a domain the mail
+// provider has authorized or every send fails.
 const CONTACT_EMAIL_TO = (process.env.CONTACT_EMAIL_TO ?? "info@veldicwear.com").toLowerCase();
 const CONTACT_EMAIL_FROM = (process.env.EMAIL_FROM ?? "info@veldicwear.com").toLowerCase();
 

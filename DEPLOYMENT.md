@@ -42,6 +42,7 @@ Your codebase is configured to deploy on Vercel (via `vercel.json`). Netlify has
    EMAIL_PASS
    EMAIL_FROM
    CONTACT_EMAIL_TO
+   SUPPORT_EMAIL
    DEO_MAIL_API_KEY
    ```
 
@@ -65,13 +66,18 @@ CJ_API_KEY                <REDACTED - set in Vercel, never commit>
 CRON_SECRET               <REDACTED - set in Vercel, never commit>
 ADMIN_SECRET              my-super-secret-key-change-this
 # EMAIL (deomail.com API)
+# EMAIL_FROM is the SENDING identity — it must stay a domain deomail has
+# authorized or every send fails. The inboxes below are where customer mail is
+# DELIVERED; changing those does not require re-authorizing the sender.
 DEO_MAIL_API_KEY          <REDACTED - set in Vercel, never commit>
 EMAIL_HOST                api.doemail.com  # deomail.com API endpoint
 EMAIL_PORT                443  # HTTPS port for deomail.com API
 EMAIL_USER                Info@veldicwear.com
 EMAIL_PASS                # Leave empty - uses API key auth instead
 EMAIL_FROM                Info@veldicwear.com
-CONTACT_EMAIL_TO          Info@veldicwear.com
+# Inboxes that must be monitored — where customer mail is delivered.
+CONTACT_EMAIL_TO          info@veldicwear.com
+SUPPORT_EMAIL             info@veldicwear.com
 ```
 ---
 
