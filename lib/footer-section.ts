@@ -75,7 +75,8 @@ export const FOOTER_DEFAULT_CONTENT: FooterContent = {
     { label: "Contact", href: "/contact" },
     { label: "FAQ", href: "/faq" },
     { label: "Start a Return", href: "/returns" },
-    { label: "Shipping & Returns", href: "/shipping" },
+    { label: "Shipping & Returns", href: "/shipping-policy" },
+    { label: "Returns & Exchanges", href: "/returns" },
   ],
   companyLinks: [
     { label: "About Us", href: "/about" },
